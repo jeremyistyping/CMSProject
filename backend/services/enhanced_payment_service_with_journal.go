@@ -1,0 +1,784 @@
+package services
+
+import (
+	"fmt"
+	"log"
+	"time"
+	"strings"
+
+	"app-sistem-akuntansi/models"
+	"app-sistem-akuntansi/repositories"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+)
+
+// EnhancedPaymentServiceWithJournal extends payment service with SSOT journal integration
+type EnhancedPaymentServiceWithJournal struct {
+	db                    *gorm.DB
+	paymentRepo          repositories.PaymentRepository
+	contactRepo          repositories.ContactRepository
+	cashBankRepo         *repositories.CashBankRepository
+	salesRepo            *repositories.SalesRepository
+	purchaseRepo         *repositories.PurchaseRepository
+	journalFactory       *PaymentJournalFactory
+	journalService       *UnifiedJournalService
+	statusValidator      *StatusValidationHelper // NEW: Konsistensi dengan SalesJournalServiceV2
+}
+
+// ListPayments returns paginated payments with filters (SSOT-compatible)
+func (eps *EnhancedPaymentServiceWithJournal) ListPayments(filter repositories.PaymentFilter) (*repositories.PaymentResult, error) {
+	return eps.paymentRepo.FindWithFilter(filter)
+}
+
+// NewEnhancedPaymentServiceWithJournal creates a new instance with journal integration
+func NewEnhancedPaymentServiceWithJournal(
+	db *gorm.DB,
+	paymentRepo repositories.PaymentRepository,
+	contactRepo repositories.ContactRepository,
+	cashBankRepo *repositories.CashBankRepository,
+	salesRepo *repositories.SalesRepository,
+	purchaseRepo *repositories.PurchaseRepository,
+	journalService *UnifiedJournalService,
+) *EnhancedPaymentServiceWithJournal {
+	journalFactory := NewPaymentJournalFactory(db)
+
+	return &EnhancedPaymentServiceWithJournal{
+		db:              db,
+		paymentRepo:     paymentRepo,
+		contactRepo:     contactRepo,
+		cashBankRepo:    cashBankRepo,
+		salesRepo:       salesRepo,
+		purchaseRepo:    purchaseRepo,
+		journalFactory:  journalFactory,
+		journalService:  journalService,
+		statusValidator: NewStatusValidationHelper(), // Initialize status validator
+	}
+}
+
+// PaymentWithJournalRequest extends payment request with journal integration options
+type PaymentWithJournalRequest struct {
+	ContactID         uint      `json:"contact_id" binding:"required"`
+	CashBankID        uint      `json:"cash_bank_id" binding:"required"`
+	Date              time.Time `json:"date" binding:"required"`
+	Amount            float64   `json:"amount" binding:"required,min=0.01"`
+	Method            string    `json:"method" binding:"required"`
+	Reference         string    `json:"reference"`
+	Notes             string    `json:"notes"`
+	
+	// Journal integration options
+	AutoCreateJournal bool      `json:"auto_create_journal" default:"true"`
+	PreviewJournal    bool      `json:"preview_journal" default:"false"`
+	
+	// Allocation options (single target - legacy)
+	TargetInvoiceID   *uint     `json:"target_invoice_id,omitempty"`
+	TargetBillID      *uint     `json:"target_bill_id,omitempty"`
+	
+	// Allocation arrays (multiple targets - preferred)
+	InvoiceAllocations []AllocationItem `json:"invoice_allocations,omitempty"`
+	BillAllocations    []AllocationItem `json:"bill_allocations,omitempty"`
+	
+	// User context
+	UserID            uint      `json:"user_id"`
+}
+
+// AllocationItem represents a single allocation to an invoice or bill
+type AllocationItem struct {
+	InvoiceID *uint   `json:"invoice_id,omitempty"`
+	BillID    *uint   `json:"bill_id,omitempty"`
+	Amount    float64 `json:"amount" binding:"required,min=0.01"`
+}
+
+// PaymentWithJournalResponse extends payment response with journal information
+type PaymentWithJournalResponse struct {
+	Payment         *models.Payment                 `json:"payment"`
+	JournalResult   *PaymentJournalResult           `json:"journal_result,omitempty"`
+	Contact         *models.Contact                 `json:"contact"`
+	CashBank        *models.CashBank                `json:"cash_bank"`
+	Allocations     []models.PaymentAllocation      `json:"allocations,omitempty"`
+	Summary         *PaymentProcessingSummary       `json:"summary"`
+	Success         bool                            `json:"success"`
+	Message         string                          `json:"message"`
+	Warnings        []string                        `json:"warnings,omitempty"`
+}
+
+// PaymentProcessingSummary provides comprehensive processing information
+type PaymentProcessingSummary struct {
+	TotalAmount           decimal.Decimal `json:"total_amount"`
+	ProcessingTime        string          `json:"processing_time"`
+	JournalEntryCreated   bool            `json:"journal_entry_created"`
+	AccountBalancesUpdated bool           `json:"account_balances_updated"`
+	AllocationsCreated    int             `json:"allocations_created"`
+	TransactionID         string          `json:"transaction_id"`
+}
+
+// CreatePaymentWithJournal creates a payment with automatic journal entry creation
+func (eps *EnhancedPaymentServiceWithJournal) CreatePaymentWithJournal(req *PaymentWithJournalRequest) (*PaymentWithJournalResponse, error) {
+	startTime := time.Now()
+
+	// 🔍 DEBUG: Log received request
+	log.Printf("🔍 DEBUG CreatePaymentWithJournal request:")
+	log.Printf("  - ContactID: %d", req.ContactID)
+	log.Printf("  - Amount: %.2f", req.Amount)
+	log.Printf("  - Method: %s", req.Method)
+	log.Printf("  - TargetBillID: %v", req.TargetBillID)
+	log.Printf("  - BillAllocations count: %d", len(req.BillAllocations))
+	if len(req.BillAllocations) > 0 {
+		for i, alloc := range req.BillAllocations {
+			log.Printf("    [%d] BillID=%v, Amount=%.2f", i, alloc.BillID, alloc.Amount)
+		}
+	}
+	log.Printf("  - InvoiceAllocations count: %d", len(req.InvoiceAllocations))
+	if len(req.InvoiceAllocations) > 0 {
+		for i, alloc := range req.InvoiceAllocations {
+			log.Printf("    [%d] InvoiceID=%v, Amount=%.2f", i, alloc.InvoiceID, alloc.Amount)
+		}
+	}
+
+	// Validate request
+	if err := eps.validatePaymentRequest(req); err != nil {
+		return nil, fmt.Errorf("payment validation failed: %w", err)
+	}
+
+	var (
+		payment       *models.Payment
+		journalResult *PaymentJournalResult
+		response      = &PaymentWithJournalResponse{
+			Success: false,
+		}
+	)
+
+	// Execute payment creation in transaction
+	err := eps.db.Transaction(func(tx *gorm.DB) error {
+		// Step 1: Get and validate contact
+		contact, err := eps.contactRepo.GetByID(req.ContactID)
+		if err != nil {
+			return fmt.Errorf("contact not found: %w", err)
+		}
+
+		// Step 2: Get and validate cash/bank account
+		cashBank, err := eps.cashBankRepo.FindByID(req.CashBankID)
+		if err != nil {
+			return fmt.Errorf("cash/bank account not found: %w", err)
+		}
+
+		// Step 3: Auto-detect payment method if needed
+		if req.Method == "" {
+			req.Method = eps.autoDetectPaymentMethod(contact.Type)
+		}
+
+		// Step 4: Create payment record
+		payment = &models.Payment{
+			ContactID:   req.ContactID,
+			UserID:      req.UserID,
+			Date:        req.Date,
+			Amount:      req.Amount,
+			Method:      req.Method,
+			Reference:   req.Reference,
+			Notes:       req.Notes,
+			Status:      models.PaymentStatusPending,
+		}
+
+		// Generate payment code
+		code, err := eps.generatePaymentCode(tx, req.Method, contact.Type)
+		if err != nil {
+			return fmt.Errorf("failed to generate payment code: %w", err)
+		}
+		payment.Code = code
+
+		// Create payment in database
+		if err := tx.Create(payment).Error; err != nil {
+			return fmt.Errorf("failed to create payment: %w", err)
+		}
+
+		log.Printf("✅ Payment created: ID=%d, Code=%s", payment.ID, payment.Code)
+
+		// Step 5: Create journal entry (if requested)
+		if req.AutoCreateJournal {
+			if contact.Type == "CUSTOMER" {
+				journalResult, err = eps.journalFactory.CreateReceivablePaymentJournal(payment, contact, cashBank)
+			} else if contact.Type == "VENDOR" {
+				journalResult, err = eps.journalFactory.CreatePayablePaymentJournal(payment, contact, cashBank)
+			} else {
+				return fmt.Errorf("unsupported contact type: %s", contact.Type)
+			}
+			if err != nil {
+				return fmt.Errorf("failed to create journal entry: %w", err)
+			}
+
+			// Update payment with journal entry ID
+			if journalResult.JournalEntry != nil {
+				journalEntryID := uint(journalResult.JournalEntry.ID)
+				payment.JournalEntryID = &journalEntryID
+				if err := tx.Save(payment).Error; err != nil {
+					return fmt.Errorf("failed to update payment with journal reference: %w", err)
+				}
+				log.Printf("✅ Journal entry created: %s", journalResult.JournalEntry.EntryNumber)
+			}
+		}
+
+		// Step 6: Create allocations if specified
+		allocations, err := eps.createPaymentAllocations(tx, payment, req, contact.Type)
+		if err != nil {
+			return fmt.Errorf("failed to create allocations: %w", err)
+		}
+
+		// Step 7: Update payment status to completed
+		payment.Status = models.PaymentStatusCompleted
+		if err := tx.Save(payment).Error; err != nil {
+			return fmt.Errorf("failed to finalize payment: %w", err)
+		}
+
+		// Step 8: Reflect movement in Cash & Bank module (keeps UI Kas/Bank in sync)
+		// IMPORTANT: We only update cash_banks and insert a transaction record.
+		// We DO NOT create another journal here to avoid double-posting because the SSOT journal above
+		// already debits/credits the GL bank account.
+		if err := eps.applyCashBankMovement(tx, cashBank, contact.Type, req.Amount, payment, req.Date); err != nil {
+			return fmt.Errorf("failed to update Cash & Bank balances: %w", err)
+		}
+
+		// Build response
+		response.Payment = payment
+		response.JournalResult = journalResult
+		response.Contact = contact
+		response.CashBank = cashBank
+		response.Allocations = allocations
+		response.Success = true
+		response.Message = fmt.Sprintf("Payment %s created successfully", payment.Code)
+
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("❌ Payment creation failed: %v", err)
+		return nil, err
+	}
+
+	// Build summary
+	response.Summary = &PaymentProcessingSummary{
+		TotalAmount:            decimal.NewFromFloat(payment.Amount),
+		ProcessingTime:         time.Since(startTime).String(),
+		JournalEntryCreated:    journalResult != nil && journalResult.Success,
+		AccountBalancesUpdated: journalResult != nil && len(journalResult.AccountUpdates) > 0,
+		AllocationsCreated:     len(response.Allocations),
+		TransactionID:          payment.Code,
+	}
+
+	log.Printf("🎉 Payment with journal created successfully: %s", payment.Code)
+	return response, nil
+}
+
+// PreviewPaymentJournal previews the journal entry that would be created for a payment
+func (eps *EnhancedPaymentServiceWithJournal) PreviewPaymentJournal(req *PaymentWithJournalRequest) (*PaymentJournalResult, error) {
+	// Get contact information
+	contact, err := eps.contactRepo.GetByID(req.ContactID)
+	if err != nil {
+		return nil, fmt.Errorf("contact not found: %w", err)
+	}
+
+	// Get cash/bank information
+	_, err = eps.cashBankRepo.FindByID(req.CashBankID)
+	if err != nil {
+		return nil, fmt.Errorf("cash/bank account not found: %w", err)
+	}
+
+	// Create journal request for preview
+	journalReq := &PaymentJournalRequest{
+		PaymentID:   0, // Preview doesn't have payment ID yet
+		ContactID:   uint64(req.ContactID),
+		Amount:      decimal.NewFromFloat(req.Amount),
+		Date:        req.Date,
+		Method:      req.Method,
+		Reference:   req.Reference,
+		Notes:       req.Notes,
+		CashBankID:  uint64(req.CashBankID),
+		CreatedBy:   uint64(req.UserID),
+		ContactType: contact.Type,
+		ContactName: contact.Name,
+	}
+
+	// Generate preview
+	return eps.journalFactory.PreviewPaymentJournalEntry(journalReq)
+}
+
+// GetPaymentWithJournal retrieves a payment with its journal entry details
+func (eps *EnhancedPaymentServiceWithJournal) GetPaymentWithJournal(paymentID uint) (*PaymentWithJournalResponse, error) {
+	// Get payment with relations
+	var payment models.Payment
+	if err := eps.db.Preload("Contact").Preload("User").First(&payment, paymentID).Error; err != nil {
+		return nil, fmt.Errorf("payment not found: %w", err)
+	}
+
+	response := &PaymentWithJournalResponse{
+		Payment: &payment,
+		Success: true,
+	}
+
+	// Get journal entry if exists
+	if payment.JournalEntryID != nil {
+		journalEntry, err := eps.journalService.GetJournalEntry(uint64(*payment.JournalEntryID))
+		if err != nil {
+			log.Printf("⚠️ Warning: Failed to load journal entry %d: %v", *payment.JournalEntryID, err)
+		} else {
+			response.JournalResult = &PaymentJournalResult{
+				JournalEntry: journalEntry,
+				Success:      true,
+				Message:      "Journal entry loaded successfully",
+			}
+		}
+	}
+
+	// Get contact
+	if payment.Contact.ID == 0 {
+		contact, err := eps.contactRepo.GetByID(payment.ContactID)
+		if err == nil {
+			response.Contact = contact
+		}
+	} else {
+		response.Contact = &payment.Contact
+	}
+
+	// Get allocations
+	var allocations []models.PaymentAllocation
+	if err := eps.db.Where("payment_id = ?", paymentID).Find(&allocations).Error; err == nil {
+		response.Allocations = allocations
+	}
+
+	return response, nil
+}
+
+// ReversePayment reverses a payment and its journal entry
+func (eps *EnhancedPaymentServiceWithJournal) ReversePayment(paymentID uint, reason string, userID uint) (*PaymentWithJournalResponse, error) {
+	var response *PaymentWithJournalResponse
+	err := eps.db.Transaction(func(tx *gorm.DB) error {
+		// Get payment
+		var payment models.Payment
+		if err := tx.First(&payment, paymentID).Error; err != nil {
+			return fmt.Errorf("payment not found: %w", err)
+		}
+
+		if payment.Status != models.PaymentStatusCompleted {
+			return fmt.Errorf("only completed payments can be reversed")
+		}
+
+		// Reverse journal entry if exists
+		var journalResult *PaymentJournalResult
+		if payment.JournalEntryID != nil {
+			var err error
+			journalResult, err = eps.journalFactory.ReversePaymentJournal(uint64(payment.ID), reason, uint64(userID))
+			if err != nil {
+				return fmt.Errorf("failed to reverse journal entry: %w", err)
+			}
+		}
+
+		// Update payment status
+		payment.Status = models.PaymentStatusReversed
+		payment.Notes = fmt.Sprintf("%s [REVERSED: %s]", payment.Notes, reason)
+		if err := tx.Save(&payment).Error; err != nil {
+			return fmt.Errorf("failed to update payment status: %w", err)
+		}
+
+		response = &PaymentWithJournalResponse{
+			Payment:       &payment,
+			JournalResult: journalResult,
+			Success:       true,
+			Message:       fmt.Sprintf("Payment %s reversed successfully", payment.Code),
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// Helper methods
+
+// applyCashBankMovement updates cash_banks.balance and records a CashBankTransaction for the payment
+// without generating additional journal entries (SSOT already handled journal posting).
+func (eps *EnhancedPaymentServiceWithJournal) applyCashBankMovement(
+	tx *gorm.DB,
+	cashBank *models.CashBank,
+	contactType string,
+	amount float64,
+	payment *models.Payment,
+	date time.Time,
+) error {
+	movement := amount
+	refType := "PAYMENT"
+	if strings.ToUpper(contactType) == "CUSTOMER" {
+		// Incoming money
+		movement = amount
+		refType = "PAYMENT_RECEIVED"
+	} else if strings.ToUpper(contactType) == "VENDOR" {
+		// Outgoing money
+		movement = -amount
+		refType = "PAYMENT_MADE"
+	}
+
+	// Update balance
+	newBalance := cashBank.Balance + movement
+	cashBank.Balance = newBalance
+	if err := tx.Save(cashBank).Error; err != nil {
+		return fmt.Errorf("save cash bank: %w", err)
+	}
+
+	// Insert transaction row for Cash&Bank UI/history
+	txRow := &models.CashBankTransaction{
+		CashBankID:      cashBank.ID,
+		ReferenceType:   refType,
+		ReferenceID:     payment.ID,
+		Amount:          movement,
+		BalanceAfter:    newBalance,
+		TransactionDate: date,
+		Notes:           fmt.Sprintf("%s %s", refType, payment.Code),
+	}
+	if err := tx.Create(txRow).Error; err != nil {
+		return fmt.Errorf("create cashbank transaction: %w", err)
+	}
+
+	return nil
+}
+
+// autoDetectPaymentMethod determines payment method based on contact type
+func (eps *EnhancedPaymentServiceWithJournal) autoDetectPaymentMethod(contactType string) string {
+	if contactType == "CUSTOMER" {
+		return "RECEIVABLE"
+	} else if contactType == "VENDOR" {
+		return "PAYABLE"
+	}
+	return "CASH"
+}
+
+// generatePaymentCode generates unique payment code
+func (eps *EnhancedPaymentServiceWithJournal) generatePaymentCode(tx *gorm.DB, method, contactType string) (string, error) {
+	prefix := "PAY"
+	if contactType == "CUSTOMER" {
+		prefix = "RCV"
+	} else if contactType == "VENDOR" {
+		prefix = "PAY"
+	}
+
+	// Get current date
+	now := time.Now()
+	datePrefix := now.Format("2006/01")
+
+	// Find next sequence number
+	var count int64
+	tx.Model(&models.Payment{}).
+		Where("code LIKE ?", fmt.Sprintf("%s-%s-%%", prefix, datePrefix)).
+		Count(&count)
+
+	// Generate code
+	return fmt.Sprintf("%s-%s-%04d", prefix, datePrefix, count+1), nil
+}
+
+// createPaymentAllocations creates payment allocations to invoices/bills
+func (eps *EnhancedPaymentServiceWithJournal) createPaymentAllocations(
+	tx *gorm.DB, 
+	payment *models.Payment, 
+	req *PaymentWithJournalRequest, 
+	contactType string,
+) ([]models.PaymentAllocation, error) {
+	var allocations []models.PaymentAllocation
+
+	// 🔥 FIX: Handle array-based allocations (preferred method)
+	if contactType == "CUSTOMER" {
+		// Handle multiple invoice allocations
+		if len(req.InvoiceAllocations) > 0 {
+			log.Printf("📝 Processing %d invoice allocations", len(req.InvoiceAllocations))
+			remainingAmount := payment.Amount
+			
+			for i, alloc := range req.InvoiceAllocations {
+				if alloc.InvoiceID == nil {
+					log.Printf("⚠️ Skipping allocation %d: no invoice ID", i)
+					continue
+				}
+				
+				if remainingAmount <= 0 {
+					log.Printf("⚠️ No remaining amount for allocation %d", i)
+					break
+				}
+				
+				// Validate invoice
+				var sale models.Sale
+				if err := tx.First(&sale, *alloc.InvoiceID).Error; err != nil {
+					return nil, fmt.Errorf("invoice %d not found: %w", *alloc.InvoiceID, err)
+				}
+				
+				// Validate status
+				if err := eps.statusValidator.ValidatePaymentAllocation(sale.Status, *alloc.InvoiceID); err != nil {
+					log.Printf("❌ Payment allocation blocked: %v", err)
+					return nil, err
+				}
+				
+				// Calculate allocated amount
+				allocatedAmount := alloc.Amount
+				if allocatedAmount > remainingAmount {
+					allocatedAmount = remainingAmount
+					log.Printf("⚠️ Adjusting amount to remaining: %.2f -> %.2f", alloc.Amount, allocatedAmount)
+				}
+				if allocatedAmount > sale.OutstandingAmount {
+					allocatedAmount = sale.OutstandingAmount
+					log.Printf("⚠️ Adjusting amount to outstanding: %.2f -> %.2f", allocatedAmount, sale.OutstandingAmount)
+				}
+				
+				// Create allocation
+				allocation := models.PaymentAllocation{
+					PaymentID:       uint64(payment.ID),
+					InvoiceID:       alloc.InvoiceID,
+					AllocatedAmount: allocatedAmount,
+				}
+				
+				if err := tx.Create(&allocation).Error; err != nil {
+					return nil, fmt.Errorf("failed to create invoice allocation: %w", err)
+				}
+				
+				allocations = append(allocations, allocation)
+				
+				// Update sale outstanding
+				if err := eps.updateSaleOutstanding(tx, *alloc.InvoiceID, allocatedAmount); err != nil {
+					log.Printf("⚠️ Warning: Failed to update sale outstanding: %v", err)
+				}
+				
+				remainingAmount -= allocatedAmount
+				log.Printf("✅ Invoice allocation %d complete. Remaining: %.2f", i+1, remainingAmount)
+			}
+		} else if req.TargetInvoiceID != nil {
+			// Legacy: single invoice allocation
+			log.Printf("📝 Processing single invoice allocation (legacy)")
+			var sale models.Sale
+			if err := tx.First(&sale, *req.TargetInvoiceID).Error; err != nil {
+				return nil, fmt.Errorf("invoice not found: %w", err)
+			}
+			
+			if err := eps.statusValidator.ValidatePaymentAllocation(sale.Status, *req.TargetInvoiceID); err != nil {
+				log.Printf("❌ Payment allocation blocked: %v", err)
+				return nil, err
+			}
+			
+			allocation := models.PaymentAllocation{
+				PaymentID:       uint64(payment.ID),
+				InvoiceID:       req.TargetInvoiceID,
+				AllocatedAmount: payment.Amount,
+			}
+			
+			if err := tx.Create(&allocation).Error; err != nil {
+				return nil, fmt.Errorf("failed to create invoice allocation: %w", err)
+			}
+			
+			allocations = append(allocations, allocation)
+			
+			if err := eps.updateSaleOutstanding(tx, *req.TargetInvoiceID, payment.Amount); err != nil {
+				log.Printf("⚠️ Warning: Failed to update sale outstanding: %v", err)
+			}
+		}
+	} else if contactType == "VENDOR" {
+		// Handle multiple bill allocations
+		if len(req.BillAllocations) > 0 {
+			log.Printf("📝 Processing %d bill allocations", len(req.BillAllocations))
+			remainingAmount := payment.Amount
+			
+			for i, alloc := range req.BillAllocations {
+				if alloc.BillID == nil {
+					log.Printf("⚠️ Skipping allocation %d: no bill ID", i)
+					continue
+				}
+				
+				if remainingAmount <= 0 {
+					log.Printf("⚠️ No remaining amount for allocation %d", i)
+					break
+				}
+				
+				// Validate purchase
+				var purchase models.Purchase
+				if err := tx.First(&purchase, *alloc.BillID).Error; err != nil {
+					return nil, fmt.Errorf("bill %d not found: %w", *alloc.BillID, err)
+				}
+				
+				// Validate ownership
+				if purchase.VendorID != req.ContactID {
+					return nil, fmt.Errorf("bill %d does not belong to this vendor", *alloc.BillID)
+				}
+				
+				// Calculate allocated amount
+				allocatedAmount := alloc.Amount
+				if allocatedAmount > remainingAmount {
+					allocatedAmount = remainingAmount
+					log.Printf("⚠️ Adjusting amount to remaining: %.2f -> %.2f", alloc.Amount, allocatedAmount)
+				}
+				if allocatedAmount > purchase.OutstandingAmount {
+					allocatedAmount = purchase.OutstandingAmount
+					log.Printf("⚠️ Adjusting amount to outstanding: %.2f -> %.2f", allocatedAmount, purchase.OutstandingAmount)
+				}
+				
+				// Create allocation
+				allocation := models.PaymentAllocation{
+					PaymentID:       uint64(payment.ID),
+					BillID:          alloc.BillID,
+					AllocatedAmount: allocatedAmount,
+				}
+				
+				if err := tx.Create(&allocation).Error; err != nil {
+					return nil, fmt.Errorf("failed to create bill allocation: %w", err)
+				}
+				
+				allocations = append(allocations, allocation)
+				
+				// 🔥 FIX: Update purchase outstanding
+				if err := eps.updatePurchaseOutstanding(tx, *alloc.BillID, allocatedAmount); err != nil {
+					log.Printf("❌ CRITICAL: Failed to update purchase outstanding: %v", err)
+					return nil, fmt.Errorf("failed to update purchase outstanding: %w", err)
+				}
+				log.Printf("✅ Purchase outstanding updated for bill %d", *alloc.BillID)
+				
+				remainingAmount -= allocatedAmount
+				log.Printf("✅ Bill allocation %d complete. Remaining: %.2f", i+1, remainingAmount)
+			}
+		} else if req.TargetBillID != nil {
+			// Legacy: single bill allocation
+			log.Printf("📝 Processing single bill allocation (legacy)")
+			allocation := models.PaymentAllocation{
+				PaymentID:       uint64(payment.ID),
+				BillID:          req.TargetBillID,
+				AllocatedAmount: payment.Amount,
+			}
+			
+			if err := tx.Create(&allocation).Error; err != nil {
+				return nil, fmt.Errorf("failed to create bill allocation: %w", err)
+			}
+			
+			allocations = append(allocations, allocation)
+			
+			if err := eps.updatePurchaseOutstanding(tx, *req.TargetBillID, payment.Amount); err != nil {
+				log.Printf("❌ CRITICAL: Failed to update purchase outstanding: %v", err)
+				return nil, fmt.Errorf("failed to update purchase outstanding: %w", err)
+			}
+		}
+	}
+
+	return allocations, nil
+}
+
+// updateSaleOutstanding updates sale outstanding amount after payment allocation
+func (eps *EnhancedPaymentServiceWithJournal) updateSaleOutstanding(tx *gorm.DB, saleID uint, paidAmount float64) error {
+	var sale models.Sale
+	if err := tx.First(&sale, saleID).Error; err != nil {
+		return fmt.Errorf("sale not found: %w", err)
+	}
+
+	// Update amounts
+	sale.PaidAmount += paidAmount
+	sale.OutstandingAmount -= paidAmount
+
+	// Update status if fully paid
+	if sale.OutstandingAmount <= 0.01 { // Allow small rounding differences
+		sale.Status = models.SaleStatusPaid
+		sale.OutstandingAmount = 0 // Ensure exact zero
+	}
+
+	return tx.Save(&sale).Error
+}
+
+// updatePurchaseOutstanding updates purchase outstanding amount after payment allocation
+func (eps *EnhancedPaymentServiceWithJournal) updatePurchaseOutstanding(tx *gorm.DB, purchaseID uint, paidAmount float64) error {
+	var purchase models.Purchase
+	if err := tx.First(&purchase, purchaseID).Error; err != nil {
+		return fmt.Errorf("purchase not found: %w", err)
+	}
+
+	log.Printf("📝 Updating purchase amounts: PaidAmount %.2f -> %.2f, Outstanding %.2f -> %.2f", 
+		purchase.PaidAmount, purchase.PaidAmount + paidAmount,
+		purchase.OutstandingAmount, purchase.OutstandingAmount - paidAmount)
+
+	// Update amounts
+	purchase.PaidAmount += paidAmount
+	purchase.OutstandingAmount -= paidAmount
+
+	// Update matching status if fully paid
+	if purchase.OutstandingAmount <= 0.01 { // Allow small rounding differences
+		purchase.MatchingStatus = models.PurchaseMatchingMatched
+		purchase.OutstandingAmount = 0 // Ensure exact zero
+		log.Printf("✅ Purchase fully paid, matching status updated to MATCHED")
+	} else {
+		purchase.MatchingStatus = models.PurchaseMatchingPartial
+		log.Printf("✅ Purchase partially paid (Outstanding: %.2f)", purchase.OutstandingAmount)
+	}
+
+	if err := tx.Save(&purchase).Error; err != nil {
+		log.Printf("❌ Failed to save purchase: %v", err)
+		return err
+	}
+	log.Printf("✅ Purchase updated successfully")
+
+	return nil
+}
+
+// validatePaymentRequest validates the payment request
+func (eps *EnhancedPaymentServiceWithJournal) validatePaymentRequest(req *PaymentWithJournalRequest) error {
+	if req.ContactID == 0 {
+		return fmt.Errorf("contact ID is required")
+	}
+
+	if req.CashBankID == 0 {
+		return fmt.Errorf("cash/bank account ID is required")
+	}
+
+	if req.Amount <= 0 {
+		return fmt.Errorf("payment amount must be positive")
+	}
+
+	if req.Date.IsZero() {
+		return fmt.Errorf("payment date is required")
+	}
+
+	if req.UserID == 0 {
+		return fmt.Errorf("user ID is required")
+	}
+
+	// Validate date is not in future (allow today)
+	if req.Date.After(time.Now().AddDate(0, 0, 1)) {
+		return fmt.Errorf("payment date cannot be more than 1 day in the future")
+	}
+
+	return nil
+}
+
+// GetAccountBalanceUpdates retrieves account balance updates from journal integration
+func (eps *EnhancedPaymentServiceWithJournal) GetAccountBalanceUpdates(paymentID uint) ([]AccountBalanceUpdate, error) {
+	// Get payment
+	var payment models.Payment
+	if err := eps.db.First(&payment, paymentID).Error; err != nil {
+		return nil, fmt.Errorf("payment not found: %w", err)
+	}
+
+	// If payment has journal entry, get the account updates from journal lines
+	if payment.JournalEntryID != nil {
+		journalEntry, err := eps.journalService.GetJournalEntry(uint64(*payment.JournalEntryID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get journal entry: %w", err)
+		}
+
+		// Convert journal lines to account balance updates
+		var updates []AccountBalanceUpdate
+		for _, line := range journalEntry.Lines {
+			update := AccountBalanceUpdate{
+				AccountID:    line.AccountID,
+				Change:       line.DebitAmount.Sub(line.CreditAmount),
+			}
+
+			if line.DebitAmount.GreaterThan(decimal.Zero) {
+				update.ChangeType = "INCREASE"
+			} else {
+				update.ChangeType = "DECREASE"
+			}
+
+			updates = append(updates, update)
+		}
+
+		return updates, nil
+	}
+
+	return nil, fmt.Errorf("payment has no journal entry")
+}

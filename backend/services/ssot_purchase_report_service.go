@@ -1,0 +1,679 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"app-sistem-akuntansi/models"
+	"gorm.io/gorm"
+)
+
+// SSOTPurchaseReportService generates purchase reports from SSOT journal data
+type SSOTPurchaseReportService struct {
+	db *gorm.DB
+}
+
+// NewSSOTPurchaseReportService creates a new SSOT purchase report service
+func NewSSOTPurchaseReportService(db *gorm.DB) *SSOTPurchaseReportService {
+	return &SSOTPurchaseReportService{
+		db: db,
+	}
+}
+
+// PurchaseReportData represents comprehensive purchase analysis
+type PurchaseReportData struct {
+	Company              CompanyInfo              `json:"company"`
+	StartDate            time.Time               `json:"start_date"`
+	EndDate              time.Time               `json:"end_date"`
+	Currency             string                  `json:"currency"`
+	TotalPurchases       int64                   `json:"total_purchases"`
+	CompletedPurchases   int64                   `json:"completed_purchases"`
+	TotalAmount          float64                 `json:"total_amount"`
+	TotalPaid            float64                 `json:"total_paid"`
+	OutstandingPayables  float64                 `json:"outstanding_payables"`
+	PurchasesByVendor    []VendorPurchaseSummary `json:"purchases_by_vendor"`
+	PurchasesByMonth     []MonthlyPurchaseSummary `json:"purchases_by_month"`
+	PurchasesByCategory  []CategoryPurchaseSummary `json:"purchases_by_category"`
+	PaymentAnalysis      PurchasePaymentAnalysis  `json:"payment_analysis"`
+	TaxAnalysis          PurchaseTaxAnalysis      `json:"tax_analysis"`
+	GeneratedAt          time.Time               `json:"generated_at"`
+}
+
+// VendorPurchaseSummary represents purchase summary by vendor
+type VendorPurchaseSummary struct {
+	VendorID        uint64               `json:"vendor_id"`
+	VendorName      string               `json:"vendor_name"`
+	TotalPurchases  int64                `json:"total_purchases"`
+	TotalAmount     float64              `json:"total_amount"`
+	TotalPaid       float64              `json:"total_paid"`
+	Outstanding     float64              `json:"outstanding"`
+	LastPurchaseDate time.Time           `json:"last_purchase_date"`
+	PaymentMethod   string               `json:"payment_method"`
+	Status          string               `json:"status"`
+	Items           []PurchaseItemDetail `json:"items,omitempty"`
+}
+
+// PurchaseItemDetail represents individual item purchased
+type PurchaseItemDetail struct {
+	ProductID     uint64    `json:"product_id"`
+	ProductCode   string    `json:"product_code"`
+	ProductName   string    `json:"product_name"`
+	Quantity      float64   `json:"quantity"`
+	UnitPrice     float64   `json:"unit_price"`
+	TotalPrice    float64   `json:"total_price"`
+	Unit          string    `json:"unit"`
+	PurchaseDate  time.Time `json:"purchase_date"`
+	InvoiceNumber string    `json:"invoice_number,omitempty"`
+}
+
+// MonthlyPurchaseSummary represents purchase summary by month
+type MonthlyPurchaseSummary struct {
+	Year            int     `json:"year"`
+	Month           int     `json:"month"`
+	MonthName       string  `json:"month_name"`
+	TotalPurchases  int64   `json:"total_purchases"`
+	TotalAmount     float64 `json:"total_amount"`
+	TotalPaid       float64 `json:"total_paid"`
+	AverageAmount   float64 `json:"average_amount"`
+}
+
+// CategoryPurchaseSummary represents purchase summary by category
+type CategoryPurchaseSummary struct {
+	CategoryName    string  `json:"category_name"`
+	AccountCode     string  `json:"account_code"`
+	AccountName     string  `json:"account_name"`
+	TotalPurchases  int64   `json:"total_purchases"`
+	TotalAmount     float64 `json:"total_amount"`
+	Percentage      float64 `json:"percentage"`
+}
+
+// PurchasePaymentAnalysis represents payment pattern analysis
+type PurchasePaymentAnalysis struct {
+	CashPurchases     int64   `json:"cash_purchases"`
+	CreditPurchases   int64   `json:"credit_purchases"`
+	CashAmount        float64 `json:"cash_amount"`
+	CreditAmount      float64 `json:"credit_amount"`
+	CashPercentage    float64 `json:"cash_percentage"`
+	CreditPercentage  float64 `json:"credit_percentage"`
+	AverageOrderValue float64 `json:"average_order_value"`
+}
+
+// PurchaseTaxAnalysis represents tax analysis for purchases
+type PurchaseTaxAnalysis struct {
+	TotalTaxableAmount     float64 `json:"total_taxable_amount"`
+	TotalTaxAmount         float64 `json:"total_tax_amount"`
+	AverageTaxRate         float64 `json:"average_tax_rate"`
+	TaxReclaimableAmount   float64 `json:"tax_reclaimable_amount"`
+	TaxByMonth             []MonthlyTaxSummary `json:"tax_by_month"`
+}
+
+// MonthlyTaxSummary represents tax summary by month
+type MonthlyTaxSummary struct {
+	Year      int     `json:"year"`
+	Month     int     `json:"month"`
+	MonthName string  `json:"month_name"`
+	TaxAmount float64 `json:"tax_amount"`
+}
+
+// GeneratePurchaseReport generates comprehensive purchase report from SSOT data
+func (s *SSOTPurchaseReportService) GeneratePurchaseReport(ctx context.Context, startDate, endDate time.Time) (*PurchaseReportData, error) {
+result := &PurchaseReportData{
+		Company:     s.getCompanyInfo(),
+		StartDate:   startDate,
+		EndDate:     endDate,
+		Currency:    s.getCurrencyFromSettings(),
+		GeneratedAt: time.Now(),
+	}
+
+	// Get purchase transactions from SSOT journal
+	purchaseSummary, err := s.getPurchaseSummary(ctx, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get purchase summary: %w", err)
+	}
+
+	// Populate basic statistics
+	result.TotalPurchases = purchaseSummary.TotalCount
+	result.CompletedPurchases = purchaseSummary.CompletedCount
+	result.TotalAmount = purchaseSummary.TotalAmount
+	result.TotalPaid = purchaseSummary.TotalPaid
+	result.OutstandingPayables = purchaseSummary.TotalAmount - purchaseSummary.TotalPaid
+
+	// Get detailed analyses
+	result.PurchasesByVendor, err = s.getPurchasesByVendor(ctx, startDate, endDate)
+	if err != nil {
+		log.Printf("Error getting purchases by vendor: %v", err)
+		result.PurchasesByVendor = []VendorPurchaseSummary{}
+	}
+
+	result.PurchasesByMonth, err = s.getPurchasesByMonth(ctx, startDate, endDate)
+	if err != nil {
+		log.Printf("Error getting purchases by month: %v", err)
+		result.PurchasesByMonth = []MonthlyPurchaseSummary{}
+	}
+
+	result.PurchasesByCategory, err = s.getPurchasesByCategory(ctx, startDate, endDate)
+	if err != nil {
+		log.Printf("Error getting purchases by category: %v", err)
+		result.PurchasesByCategory = []CategoryPurchaseSummary{}
+	}
+
+	result.PaymentAnalysis, err = s.getPaymentAnalysis(ctx, startDate, endDate)
+	if err != nil {
+		log.Printf("Error getting payment analysis: %v", err)
+		result.PaymentAnalysis = PurchasePaymentAnalysis{}
+	}
+
+	result.TaxAnalysis, err = s.getTaxAnalysis(ctx, startDate, endDate)
+	if err != nil {
+		log.Printf("Error getting tax analysis: %v", err)
+		result.TaxAnalysis = PurchaseTaxAnalysis{}
+	}
+
+	return result, nil
+}
+
+// Helper struct for purchase summary
+type purchaseBaseSummary struct {
+	TotalCount     int64
+	CompletedCount int64
+	TotalAmount    float64
+	TotalPaid      float64
+}
+
+// getPurchaseSummary gets basic purchase statistics from purchases table (primary source)
+func (s *SSOTPurchaseReportService) getPurchaseSummary(ctx context.Context, startDate, endDate time.Time) (*purchaseBaseSummary, error) {
+	// FIX: Use purchases table as primary source, not journal ledger
+	// This ensures all approved purchases appear even if journal entry is missing/draft
+	query := `
+		SELECT 
+			COUNT(DISTINCT p.id) as total_count,
+			COUNT(DISTINCT CASE WHEN ujl.status = 'POSTED' OR p.status = 'COMPLETED' THEN p.id END) as completed_count,
+			COALESCE(SUM(p.total_amount), 0) as total_amount,
+			-- Calculate total_paid from actual payments or cash transactions
+			COALESCE(SUM(CASE 
+				WHEN p.payment_method = 'CASH' OR p.payment_method = 'BANK_TRANSFER'
+				THEN p.total_amount  -- Cash/Bank: fully paid immediately
+				WHEN ujl.description ILIKE '%cash%' OR ujl.description ILIKE '%kas%'
+				THEN COALESCE(ujl.total_debit, p.total_amount)  -- From journal if exists
+				ELSE 0  -- Credit: not paid yet
+			END), 0) as total_paid
+		FROM purchases p
+		LEFT JOIN unified_journal_ledger ujl ON ujl.source_id = p.id AND ujl.source_type = 'PURCHASE' AND ujl.deleted_at IS NULL
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+	`
+
+	var summary purchaseBaseSummary
+	err := s.db.WithContext(ctx).Raw(query, startDate, endDate).Scan(&summary).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query purchase summary: %w", err)
+	}
+
+	return &summary, nil
+}
+
+// getPurchasesByVendor gets purchase summary grouped by vendor - using purchases table as source
+func (s *SSOTPurchaseReportService) getPurchasesByVendor(ctx context.Context, startDate, endDate time.Time) ([]VendorPurchaseSummary, error) {
+	// FIX: Use purchases table as primary source with vendor info
+	query := `
+		SELECT 
+			p.vendor_id as vendor_id,
+			COALESCE(c.name, 'Unknown Vendor') as vendor_name,
+			COUNT(DISTINCT p.id) as total_purchases,
+			COALESCE(SUM(p.total_amount), 0) as total_amount,
+			-- Calculate total_paid from payment method or actual payments
+			COALESCE(SUM(CASE 
+				WHEN p.payment_method IN ('CASH', 'BANK_TRANSFER')
+				THEN p.total_amount  -- Cash/Bank = fully paid
+				WHEN ujl.description ILIKE '%cash%' OR ujl.description ILIKE '%kas%'
+				THEN COALESCE(ujl.total_debit, p.total_amount)
+				ELSE 0  -- Credit = check actual payments
+			END), 0) as total_paid,
+			MAX(p.date) as last_purchase_date,
+			CASE 
+				WHEN bool_or(p.payment_method IN ('CASH', 'BANK_TRANSFER'))
+				THEN 'CASH'
+				ELSE 'CREDIT'
+			END as payment_method,
+			CASE 
+				WHEN bool_and(p.status = 'COMPLETED')
+				THEN 'COMPLETED'
+				ELSE 'PENDING'
+			END as status,
+			string_agg(DISTINCT p.code, ', ') as descriptions
+		FROM purchases p
+		LEFT JOIN contacts c ON c.id = p.vendor_id
+		LEFT JOIN unified_journal_ledger ujl ON ujl.source_id = p.id AND ujl.source_type = 'PURCHASE' AND ujl.deleted_at IS NULL
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+		GROUP BY p.vendor_id, c.name
+		ORDER BY total_amount DESC
+	`
+
+	var vendors []struct {
+		VendorID         uint64     `json:"vendor_id"`
+		VendorName       string     `json:"vendor_name"`
+		TotalPurchases   int64      `json:"total_purchases"`
+		TotalAmount      float64    `json:"total_amount"`
+		TotalPaid        float64    `json:"total_paid"`
+		LastPurchaseDate time.Time  `json:"last_purchase_date"`
+		PaymentMethod    string     `json:"payment_method"`
+		Status           string     `json:"status"`
+		Descriptions     string     `json:"descriptions"`
+	}
+
+	err := s.db.WithContext(ctx).Raw(query, startDate, endDate).Scan(&vendors).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query purchases by vendor: %w", err)
+	}
+
+	// Add logging for debugging
+	log.Printf("Found %d vendor groups from SSOT journal", len(vendors))
+	for i, v := range vendors {
+		log.Printf("Vendor %d: ID=%v, Name=%s, Purchases=%d, Amount=%.2f, Descriptions=%s", 
+			i+1, v.VendorID, v.VendorName, v.TotalPurchases, v.TotalAmount, v.Descriptions)
+	}
+
+	// Convert to result format
+	var result []VendorPurchaseSummary
+	validVendorCount := 0
+	
+	for _, v := range vendors {
+		// Skip vendors with no purchases
+		if v.TotalAmount <= 0 {
+			continue
+		}
+		
+		if v.VendorName != "Unknown Vendor" {
+			validVendorCount++
+		}
+
+		summary := VendorPurchaseSummary{
+			VendorID:         v.VendorID,
+			VendorName:       v.VendorName,
+			TotalPurchases:   v.TotalPurchases,
+			TotalAmount:      v.TotalAmount,
+			TotalPaid:        v.TotalPaid,
+			Outstanding:      v.TotalAmount - v.TotalPaid,
+			LastPurchaseDate: v.LastPurchaseDate,
+			PaymentMethod:    v.PaymentMethod,
+			Status:           v.Status,
+		}
+
+		result = append(result, summary)
+	}
+
+	log.Printf("Valid vendors found: %d out of %d total groups", validVendorCount, len(vendors))
+	
+	// Fetch items for each vendor using SSOT journal source_id
+	for i := range result {
+		items, err := s.getPurchaseItemsFromSSOT(ctx, startDate, endDate, result[i].VendorName)
+		if err != nil {
+			log.Printf("Warning: Failed to get items for vendor %s: %v", result[i].VendorName, err)
+			continue
+		}
+		result[i].Items = items
+		if len(items) > 0 {
+			log.Printf("✅ Loaded %d items for vendor: %s", len(items), result[i].VendorName)
+		}
+	}
+	
+	return result, nil
+}
+
+// getPurchaseItemsFromSSOT gets detailed items purchased - using purchases table directly
+func (s *SSOTPurchaseReportService) getPurchaseItemsFromSSOT(ctx context.Context, startDate, endDate time.Time, vendorName string) ([]PurchaseItemDetail, error) {
+	// FIX: Query from purchases table directly, not from journal
+	query := `
+		SELECT 
+			COALESCE(pi.product_id, 0) as product_id,
+			COALESCE(prod.code, 'N/A') as product_code,
+			COALESCE(prod.name, 'Unknown Product') as product_name,
+			pi.quantity,
+			pi.unit_price,
+			pi.total_price,
+			COALESCE(prod.unit, 'pcs') as unit,
+			pur.date as purchase_date,
+			COALESCE(pur.code, '') as invoice_number
+		FROM purchases pur
+		INNER JOIN purchase_items pi ON pi.purchase_id = pur.id
+		INNER JOIN contacts v ON v.id = pur.vendor_id
+		LEFT JOIN products prod ON prod.id = pi.product_id
+		WHERE pur.date BETWEEN ? AND ?
+		  AND pur.deleted_at IS NULL
+		  AND pi.deleted_at IS NULL
+		  AND v.name = ?
+		  AND (pur.status = 'APPROVED' OR pur.status = 'COMPLETED' OR pur.approval_status = 'APPROVED')
+		ORDER BY pur.date DESC, pi.id
+	`
+	
+	var items []PurchaseItemDetail
+	err := s.db.WithContext(ctx).Raw(query, startDate, endDate, vendorName).Scan(&items).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query purchase items from SSOT: %w", err)
+	}
+	
+	log.Printf("🔍 Query items for vendor '%s': found %d items", vendorName, len(items))
+	return items, nil
+}
+
+// getPurchasesByMonth gets purchase summary grouped by month - using purchases table
+func (s *SSOTPurchaseReportService) getPurchasesByMonth(ctx context.Context, startDate, endDate time.Time) ([]MonthlyPurchaseSummary, error) {
+	// FIX: Use purchases.date instead of journal.entry_date
+	query := `
+		SELECT 
+			EXTRACT(YEAR FROM p.date) as year,
+			EXTRACT(MONTH FROM p.date) as month,
+			COUNT(DISTINCT p.id) as total_purchases,
+			COALESCE(SUM(p.total_amount), 0) as total_amount,
+			COALESCE(SUM(CASE 
+				WHEN p.payment_method IN ('CASH', 'BANK_TRANSFER')
+				THEN p.total_amount
+				ELSE 0 
+			END), 0) as total_paid
+		FROM purchases p
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+		GROUP BY EXTRACT(YEAR FROM p.date), EXTRACT(MONTH FROM p.date)
+		ORDER BY year, month
+	`
+
+	var months []struct {
+		Year           int     `json:"year"`
+		Month          int     `json:"month"`
+		TotalPurchases int64   `json:"total_purchases"`
+		TotalAmount    float64 `json:"total_amount"`
+		TotalPaid      float64 `json:"total_paid"`
+	}
+
+	err := s.db.WithContext(ctx).Raw(query, startDate, endDate).Scan(&months).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query purchases by month: %w", err)
+	}
+
+	// Convert to result format with month names
+	monthNames := []string{
+		"", "January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December",
+	}
+
+	var result []MonthlyPurchaseSummary
+	for _, m := range months {
+		avgAmount := float64(0)
+		if m.TotalPurchases > 0 {
+			avgAmount = m.TotalAmount / float64(m.TotalPurchases)
+		}
+
+		summary := MonthlyPurchaseSummary{
+			Year:           m.Year,
+			Month:          m.Month,
+			MonthName:      monthNames[m.Month],
+			TotalPurchases: m.TotalPurchases,
+			TotalAmount:    m.TotalAmount,
+			TotalPaid:      m.TotalPaid,
+			AverageAmount:  avgAmount,
+		}
+
+		result = append(result, summary)
+	}
+
+	return result, nil
+}
+
+// getPurchasesByCategory gets purchase summary grouped by account category - fallback to inventory
+func (s *SSOTPurchaseReportService) getPurchasesByCategory(ctx context.Context, startDate, endDate time.Time) ([]CategoryPurchaseSummary, error) {
+	// Try to get from journal lines first, fallback to simple categorization
+	query := `
+		SELECT 
+			COALESCE(a.code, '1301') as account_code,
+			COALESCE(a.name, 'Inventory') as account_name,
+			CASE 
+				WHEN a.code LIKE '13%' THEN 'Inventory'
+				WHEN a.code LIKE '15%' THEN 'Fixed Assets'
+				WHEN a.code LIKE '6%' THEN 'Expenses'
+				ELSE 'Inventory'
+			END as category_name,
+			COUNT(DISTINCT p.id) as total_purchases,
+			COALESCE(SUM(CASE 
+				WHEN sjl.debit_amount > 0 THEN sjl.debit_amount
+				ELSE p.net_before_tax  -- Fallback to purchase net_before_tax if no journal
+			END), 0) as total_amount
+		FROM purchases p
+		LEFT JOIN unified_journal_ledger sje ON sje.source_id = p.id AND sje.source_type = 'PURCHASE' AND sje.deleted_at IS NULL
+		LEFT JOIN unified_journal_lines sjl ON sjl.journal_id = sje.id AND sjl.debit_amount > 0
+		LEFT JOIN accounts a ON a.id = sjl.account_id AND a.code NOT LIKE '21%'
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+		GROUP BY a.code, a.name
+		ORDER BY total_amount DESC
+	`
+
+	var categories []struct {
+		AccountCode    string  `json:"account_code"`
+		AccountName    string  `json:"account_name"`
+		CategoryName   string  `json:"category_name"`
+		TotalPurchases int64   `json:"total_purchases"`
+		TotalAmount    float64 `json:"total_amount"`
+	}
+
+	err := s.db.WithContext(ctx).Raw(query, startDate, endDate).Scan(&categories).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to query purchases by category: %w", err)
+	}
+
+	// Calculate total for percentage calculation
+	var totalAmount float64
+	for _, cat := range categories {
+		totalAmount += cat.TotalAmount
+	}
+
+	// Convert to result format with percentages
+	var result []CategoryPurchaseSummary
+	for _, cat := range categories {
+		percentage := float64(0)
+		if totalAmount > 0 {
+			percentage = (cat.TotalAmount / totalAmount) * 100
+		}
+
+		summary := CategoryPurchaseSummary{
+			CategoryName:   cat.CategoryName,
+			AccountCode:    cat.AccountCode,
+			AccountName:    cat.AccountName,
+			TotalPurchases: cat.TotalPurchases,
+			TotalAmount:    cat.TotalAmount,
+			Percentage:     percentage,
+		}
+
+		result = append(result, summary)
+	}
+
+	return result, nil
+}
+
+// getPaymentAnalysis analyzes payment patterns in purchases - using purchases table
+func (s *SSOTPurchaseReportService) getPaymentAnalysis(ctx context.Context, startDate, endDate time.Time) (PurchasePaymentAnalysis, error) {
+	// FIX: Use payment_method field from purchases table
+	query := `
+		SELECT 
+			COUNT(CASE 
+				WHEN p.payment_method IN ('CASH', 'BANK_TRANSFER')
+				THEN 1 END) as cash_purchases,
+			COUNT(CASE 
+				WHEN p.payment_method NOT IN ('CASH', 'BANK_TRANSFER') OR p.payment_method IS NULL
+				THEN 1 END) as credit_purchases,
+			COALESCE(SUM(CASE 
+				WHEN p.payment_method IN ('CASH', 'BANK_TRANSFER')
+				THEN p.total_amount
+				ELSE 0 
+			END), 0) as cash_amount,
+			COALESCE(SUM(CASE 
+				WHEN p.payment_method NOT IN ('CASH', 'BANK_TRANSFER') OR p.payment_method IS NULL
+				THEN p.total_amount
+				ELSE 0 
+			END), 0) as credit_amount,
+			COALESCE(AVG(p.total_amount), 0) as average_order_value
+		FROM purchases p
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+	`
+
+	var analysis struct {
+		CashPurchases    int64   `json:"cash_purchases"`
+		CreditPurchases  int64   `json:"credit_purchases"`
+		CashAmount       float64 `json:"cash_amount"`
+		CreditAmount     float64 `json:"credit_amount"`
+		AverageOrderValue float64 `json:"average_order_value"`
+	}
+
+	err := s.db.WithContext(ctx).Raw(query, startDate, endDate).Scan(&analysis).Error
+	if err != nil {
+		return PurchasePaymentAnalysis{}, fmt.Errorf("failed to analyze payment patterns: %w", err)
+	}
+
+	totalAmount := analysis.CashAmount + analysis.CreditAmount
+	cashPercentage := float64(0)
+	creditPercentage := float64(0)
+
+	if totalAmount > 0 {
+		cashPercentage = (analysis.CashAmount / totalAmount) * 100
+		creditPercentage = (analysis.CreditAmount / totalAmount) * 100
+	}
+
+	return PurchasePaymentAnalysis{
+		CashPurchases:     analysis.CashPurchases,
+		CreditPurchases:   analysis.CreditPurchases,
+		CashAmount:        analysis.CashAmount,
+		CreditAmount:      analysis.CreditAmount,
+		CashPercentage:    cashPercentage,
+		CreditPercentage:  creditPercentage,
+		AverageOrderValue: analysis.AverageOrderValue,
+	}, nil
+}
+
+// getTaxAnalysis analyzes tax information in purchases - using purchases table with tax fields
+func (s *SSOTPurchaseReportService) getTaxAnalysis(ctx context.Context, startDate, endDate time.Time) (PurchaseTaxAnalysis, error) {
+	// FIX: Get tax from purchases table tax field, fallback to journal if needed
+	taxQuery := `
+		SELECT 
+			COALESCE(SUM(p.net_before_tax), 0) as total_taxable_amount,
+			COALESCE(SUM(p.tax_amount), 0) as total_tax_amount
+		FROM purchases p
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+	`
+
+	var taxSummary struct {
+		TotalTaxableAmount float64 `json:"total_taxable_amount"`
+		TotalTaxAmount     float64 `json:"total_tax_amount"`
+	}
+
+	err := s.db.WithContext(ctx).Raw(taxQuery, startDate, endDate).Scan(&taxSummary).Error
+	if err != nil {
+		return PurchaseTaxAnalysis{}, fmt.Errorf("failed to analyze tax: %w", err)
+	}
+
+	averageTaxRate := float64(0)
+	if taxSummary.TotalTaxableAmount > 0 {
+		averageTaxRate = (taxSummary.TotalTaxAmount / taxSummary.TotalTaxableAmount) * 100
+	}
+
+	// Get monthly tax breakdown
+	monthlyTaxQuery := `
+		SELECT 
+			EXTRACT(YEAR FROM p.date) as year,
+			EXTRACT(MONTH FROM p.date) as month,
+			COALESCE(SUM(p.tax_amount), 0) as tax_amount
+		FROM purchases p
+		WHERE p.date BETWEEN ? AND ?
+		  AND p.deleted_at IS NULL
+		  AND (p.status = 'APPROVED' OR p.status = 'COMPLETED' OR p.approval_status = 'APPROVED')
+		GROUP BY EXTRACT(YEAR FROM p.date), EXTRACT(MONTH FROM p.date)
+		ORDER BY year, month
+	`
+
+	var monthlyTax []struct {
+		Year      int     `json:"year"`
+		Month     int     `json:"month"`
+		TaxAmount float64 `json:"tax_amount"`
+	}
+
+	err = s.db.WithContext(ctx).Raw(monthlyTaxQuery, startDate, endDate).Scan(&monthlyTax).Error
+	if err != nil {
+		log.Printf("Error getting monthly tax data: %v", err)
+		monthlyTax = []struct {
+			Year      int     `json:"year"`
+			Month     int     `json:"month"`
+			TaxAmount float64 `json:"tax_amount"`
+		}{}
+	}
+
+	// Convert monthly tax to result format
+	monthNames := []string{
+		"", "January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December",
+	}
+
+	var taxByMonth []MonthlyTaxSummary
+	for _, mt := range monthlyTax {
+		summary := MonthlyTaxSummary{
+			Year:      mt.Year,
+			Month:     mt.Month,
+			MonthName: monthNames[mt.Month],
+			TaxAmount: mt.TaxAmount,
+		}
+		taxByMonth = append(taxByMonth, summary)
+	}
+
+	return PurchaseTaxAnalysis{
+		TotalTaxableAmount:   taxSummary.TotalTaxableAmount,
+		TotalTaxAmount:       taxSummary.TotalTaxAmount,
+		AverageTaxRate:       averageTaxRate,
+		TaxReclaimableAmount: taxSummary.TotalTaxAmount, // Input tax is reclaimable
+		TaxByMonth:           taxByMonth,
+	}, nil
+}
+
+// getCompanyInfo returns company information for reports
+func (s *SSOTPurchaseReportService) getCompanyInfo() CompanyInfo {
+	// Prefer Settings table (admin-configured company information)
+	var settings models.Settings
+	if err := s.db.First(&settings).Error; err == nil {
+		return CompanyInfo{
+			Name:      settings.CompanyName,
+			Address:   settings.CompanyAddress,
+			City:      "", // City may be embedded in the address field
+			State:     "",
+			Phone:     settings.CompanyPhone,
+			Email:     settings.CompanyEmail,
+			Website:   settings.CompanyWebsite,
+			TaxNumber: settings.TaxNumber,
+		}
+	}
+	// Fallback defaults
+	return CompanyInfo{
+		Name:      "PT. Default Company",
+		Address:   "Jalan Default No. 1",
+		City:      "Jakarta",
+		State:     "DKI Jakarta",
+		Phone:     "+62-21-12345678",
+		Email:     "info@defaultcompany.com",
+		TaxNumber: "01.234.567.8-901.000",
+	}
+}
+
+// getCurrencyFromSettings returns the configured currency or IDR as fallback
+func (s *SSOTPurchaseReportService) getCurrencyFromSettings() string {
+	var settings models.Settings
+	if err := s.db.First(&settings).Error; err == nil && settings.Currency != "" {
+		return settings.Currency
+	}
+	return "IDR"
+}

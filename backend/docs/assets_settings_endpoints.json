@@ -1,0 +1,735 @@
+{
+  "paths": {
+    "/api/v1/assets": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get all assets",
+        "description": "Retrieve list of all assets with filtering and pagination",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by asset name or code",
+            "type": "string"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "description": "Filter by category ID",
+            "type": "integer"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by asset status",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "type": "integer"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer", "example": 1},
+                      "name": {"type": "string", "example": "Office Computer"},
+                      "code": {"type": "string", "example": "AST-001"},
+                      "category": {"type": "string", "example": "IT Equipment"},
+                      "acquisition_cost": {"type": "number", "example": 5000000},
+                      "current_value": {"type": "number", "example": 3000000},
+                      "depreciation_method": {"type": "string", "example": "STRAIGHT_LINE"},
+                      "useful_life_years": {"type": "integer", "example": 5},
+                      "status": {"type": "string", "example": "ACTIVE"},
+                      "created_at": {"type": "string", "format": "date-time"},
+                      "updated_at": {"type": "string", "format": "date-time"}
+                    }
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "limit": {"type": "integer"},
+                    "total": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "tags": ["Assets"],
+        "summary": "Create new asset",
+        "description": "Create a new fixed asset",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "asset",
+            "in": "body",
+            "description": "Asset creation data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name", "code", "acquisition_cost", "category_id"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Office Computer",
+                  "description": "Asset name"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "AST-001",
+                  "description": "Unique asset code"
+                },
+                "category_id": {
+                  "type": "integer",
+                  "example": 1,
+                  "description": "Asset category ID"
+                },
+                "acquisition_cost": {
+                  "type": "number",
+                  "example": 5000000,
+                  "description": "Asset acquisition cost"
+                },
+                "acquisition_date": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2024-01-15",
+                  "description": "Asset acquisition date"
+                },
+                "depreciation_method": {
+                  "type": "string",
+                  "enum": ["STRAIGHT_LINE", "DECLINING_BALANCE", "UNITS_OF_PRODUCTION"],
+                  "example": "STRAIGHT_LINE",
+                  "description": "Depreciation method"
+                },
+                "useful_life_years": {
+                  "type": "integer",
+                  "example": 5,
+                  "description": "Estimated useful life in years"
+                },
+                "residual_value": {
+                  "type": "number",
+                  "example": 500000,
+                  "description": "Expected residual value"
+                },
+                "location": {
+                  "type": "string",
+                  "example": "Office Floor 1",
+                  "description": "Asset location"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "High performance computer for accounting work",
+                  "description": "Asset description"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Asset created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "message": {"type": "string", "example": "Asset created successfully"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer", "example": 1},
+                    "name": {"type": "string", "example": "Office Computer"},
+                    "code": {"type": "string", "example": "AST-001"},
+                    "acquisition_cost": {"type": "number", "example": 5000000}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/{id}": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get asset by ID",
+        "description": "Get asset details by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Asset ID",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer", "example": 1},
+                    "name": {"type": "string", "example": "Office Computer"},
+                    "code": {"type": "string", "example": "AST-001"},
+                    "acquisition_cost": {"type": "number", "example": 5000000},
+                    "current_value": {"type": "number", "example": 3000000},
+                    "accumulated_depreciation": {"type": "number", "example": 2000000},
+                    "depreciation_method": {"type": "string", "example": "STRAIGHT_LINE"},
+                    "useful_life_years": {"type": "integer", "example": 5},
+                    "residual_value": {"type": "number", "example": 500000},
+                    "location": {"type": "string", "example": "Office Floor 1"},
+                    "status": {"type": "string", "example": "ACTIVE"},
+                    "created_at": {"type": "string", "format": "date-time"},
+                    "updated_at": {"type": "string", "format": "date-time"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Asset not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "tags": ["Assets"],
+        "summary": "Update asset",
+        "description": "Update asset details",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Asset ID",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "asset",
+            "in": "body",
+            "description": "Asset update data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string", "example": "Updated Computer"},
+                "location": {"type": "string", "example": "Office Floor 2"},
+                "status": {"type": "string", "example": "ACTIVE"},
+                "description": {"type": "string", "example": "Updated description"},
+                "notes": {"type": "string", "example": "Maintenance notes"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "message": {"type": "string", "example": "Asset updated successfully"}
+              }
+            }
+          },
+          "404": {
+            "description": "Asset not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "delete": {
+        "tags": ["Assets"],
+        "summary": "Delete asset",
+        "description": "Delete asset (only if not in use)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Asset ID",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset deleted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "message": {"type": "string", "example": "Asset deleted successfully"}
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot delete asset in use",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Asset not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/{id}/depreciation-schedule": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get depreciation schedule",
+        "description": "Get depreciation schedule for an asset",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Asset ID",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "year": {"type": "integer", "example": 2024},
+                      "opening_value": {"type": "number", "example": 5000000},
+                      "depreciation_amount": {"type": "number", "example": 900000},
+                      "closing_value": {"type": "number", "example": 4100000}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Asset not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/{id}/capitalize": {
+      "post": {
+        "tags": ["Assets"],
+        "summary": "Capitalize asset",
+        "description": "Manually capitalize asset (create journal entries)",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Asset ID",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset capitalized successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "message": {"type": "string", "example": "Asset capitalized successfully"}
+              }
+            }
+          },
+          "400": {
+            "description": "Asset already capitalized",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/categories": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get asset categories",
+        "description": "Get list of asset categories",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer", "example": 1},
+                      "name": {"type": "string", "example": "IT Equipment"},
+                      "depreciation_years": {"type": "integer", "example": 5}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "tags": ["Assets"],
+        "summary": "Create asset category",
+        "description": "Create a new asset category",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "body",
+            "description": "Category creation data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Office Furniture",
+                  "description": "Category name"
+                },
+                "depreciation_years": {
+                  "type": "integer",
+                  "example": 8,
+                  "description": "Default depreciation years"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Category created successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/summary": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get assets summary",
+        "description": "Get summary of all assets with total values",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "total_assets": {"type": "integer", "example": 150},
+                    "total_acquisition_cost": {"type": "number", "example": 500000000},
+                    "total_current_value": {"type": "number", "example": 300000000},
+                    "total_depreciation": {"type": "number", "example": 200000000},
+                    "by_category": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "category": {"type": "string"},
+                          "count": {"type": "integer"},
+                          "value": {"type": "number"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+
+    "/api/v1/settings": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get system settings",
+        "description": "Get current system settings and configuration",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "company_name": {"type": "string", "example": "PT Sistem Akuntansi"},
+                    "company_address": {"type": "string", "example": "Jl. Akuntansi No. 123, Jakarta"},
+                    "company_phone": {"type": "string", "example": "+62211234567"},
+                    "company_email": {"type": "string", "example": "admin@company.com"},
+                    "tax_number": {"type": "string", "example": "01.234.567.8-901.000"},
+                    "currency": {"type": "string", "example": "IDR"},
+                    "currency_symbol": {"type": "string", "example": "Rp"},
+                    "tax_rate": {"type": "number", "example": 0.11},
+                    "fiscal_year_start": {"type": "string", "format": "date", "example": "2024-01-01"},
+                    "decimal_places": {"type": "integer", "example": 2},
+                    "date_format": {"type": "string", "example": "DD/MM/YYYY"},
+                    "timezone": {"type": "string", "example": "Asia/Jakarta"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Update system settings",
+        "description": "Update system settings and configuration",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "settings",
+            "in": "body",
+            "description": "Settings data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "company_name": {"type": "string", "example": "PT Sistem Akuntansi Updated"},
+                "company_address": {"type": "string", "example": "Jl. Akuntansi Baru No. 456, Jakarta"},
+                "company_phone": {"type": "string", "example": "+62211234568"},
+                "company_email": {"type": "string", "example": "admin@newcompany.com"},
+                "tax_number": {"type": "string", "example": "01.234.567.8-901.001"},
+                "currency": {"type": "string", "example": "IDR"},
+                "currency_symbol": {"type": "string", "example": "Rp"},
+                "tax_rate": {"type": "number", "example": 0.11},
+                "fiscal_year_start": {"type": "string", "format": "date", "example": "2024-01-01"},
+                "decimal_places": {"type": "integer", "example": 2},
+                "date_format": {"type": "string", "example": "DD/MM/YYYY"},
+                "timezone": {"type": "string", "example": "Asia/Jakarta"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "success"},
+                "message": {"type": "string", "example": "Settings updated successfully"}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/settings/company": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get company settings",
+        "description": "Get company-specific settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "company_name": {"type": "string"},
+                    "company_address": {"type": "string"},
+                    "company_phone": {"type": "string"},
+                    "company_email": {"type": "string"},
+                    "tax_number": {"type": "string"},
+                    "logo_url": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Update company settings",
+        "description": "Update company-specific settings",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "company",
+            "in": "body",
+            "description": "Company settings data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "company_name": {"type": "string"},
+                "company_address": {"type": "string"},
+                "company_phone": {"type": "string"},
+                "company_email": {"type": "string"},
+                "tax_number": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company settings updated successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/settings/accounting": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get accounting settings",
+        "description": "Get accounting-specific settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "fiscal_year_start": {"type": "string", "format": "date"},
+                    "decimal_places": {"type": "integer"},
+                    "currency": {"type": "string"},
+                    "tax_rate": {"type": "number"},
+                    "enable_multi_currency": {"type": "boolean"},
+                    "auto_posting": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Update accounting settings",
+        "description": "Update accounting-specific settings",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "accounting",
+            "in": "body",
+            "description": "Accounting settings data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "fiscal_year_start": {"type": "string", "format": "date"},
+                "decimal_places": {"type": "integer"},
+                "currency": {"type": "string"},
+                "tax_rate": {"type": "number"},
+                "enable_multi_currency": {"type": "boolean"},
+                "auto_posting": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accounting settings updated successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Assets",
+      "description": "Fixed assets and depreciation management - Manajemen aset tetap dan depresiasi"
+    },
+    {
+      "name": "Settings",
+      "description": "System settings and configuration - Pengaturan sistem dan konfigurasi"
+    }
+  ]
+}

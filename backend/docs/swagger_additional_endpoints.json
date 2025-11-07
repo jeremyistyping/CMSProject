@@ -1,0 +1,1488 @@
+{
+  "paths": {
+    "/api/v1/accounts": {
+      "get": {
+        "description": "Retrieve list of all accounts with optional filtering and pagination",
+        "tags": ["Accounts"],
+        "summary": "Get all accounts",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Account type filter (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Search by account name or code",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Filter active/inactive accounts",
+            "name": "is_active",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Page number",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Items per page",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/models.Account"
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "limit": {"type": "integer"},
+                    "total": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "description": "Create a new account in the chart of accounts",
+        "tags": ["Accounts"],
+        "summary": "Create new account",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Account creation data",
+            "name": "account",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["code", "name", "type"],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "example": "1100-001",
+                  "description": "Unique account code"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Kas Kecil",
+                  "description": "Account name"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"],
+                  "example": "ASSET",
+                  "description": "Account type"
+                },
+                "category": {
+                  "type": "string",
+                  "example": "current_asset",
+                  "description": "Account category"
+                },
+                "parent_id": {
+                  "type": "integer",
+                  "example": 1,
+                  "description": "Parent account ID for hierarchy"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "Kas untuk keperluan operasional harian",
+                  "description": "Account description"
+                },
+                "is_header": {
+                  "type": "boolean",
+                  "example": false,
+                  "description": "Whether this is a header account"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Account created successfully",
+            "schema": {
+              "$ref": "#/definitions/models.AccountResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          },
+          "409": {
+            "description": "Account code already exists",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/accounts/{code}": {
+      "get": {
+        "description": "Get account details by account code",
+        "tags": ["Accounts"],
+        "summary": "Get account by code",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Account code",
+            "name": "code",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/models.AccountResponse"
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "description": "Update account details",
+        "tags": ["Accounts"],
+        "summary": "Update account",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Account code",
+            "name": "code",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Account update data",
+            "name": "account",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Kas Kecil Updated"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "Updated description"
+                },
+                "is_active": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account updated successfully",
+            "schema": {
+              "$ref": "#/definitions/models.AccountResponse"
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "delete": {
+        "description": "Delete account (only if no transactions exist)",
+        "tags": ["Accounts"],
+        "summary": "Delete account",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Account code",
+            "name": "code",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account deleted successfully",
+            "schema": {
+              "$ref": "#/definitions/models.APIResponse"
+            }
+          },
+          "400": {
+            "description": "Cannot delete account with transactions",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/accounts/hierarchy": {
+      "get": {
+        "description": "Get account hierarchy tree structure",
+        "tags": ["Accounts"],
+        "summary": "Get account hierarchy",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/models.Account"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/accounts/export/pdf": {
+      "get": {
+        "description": "Export chart of accounts to PDF",
+        "tags": ["Accounts"],
+        "summary": "Export accounts to PDF",
+        "produces": ["application/pdf"],
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "schema": {
+              "type": "file"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/accounts/export/excel": {
+      "get": {
+        "description": "Export chart of accounts to Excel",
+        "tags": ["Accounts"],
+        "summary": "Export accounts to Excel",
+        "produces": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+        "responses": {
+          "200": {
+            "description": "Excel file",
+            "schema": {
+              "type": "file"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+
+    "/api/v1/products": {
+      "get": {
+        "description": "Retrieve list of all products with filtering and pagination",
+        "tags": ["Products"],
+        "summary": "Get all products",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Search by product name or SKU",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Filter by category ID",
+            "name": "category_id",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Filter active/inactive products",
+            "name": "is_active",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Filter service/product items",
+            "name": "is_service",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Page number",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Items per page",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/models.Product"
+                  }
+                },
+                "pagination": {
+                  "type": "object",
+                  "properties": {
+                    "page": {"type": "integer"},
+                    "limit": {"type": "integer"},
+                    "total": {"type": "integer"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "description": "Create a new product",
+        "tags": ["Products"],
+        "summary": "Create new product",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Product creation data",
+            "name": "product",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name", "code", "sale_price"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Laptop Gaming ASUS",
+                  "description": "Product name"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "LTP-ASUS-001",
+                  "description": "Unique product code"
+                },
+                "sku": {
+                  "type": "string",
+                  "example": "ASUS-ROG-G15",
+                  "description": "Stock keeping unit"
+                },
+                "description": {
+                  "type": "string",
+                  "example": "High performance gaming laptop",
+                  "description": "Product description"
+                },
+                "sale_price": {
+                  "type": "number",
+                  "example": 15000000,
+                  "description": "Selling price"
+                },
+                "purchase_price": {
+                  "type": "number",
+                  "example": 12000000,
+                  "description": "Purchase price"
+                },
+                "cost_price": {
+                  "type": "number",
+                  "example": 11500000,
+                  "description": "Cost price"
+                },
+                "category_id": {
+                  "type": "integer",
+                  "example": 1,
+                  "description": "Product category ID"
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "pcs",
+                  "description": "Unit of measurement"
+                },
+                "is_service": {
+                  "type": "boolean",
+                  "example": false,
+                  "description": "Is this a service item"
+                },
+                "taxable": {
+                  "type": "boolean",
+                  "example": true,
+                  "description": "Is product taxable"
+                },
+                "min_stock": {
+                  "type": "integer",
+                  "example": 5,
+                  "description": "Minimum stock level"
+                },
+                "max_stock": {
+                  "type": "integer",
+                  "example": 100,
+                  "description": "Maximum stock level"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Product created successfully",
+            "schema": {
+              "$ref": "#/definitions/models.Product"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/products/{id}": {
+      "get": {
+        "description": "Get product details by ID",
+        "tags": ["Products"],
+        "summary": "Get product by ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Product ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/models.Product"
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "description": "Update product details",
+        "tags": ["Products"],
+        "summary": "Update product",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Product ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Product update data",
+            "name": "product",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "sale_price": {"type": "number"},
+                "purchase_price": {"type": "number"},
+                "cost_price": {"type": "number"},
+                "min_stock": {"type": "integer"},
+                "max_stock": {"type": "integer"},
+                "is_active": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product updated successfully",
+            "schema": {
+              "$ref": "#/definitions/models.Product"
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "delete": {
+        "description": "Delete product",
+        "tags": ["Products"],
+        "summary": "Delete product",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Product ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product deleted successfully",
+            "schema": {
+              "$ref": "#/definitions/models.APIResponse"
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "schema": {
+              "$ref": "#/definitions/models.ErrorResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/products/adjust-stock": {
+      "post": {
+        "description": "Adjust product stock levels",
+        "tags": ["Products"],
+        "summary": "Adjust stock",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Stock adjustment data",
+            "name": "adjustment",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["product_id", "adjustment_quantity", "reason"],
+              "properties": {
+                "product_id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "adjustment_quantity": {
+                  "type": "integer",
+                  "example": 10,
+                  "description": "Positive for increase, negative for decrease"
+                },
+                "reason": {
+                  "type": "string",
+                  "example": "Stock correction"
+                },
+                "notes": {
+                  "type": "string",
+                  "example": "Monthly inventory adjustment"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stock adjusted successfully",
+            "schema": {
+              "$ref": "#/definitions/models.APIResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+
+    "/api/v1/assets": {
+      "get": {
+        "description": "Retrieve list of all assets with filtering and pagination",
+        "tags": ["Assets"],
+        "summary": "Get all assets",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Search by asset name or code",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Filter by category ID",
+            "name": "category_id",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Filter by asset status",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Page number",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Items per page",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "integer"},
+                      "name": {"type": "string"},
+                      "code": {"type": "string"},
+                      "category": {"type": "string"},
+                      "acquisition_cost": {"type": "number"},
+                      "current_value": {"type": "number"},
+                      "depreciation_method": {"type": "string"},
+                      "useful_life_years": {"type": "integer"},
+                      "status": {"type": "string"},
+                      "created_at": {"type": "string"},
+                      "updated_at": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "description": "Create a new asset",
+        "tags": ["Assets"],
+        "summary": "Create new asset",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Asset creation data",
+            "name": "asset",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name", "code", "acquisition_cost", "category_id"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Office Computer",
+                  "description": "Asset name"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "AST-001",
+                  "description": "Unique asset code"
+                },
+                "category_id": {
+                  "type": "integer",
+                  "example": 1,
+                  "description": "Asset category ID"
+                },
+                "acquisition_cost": {
+                  "type": "number",
+                  "example": 5000000,
+                  "description": "Asset acquisition cost"
+                },
+                "acquisition_date": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2024-01-15",
+                  "description": "Asset acquisition date"
+                },
+                "depreciation_method": {
+                  "type": "string",
+                  "enum": ["STRAIGHT_LINE", "DECLINING_BALANCE", "UNITS_OF_PRODUCTION"],
+                  "example": "STRAIGHT_LINE",
+                  "description": "Depreciation method"
+                },
+                "useful_life_years": {
+                  "type": "integer",
+                  "example": 5,
+                  "description": "Estimated useful life in years"
+                },
+                "residual_value": {
+                  "type": "number",
+                  "example": 500000,
+                  "description": "Expected residual value"
+                },
+                "location": {
+                  "type": "string",
+                  "example": "Office Floor 1",
+                  "description": "Asset location"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Asset created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "message": {"type": "string"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "code": {"type": "string"},
+                    "acquisition_cost": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/{id}": {
+      "get": {
+        "description": "Get asset details by ID",
+        "tags": ["Assets"],
+        "summary": "Get asset by ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Asset ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "code": {"type": "string"},
+                    "acquisition_cost": {"type": "number"},
+                    "current_value": {"type": "number"},
+                    "accumulated_depreciation": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "description": "Update asset details",
+        "tags": ["Assets"],
+        "summary": "Update asset",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Asset ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Asset update data",
+            "name": "asset",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "location": {"type": "string"},
+                "status": {"type": "string"},
+                "notes": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset updated successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "delete": {
+        "description": "Delete asset",
+        "tags": ["Assets"],
+        "summary": "Delete asset",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Asset ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset deleted successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/assets/{id}/depreciation-schedule": {
+      "get": {
+        "description": "Get depreciation schedule for an asset",
+        "tags": ["Assets"],
+        "summary": "Get depreciation schedule",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Asset ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "year": {"type": "integer"},
+                      "opening_value": {"type": "number"},
+                      "depreciation_amount": {"type": "number"},
+                      "closing_value": {"type": "number"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+
+    "/api/v1/contacts": {
+      "get": {
+        "description": "Retrieve list of all contacts with filtering and pagination",
+        "tags": ["Contacts"],
+        "summary": "Get all contacts",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Search by contact name",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Filter by contact type (CUSTOMER, VENDOR, EMPLOYEE)",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Filter active/inactive contacts",
+            "name": "is_active",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Page number",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Items per page",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/models.Contact"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "description": "Create a new contact",
+        "tags": ["Contacts"],
+        "summary": "Create new contact",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Contact creation data",
+            "name": "contact",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name", "type"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "PT Teknologi Maju",
+                  "description": "Contact name"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["CUSTOMER", "VENDOR", "EMPLOYEE"],
+                  "example": "CUSTOMER",
+                  "description": "Contact type"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "CUST-001",
+                  "description": "Contact code"
+                },
+                "email": {
+                  "type": "string",
+                  "example": "info@teknologimaju.com",
+                  "description": "Email address"
+                },
+                "phone": {
+                  "type": "string",
+                  "example": "+62211234567",
+                  "description": "Phone number"
+                },
+                "mobile": {
+                  "type": "string",
+                  "example": "+628123456789",
+                  "description": "Mobile number"
+                },
+                "address": {
+                  "type": "string",
+                  "example": "Jl. Teknologi No. 123, Jakarta",
+                  "description": "Address"
+                },
+                "tax_number": {
+                  "type": "string",
+                  "example": "01.234.567.8-901.000",
+                  "description": "Tax identification number"
+                },
+                "credit_limit": {
+                  "type": "number",
+                  "example": 50000000,
+                  "description": "Credit limit for customers"
+                },
+                "payment_terms": {
+                  "type": "integer",
+                  "example": 30,
+                  "description": "Payment terms in days"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Contact created successfully",
+            "schema": {
+              "$ref": "#/definitions/models.Contact"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/contacts/{id}": {
+      "get": {
+        "description": "Get contact details by ID",
+        "tags": ["Contacts"],
+        "summary": "Get contact by ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Contact ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/models.Contact"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "description": "Update contact details",
+        "tags": ["Contacts"],
+        "summary": "Update contact",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Contact ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Contact update data",
+            "name": "contact",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "email": {"type": "string"},
+                "phone": {"type": "string"},
+                "address": {"type": "string"},
+                "is_active": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact updated successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "delete": {
+        "description": "Delete contact",
+        "tags": ["Contacts"],
+        "summary": "Delete contact",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Contact ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact deleted successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/contacts/type/{type}": {
+      "get": {
+        "description": "Get contacts by type (CUSTOMER, VENDOR, EMPLOYEE)",
+        "tags": ["Contacts"],
+        "summary": "Get contacts by type",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Contact type",
+            "name": "type",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/models.Contact"
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+
+    "/api/v1/users": {
+      "get": {
+        "description": "Retrieve list of all users (admin only)",
+        "tags": ["Users"],
+        "summary": "Get all users",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Search by username or email",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Filter by role",
+            "name": "role",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Filter active/inactive users",
+            "name": "is_active",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/models.User"
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "description": "Create a new user (admin only)",
+        "tags": ["Users"],
+        "summary": "Create new user",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "User creation data",
+            "name": "user",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["username", "email", "password"],
+              "properties": {
+                "username": {
+                  "type": "string",
+                  "example": "johndoe"
+                },
+                "email": {
+                  "type": "string",
+                  "example": "john@example.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "securepassword123"
+                },
+                "first_name": {
+                  "type": "string",
+                  "example": "John"
+                },
+                "last_name": {
+                  "type": "string",
+                  "example": "Doe"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["admin", "finance", "employee", "director"],
+                  "example": "employee"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "schema": {
+              "$ref": "#/definitions/models.User"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "description": "Get user details by ID (admin only)",
+        "tags": ["Users"],
+        "summary": "Get user by ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "User ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/models.User"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "description": "Update user details (admin only)",
+        "tags": ["Users"],
+        "summary": "Update user",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "User ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "User update data",
+            "name": "user",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {"type": "string"},
+                "first_name": {"type": "string"},
+                "last_name": {"type": "string"},
+                "role": {"type": "string"},
+                "is_active": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User updated successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "delete": {
+        "description": "Delete user (admin only)",
+        "tags": ["Users"],
+        "summary": "Delete user",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "User ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+
+    "/api/v1/settings": {
+      "get": {
+        "description": "Get system settings",
+        "tags": ["Settings"],
+        "summary": "Get system settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "company_name": {"type": "string"},
+                    "currency": {"type": "string"},
+                    "tax_rate": {"type": "number"},
+                    "fiscal_year_start": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "put": {
+        "description": "Update system settings",
+        "tags": ["Settings"],
+        "summary": "Update settings",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Settings data",
+            "name": "settings",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "company_name": {"type": "string"},
+                "currency": {"type": "string"},
+                "tax_rate": {"type": "number"},
+                "fiscal_year_start": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings updated successfully"
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    },
+    "/api/v1/settings/tax-accounts": {
+      "get": {
+        "description": "Get tax account settings",
+        "tags": ["Settings"],
+        "summary": "Get tax account settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/models.TaxAccountSettingsResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      },
+      "post": {
+        "description": "Create or update tax account settings",
+        "tags": ["Settings"],
+        "summary": "Create/Update tax account settings",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "description": "Tax account settings",
+            "name": "settings",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/models.TaxAccountSettingsCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tax account settings updated successfully",
+            "schema": {
+              "$ref": "#/definitions/models.TaxAccountSettingsResponse"
+            }
+          }
+        },
+        "security": [{"BearerAuth": []}]
+      }
+    }
+  }
+}

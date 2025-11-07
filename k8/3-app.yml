@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dpl-dbm-accounting
+  namespace: dbm-accounting
+spec:
+  selector:
+    matchLabels:
+      app: dbm-accounting
+  template:
+    metadata:
+      labels:
+        app: dbm-accounting
+    spec:
+      imagePullSecrets:
+        - name: regsecret
+      containers:
+        - name: dbm-accounting
+          image: registry.digitalocean.com/registry-tigapilar/dbm/account-backend:latest
+          imagePullPolicy: Always
+          # securityContext:
+          #     runAsNonRoot: true
+          #     allowPrivilegeEscalation: false
+          #     capabilities:
+          #       drop: ["ALL"]
+          #     seccompProfile:
+          #       type: RuntimeDefault
+          resources:
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+            requests:
+              cpu: "100m"
+              memory: "53Mi"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+         
+
+          envFrom:
+            - configMapRef:
+                name: cm-dbm-accounting
+         
+    

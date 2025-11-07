@@ -1,0 +1,499 @@
+package controllers
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
+	
+	"github.com/gin-gonic/gin"
+	"app-sistem-akuntansi/models"
+	"app-sistem-akuntansi/services"
+)
+
+type SettingsController struct {
+	settingsService *services.SettingsService
+}
+
+// NewSettingsController creates a new instance of SettingsController
+func NewSettingsController(settingsService *services.SettingsService) *SettingsController {
+	return &SettingsController{
+		settingsService: settingsService,
+	}
+}
+
+// GetSettings handles GET /api/v1/settings
+func (sc *SettingsController) GetSettings(c *gin.Context) {
+	// Get settings from service
+	settings, err := sc.settingsService.GetSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve settings",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Convert to response format (without sensitive data)
+	response := settings.ToResponse()
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": response,
+	})
+}
+
+// UpdateSettings handles PUT /api/v1/settings
+func (sc *SettingsController) UpdateSettings(c *gin.Context) {
+	// Get user ID from context (assuming it's set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+		})
+		return
+	}
+	
+	// Check if user has admin role
+	userRole, _ := c.Get("role")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Only administrators can update settings",
+		})
+		return
+	}
+	
+	// Parse request body
+	var updates map[string]interface{}
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Remove any sensitive fields that shouldn't be updated directly
+	delete(updates, "id")
+	delete(updates, "created_at")
+	delete(updates, "updated_at")
+	delete(updates, "deleted_at")
+	
+	// Convert userID to uint
+	uid, ok := userID.(uint)
+	if !ok {
+		// Try to convert from float64 (common in JWT claims)
+		if floatID, ok := userID.(float64); ok {
+			uid = uint(floatID)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Invalid user ID format",
+			})
+			return
+		}
+	}
+	
+	// Update settings through service
+	if err := sc.settingsService.UpdateSettings(updates, uid); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to update settings",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Get updated settings
+	settings, err := sc.settingsService.GetSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve updated settings",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Settings updated successfully",
+		"data": settings.ToResponse(),
+	})
+}
+
+// UpdateCompanyInfo handles PUT /api/v1/settings/company
+func (sc *SettingsController) UpdateCompanyInfo(c *gin.Context) {
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+		})
+		return
+	}
+	
+	// Check if user has admin role
+	userRole, _ := c.Get("role")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Only administrators can update company information",
+		})
+		return
+	}
+	
+	// Parse request body
+	var companyInfo struct {
+		CompanyName    string `json:"company_name"`
+		CompanyAddress string `json:"company_address"`
+		CompanyPhone   string `json:"company_phone"`
+		CompanyEmail   string `json:"company_email"`
+		CompanyWebsite string `json:"company_website"`
+		TaxNumber      string `json:"tax_number"`
+	}
+	
+	if err := c.ShouldBindJSON(&companyInfo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Convert to map for update
+	updates := map[string]interface{}{
+		"company_name":    companyInfo.CompanyName,
+		"company_address": companyInfo.CompanyAddress,
+		"company_phone":   companyInfo.CompanyPhone,
+		"company_email":   companyInfo.CompanyEmail,
+		"company_website": companyInfo.CompanyWebsite,
+		"tax_number":      companyInfo.TaxNumber,
+	}
+	
+	// Remove empty values
+	for key, value := range updates {
+		if str, ok := value.(string); ok && str == "" {
+			delete(updates, key)
+		}
+	}
+	
+	// Convert userID to uint
+	uid, ok := userID.(uint)
+	if !ok {
+		if floatID, ok := userID.(float64); ok {
+			uid = uint(floatID)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Invalid user ID format",
+			})
+			return
+		}
+	}
+	
+	// Update settings
+	if err := sc.settingsService.UpdateSettings(updates, uid); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to update company information",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Company information updated successfully",
+	})
+}
+
+// UpdateSystemConfig handles PUT /api/v1/settings/system
+func (sc *SettingsController) UpdateSystemConfig(c *gin.Context) {
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+		})
+		return
+	}
+	
+	// Check if user has admin role
+	userRole, _ := c.Get("role")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Only administrators can update system configuration",
+		})
+		return
+	}
+	
+	// Parse request body
+	var systemConfig struct {
+		Currency          string  `json:"currency"`
+		DateFormat        string  `json:"date_format"`
+		FiscalYearStart   string  `json:"fiscal_year_start"`
+		DefaultTaxRate    float64 `json:"default_tax_rate"`
+		Language          string  `json:"language"`
+		Timezone          string  `json:"timezone"`
+		ThousandSeparator string  `json:"thousand_separator"`
+		DecimalSeparator  string  `json:"decimal_separator"`
+		DecimalPlaces     int     `json:"decimal_places"`
+	}
+	
+	if err := c.ShouldBindJSON(&systemConfig); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Convert to map for update
+	updates := make(map[string]interface{})
+	
+	if systemConfig.Currency != "" {
+		updates["currency"] = systemConfig.Currency
+	}
+	if systemConfig.DateFormat != "" {
+		updates["date_format"] = systemConfig.DateFormat
+	}
+	if systemConfig.FiscalYearStart != "" {
+		updates["fiscal_year_start"] = systemConfig.FiscalYearStart
+	}
+	if systemConfig.DefaultTaxRate >= 0 {
+		updates["default_tax_rate"] = systemConfig.DefaultTaxRate
+	}
+	if systemConfig.Language != "" {
+		updates["language"] = systemConfig.Language
+	}
+	if systemConfig.Timezone != "" {
+		updates["timezone"] = systemConfig.Timezone
+	}
+	if systemConfig.ThousandSeparator != "" {
+		updates["thousand_separator"] = systemConfig.ThousandSeparator
+	}
+	if systemConfig.DecimalSeparator != "" {
+		updates["decimal_separator"] = systemConfig.DecimalSeparator
+	}
+	if systemConfig.DecimalPlaces >= 0 {
+		updates["decimal_places"] = systemConfig.DecimalPlaces
+	}
+	
+	// Convert userID to uint
+	uid, ok := userID.(uint)
+	if !ok {
+		if floatID, ok := userID.(float64); ok {
+			uid = uint(floatID)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Invalid user ID format",
+			})
+			return
+		}
+	}
+	
+	// Update settings
+	if err := sc.settingsService.UpdateSettings(updates, uid); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to update system configuration",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "System configuration updated successfully",
+	})
+}
+
+// ResetToDefaults handles POST /api/v1/settings/reset
+func (sc *SettingsController) ResetToDefaults(c *gin.Context) {
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+		})
+		return
+	}
+	
+	// Check if user has admin role
+	userRole, _ := c.Get("role")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Only administrators can reset settings",
+		})
+		return
+	}
+	
+	// Convert userID to uint
+	uid, ok := userID.(uint)
+	if !ok {
+		if floatID, ok := userID.(float64); ok {
+			uid = uint(floatID)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Invalid user ID format",
+			})
+			return
+		}
+	}
+	
+	// Reset settings to defaults
+	if err := sc.settingsService.ResetToDefaults(uid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to reset settings to defaults",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Get updated settings
+	settings, err := sc.settingsService.GetSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve updated settings",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Settings reset to defaults successfully",
+		"data": settings.ToResponse(),
+	})
+}
+
+// GetValidationRules handles GET /api/v1/settings/validation-rules
+func (sc *SettingsController) GetValidationRules(c *gin.Context) {
+	rules := sc.settingsService.GetValidationRules()
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": rules,
+	})
+}
+
+// GetSettingsHistory handles GET /api/v1/settings/history
+func (sc *SettingsController) GetSettingsHistory(c *gin.Context) {
+	// Check if user has admin role
+	userRole, _ := c.Get("role")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Only administrators can view settings history",
+		})
+		return
+	}
+	
+	// Parse query parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	field := c.Query("field")
+	action := c.Query("action")
+	changedBy := c.Query("changed_by")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	
+	filter := models.SettingsHistoryFilter{
+		Field:     field,
+		Action:    action,
+		ChangedBy: changedBy,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Page:      page,
+		Limit:     limit,
+	}
+	
+	result, err := sc.settingsService.GetSettingsHistory(filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to retrieve settings history",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": result,
+	})
+}
+
+// UploadCompanyLogo handles POST /api/v1/settings/company/logo to upload and set the company logo
+func (sc *SettingsController) UploadCompanyLogo(c *gin.Context) {
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Ensure admin (route also protected by middleware, this is an extra check)
+	userRole, _ := c.Get("role")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only administrators can upload company logo"})
+		return
+	}
+
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get uploaded file"})
+		return
+	}
+
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+	if !allowedTypes[file.Header.Get("Content-Type")] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed"})
+		return
+	}
+
+	// Max 5MB
+	if file.Size > int64(5*1024*1024) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File size too large. Maximum 5MB allowed"})
+		return
+	}
+
+	uploadPath := "./uploads/company/"
+	if err := os.MkdirAll(uploadPath, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	filename := fmt.Sprintf("%d_%d_%s", time.Now().Unix(), time.Now().UnixNano()%1000, file.Filename)
+	filePath := filepath.Join(uploadPath, filename)
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Update settings with relative web path
+	relativePath := "/uploads/company/" + filename
+
+	// Convert userID to uint
+	uid, ok := userID.(uint)
+	if !ok {
+		if floatID, ok := userID.(float64); ok {
+			uid = uint(floatID)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
+			return
+		}
+	}
+
+	if err := sc.settingsService.UpdateSettings(map[string]interface{}{"company_logo": relativePath}, uid); err != nil {
+		// Cleanup file on failure
+		_ = os.Remove(filePath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update company logo", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Company logo uploaded successfully",
+		"path":    relativePath,
+	})
+}

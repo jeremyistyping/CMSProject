@@ -1,0 +1,63 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
+import { ThemeProvider } from '@/contexts/SimpleThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+import theme from '@/theme';
+
+interface ClientProvidersProps {
+  children: React.ReactNode;
+}
+
+export default function ClientProviders({ children }: ClientProvidersProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    // Use neutral styles during SSR to avoid hydration mismatches
+    // We'll use a light theme by default on server to match most common case
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f7f7f7',
+        color: '#1a1d23',
+        transition: 'background-color 0.3s ease, color 0.3s ease'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          padding: '2rem'
+        }}>
+          <div style={{
+            fontSize: '1.25rem',
+            fontWeight: '600',
+            marginBottom: '0.5rem'
+          }}>Accounting System</div>
+          <div style={{
+            fontSize: '0.875rem',
+            opacity: 0.7
+          }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ChakraProvider theme={theme}>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </ChakraProvider>
+  );
+}

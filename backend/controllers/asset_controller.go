@@ -1,0 +1,625 @@
+package controllers
+
+import (
+	"app-sistem-akuntansi/models"
+	"app-sistem-akuntansi/repositories"
+	"app-sistem-akuntansi/services"
+	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+type AssetController struct {
+	assetService services.AssetServiceInterface
+	db           *gorm.DB
+}
+
+type AssetCreateRequest struct {
+	Code               string    `json:"code"`
+	Name               string    `json:"name" binding:"required"`
+	CategoryID         *uint     `json:"category_id"`
+	Category           string    `json:"category" binding:"required"`
+	Status             string    `json:"status"`
+	PurchaseDate       time.Time `json:"purchase_date" binding:"required"`
+	PurchasePrice      float64   `json:"purchase_price" binding:"required,gt=0"`
+	SalvageValue       float64   `json:"salvage_value"`
+	UsefulLife         int       `json:"useful_life" binding:"gt=0"`
+	DepreciationMethod string    `json:"depreciation_method"`
+	IsActive           bool      `json:"is_active"`
+	Notes              string    `json:"notes"`
+	Location           string    `json:"location"`
+	Coordinates        string    `json:"coordinates"`
+	SerialNumber       string    `json:"serial_number"`
+	Condition          string    `json:"condition"`
+	AssetAccountID     *uint     `json:"asset_account_id"`
+	DepreciationAccountID *uint  `json:"depreciation_account_id"`
+	PaymentMethod      string    `json:"payment_method"` // CASH, BANK, CREDIT
+	PaymentAccountID   *uint     `json:"payment_account_id"` // Specific CASH/BANK account
+	CreditAccountID    *uint     `json:"credit_account_id"`  // Specific LIABILITY account
+	UserID             uint      `json:"user_id" binding:"required"`
+}
+
+type AssetUpdateRequest struct {
+	Name               string    `json:"name" binding:"required"`
+	CategoryID         *uint     `json:"category_id"`
+	Category           string    `json:"category" binding:"required"`
+	Status             string    `json:"status"`
+	PurchaseDate       time.Time `json:"purchase_date" binding:"required"`
+	PurchasePrice      float64   `json:"purchase_price" binding:"required,gt=0"`
+	SalvageValue       float64   `json:"salvage_value"`
+	UsefulLife         int       `json:"useful_life" binding:"gt=0"`
+	DepreciationMethod string    `json:"depreciation_method"`
+	IsActive           bool      `json:"is_active"`
+	Notes              string    `json:"notes"`
+	Location           string    `json:"location"`
+	Coordinates        string    `json:"coordinates"`
+	SerialNumber       string    `json:"serial_number"`
+	Condition          string    `json:"condition"`
+	AssetAccountID     *uint     `json:"asset_account_id"`
+	DepreciationAccountID *uint  `json:"depreciation_account_id"`
+}
+
+func NewAssetController(db *gorm.DB) *AssetController {
+	assetRepo := repositories.NewAssetRepository(db)
+	assetService := services.NewAssetService(assetRepo, db)
+	
+	return &AssetController{
+		assetService: assetService,
+		db:           db,
+	}
+}
+
+// GetAssets retrieves all assets with optional filtering
+func (ac *AssetController) GetAssets(c *gin.Context) {
+	assets, err := ac.assetService.GetAllAssets()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to retrieve assets",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Assets retrieved successfully",
+		"data":    assets,
+		"count":   len(assets),
+	})
+}
+
+// GetAsset retrieves a specific asset by ID
+func (ac *AssetController) GetAsset(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+
+	asset, err := ac.assetService.GetAssetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Asset not found",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Asset retrieved successfully",
+		"data":    asset,
+	})
+}
+
+// CreateAsset creates a new asset
+func (ac *AssetController) CreateAsset(c *gin.Context) {
+	var req AssetCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request data",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Convert request to asset model
+	asset := &models.Asset{
+		Code:                  req.Code,
+		Name:                  req.Name,
+		CategoryID:            req.CategoryID,
+		Category:              req.Category,
+		Status:                req.Status,
+		PurchaseDate:          req.PurchaseDate,
+		PurchasePrice:         req.PurchasePrice,
+		SalvageValue:          req.SalvageValue,
+		UsefulLife:            req.UsefulLife,
+		DepreciationMethod:    req.DepreciationMethod,
+		IsActive:              req.IsActive,
+		Notes:                 req.Notes,
+		Location:              req.Location,
+		Coordinates:           req.Coordinates,
+		MapsURL:               generateMapsURL(req.Coordinates),
+		SerialNumber:          req.SerialNumber,
+		Condition:             req.Condition,
+		AssetAccountID:        req.AssetAccountID,
+		DepreciationAccountID: req.DepreciationAccountID,
+	}
+
+	// Set defaults
+	if asset.Status == "" {
+		asset.Status = models.AssetStatusActive
+	}
+	if !asset.IsActive {
+		asset.IsActive = true
+	}
+
+	// Default payment method if not provided
+	paymentMethod := req.PaymentMethod
+	if paymentMethod == "" {
+		paymentMethod = "CREDIT" // Default to credit purchase
+	}
+
+	// QUICK FIX: Use CreateAsset without journal entries to avoid account ID issues
+	// TODO: Later implement proper journal entry creation with dynamic account lookup
+	err := ac.assetService.CreateAsset(asset)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Failed to create asset",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Asset created successfully",
+		"data":    asset,
+	})
+}
+
+// CapitalizeAsset creates capitalization journal entries for a given asset
+func (ac *AssetController) CapitalizeAsset(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+	var req struct {
+		Amount              float64   `json:"amount" binding:"required,gt=0"`
+		Date                *time.Time `json:"date"`
+		Description         string    `json:"description"`
+		Reference           string    `json:"reference"`
+		SourceAccountID     *uint     `json:"source_account_id"`
+		FixedAssetAccountID *uint     `json:"fixed_asset_account_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
+		return
+	}
+	// Resolve accounts
+	accountRepo := repositories.NewAccountRepository(ac.db)
+	journalRepo := repositories.NewJournalEntryRepository(ac.db)
+	capSvc := services.NewAssetCapitalizationService(ac.db, accountRepo, nil, journalRepo)
+	// Defaults
+	date := time.Now()
+	if req.Date != nil {
+		date = *req.Date
+	}
+	var sourceID uint
+	if req.SourceAccountID != nil {
+		sourceID = *req.SourceAccountID
+	} else {
+		// default to inventory 1301
+		if acc, err := accountRepo.FindByCode(nil, "1301"); err == nil {
+			sourceID = acc.ID
+		}
+	}
+	var faID uint
+	if req.FixedAssetAccountID != nil {
+		faID = *req.FixedAssetAccountID
+	} else {
+		// default fixed asset 1501
+		if acc, err := accountRepo.FindByCode(nil, "1501"); err == nil {
+			faID = acc.ID
+		}
+	}
+	if sourceID == 0 || faID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to resolve accounts. Provide source_account_id and fixed_asset_account_id explicitly."})
+		return
+	}
+	userID := c.MustGet("user_id").(uint)
+	input := services.CapitalizationInput{
+		AssetID:             uint(id),
+		Amount:              req.Amount,
+		Date:                date,
+		Description:         req.Description,
+		Reference:           req.Reference,
+		SourceAccountID:     sourceID,
+		FixedAssetAccountID: faID,
+		UserID:              userID,
+		ReferenceType:       models.JournalRefAsset,
+		ReferenceID:         uint(id),
+	}
+	if err := capSvc.Capitalize(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to capitalize asset", "details": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Asset capitalized successfully"})
+}
+
+// UpdateAsset updates an existing asset
+func (ac *AssetController) UpdateAsset(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+
+	var req AssetUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request data",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Get existing asset
+	existingAsset, err := ac.assetService.GetAssetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Asset not found",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Update fields
+	existingAsset.Name = req.Name
+	existingAsset.CategoryID = req.CategoryID
+	existingAsset.Category = req.Category
+	existingAsset.Status = req.Status
+	existingAsset.PurchaseDate = req.PurchaseDate
+	existingAsset.PurchasePrice = req.PurchasePrice
+	existingAsset.SalvageValue = req.SalvageValue
+	existingAsset.UsefulLife = req.UsefulLife
+	existingAsset.DepreciationMethod = req.DepreciationMethod
+	existingAsset.IsActive = req.IsActive
+	existingAsset.Notes = req.Notes
+	existingAsset.Location = req.Location
+	existingAsset.Coordinates = req.Coordinates
+	existingAsset.MapsURL = generateMapsURL(req.Coordinates)
+	existingAsset.SerialNumber = req.SerialNumber
+	existingAsset.Condition = req.Condition
+	existingAsset.AssetAccountID = req.AssetAccountID
+	existingAsset.DepreciationAccountID = req.DepreciationAccountID
+
+	err = ac.assetService.UpdateAsset(existingAsset)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Failed to update asset",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Asset updated successfully",
+		"data":    existingAsset,
+	})
+}
+
+// DeleteAsset deletes an asset
+func (ac *AssetController) DeleteAsset(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+
+	err = ac.assetService.DeleteAsset(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Failed to delete asset",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Asset deleted successfully",
+	})
+}
+
+// GetAssetsSummary returns summary statistics for assets
+func (ac *AssetController) GetAssetsSummary(c *gin.Context) {
+	summary, err := ac.assetService.GetAssetsSummary()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to get assets summary",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Assets summary retrieved successfully",
+		"data":    summary,
+	})
+}
+
+// GetDepreciationReport returns depreciation report for all assets
+func (ac *AssetController) GetDepreciationReport(c *gin.Context) {
+	report, err := ac.assetService.GetAssetsForDepreciationReport()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to generate depreciation report",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Depreciation report generated successfully",
+		"data":    report,
+		"count":   len(report),
+	})
+}
+
+// GetDepreciationSchedule returns depreciation schedule for a specific asset
+func (ac *AssetController) GetDepreciationSchedule(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+
+	asset, err := ac.assetService.GetAssetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Asset not found",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	schedule, err := ac.assetService.GetDepreciationSchedule(asset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to generate depreciation schedule",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Depreciation schedule generated successfully",
+		"data": gin.H{
+			"asset":    asset,
+			"schedule": schedule,
+		},
+	})
+}
+
+// CalculateCurrentDepreciation calculates current depreciation for an asset
+func (ac *AssetController) CalculateCurrentDepreciation(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+
+	asset, err := ac.assetService.GetAssetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Asset not found",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Get date parameter (optional, defaults to now)
+	dateStr := c.DefaultQuery("as_of_date", "")
+	var asOfDate time.Time
+	if dateStr != "" {
+		asOfDate, err = time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Use YYYY-MM-DD"})
+			return
+		}
+	} else {
+		asOfDate = time.Now()
+	}
+
+	depreciation, err := ac.assetService.CalculateDepreciation(asset, asOfDate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to calculate depreciation",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	currentBookValue := asset.PurchasePrice - depreciation
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Depreciation calculated successfully",
+		"data": gin.H{
+			"asset_id":                    asset.ID,
+			"asset_name":                  asset.Name,
+			"as_of_date":                  asOfDate.Format("2006-01-02"),
+			"purchase_price":              asset.PurchasePrice,
+			"salvage_value":               asset.SalvageValue,
+			"accumulated_depreciation":    depreciation,
+			"current_book_value":          currentBookValue,
+			"depreciation_method":         asset.DepreciationMethod,
+		"useful_life_years":           asset.UsefulLife,
+		},
+	})
+}
+
+// UploadAssetImage handles asset image upload
+func (ac *AssetController) UploadAssetImage(c *gin.Context) {
+	assetID, err := strconv.Atoi(c.PostForm("asset_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid asset ID"})
+		return
+	}
+
+	// Check if asset exists
+	asset, err := ac.assetService.GetAssetByID(uint(assetID))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Asset not found"})
+		return
+	}
+
+	// Get uploaded file
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get uploaded file"})
+		return
+	}
+
+	// Validate file type
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	if !allowedTypes[file.Header.Get("Content-Type")] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed"})
+		return
+	}
+
+	// Validate file size (max 5MB)
+	maxSize := int64(5 * 1024 * 1024) // 5MB
+	if file.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File size too large. Maximum 5MB allowed"})
+		return
+	}
+
+	// Create uploads directory if it doesn't exist
+	uploadPath := "./uploads/assets/"
+	if err := os.MkdirAll(uploadPath, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	filename := fmt.Sprintf("%d_%d_%s", assetID, time.Now().Unix(), file.Filename)
+	filePath := uploadPath + filename
+
+	// Save the file
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Update asset with image path
+	relativeImagePath := "/uploads/assets/" + filename
+	asset.ImagePath = relativeImagePath
+
+	if err := ac.assetService.UpdateAsset(asset); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update asset image path"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Image uploaded successfully",
+		"filename": filename,
+		"path": relativeImagePath,
+		"asset": asset,
+	})
+}
+
+// GetAssetCategories retrieves all asset categories
+func (ac *AssetController) GetAssetCategories(c *gin.Context) {
+	categories, err := ac.assetService.GetAssetCategories()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to retrieve asset categories",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Asset categories retrieved successfully",
+		"data":    categories,
+		"count":   len(categories),
+	})
+}
+
+// CreateAssetCategory creates a new asset category
+func (ac *AssetController) CreateAssetCategory(c *gin.Context) {
+	var req struct {
+		Code        string `json:"code" binding:"required"`
+		Name        string `json:"name" binding:"required"`
+		Description string `json:"description"`
+		ParentID    *uint  `json:"parent_id"`
+		IsActive    bool   `json:"is_active"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request data",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	category := &models.AssetCategory{
+		Code:        req.Code,
+		Name:        req.Name,
+		Description: req.Description,
+		ParentID:    req.ParentID,
+		IsActive:    req.IsActive,
+	}
+	
+	// Set default IsActive to true if not specified
+	if !req.IsActive {
+		category.IsActive = true
+	}
+
+	if err := ac.assetService.CreateAssetCategory(category); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Failed to create asset category",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Asset category created successfully",
+		"data":    category,
+	})
+}
+
+// Helper function to generate Google Maps URL from coordinates
+func generateMapsURL(coordinates string) string {
+	if coordinates == "" {
+		return ""
+	}
+	
+	// Validate coordinate format (lat,lng)
+	parts := strings.Split(coordinates, ",")
+	if len(parts) != 2 {
+		return ""
+	}
+	
+	// Generate Google Maps URL
+	return fmt.Sprintf("https://www.google.com/maps?q=%s", coordinates)
+}

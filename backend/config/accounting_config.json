@@ -1,0 +1,73 @@
+{
+  "default_accounts": {
+    "cash": 1101,
+    "bank": 1102,
+    "accounts_receivable": 1201,
+    "inventory": 1301,
+    "ppn_receivable": 1240,
+    "fixed_assets": 1501,
+    "accumulated_depreciation": 1502,
+
+    "accounts_payable": 2101,
+    "ppn_payable": 2103,
+    "tax_payable": 2103,
+    "share_capital": 3101,
+    "retained_earnings": 3201,
+    "sales_revenue": 4101,
+    "service_revenue": 4102,
+    "other_income": 4901,
+    "cogs": 5101,
+    "operating_expenses": 6001,
+    "depreciation_expense": 6201,
+    "interest_expense": 7001
+  },
+  "tax_rates": {
+    "default_ppn": 11.0,
+    "default_pph21": 5.0,
+    "default_pph23": 2.0,
+    "tax_rates_by_type": {
+      "PPN": 11.0,
+      "PPh21": 5.0,
+      "PPh23": 2.0,
+      "PPh25": 25.0,
+      "PPh29": 29.0
+    },
+    "tax_exemptions": ["medical", "education", "religious"]
+  },
+  "currency_settings": {
+    "base_currency": "IDR",
+    "supported_currencies": ["IDR", "USD", "EUR", "SGD"],
+    "exchange_rate_api": "https://api.exchangerate-api.com/v4/latest/",
+    "decimal_places": 2,
+    "currency_symbols": {
+      "IDR": "Rp",
+      "USD": "$",
+      "EUR": "€",
+      "SGD": "S$"
+    }
+  },
+  "journal_settings": {
+    "code_prefix": "JE",
+    "auto_generate_code": true,
+    "require_balanced_entry": true,
+    "allow_future_dates": false,
+    "max_future_days": 7,
+    "require_approval": false,
+    "batch_size": 100
+  },
+  "period_settings": {
+    "fiscal_year_start": 1,
+    "auto_close_periods": false,
+    "warn_before_close": true,
+    "allow_post_to_old_period": false,
+    "max_old_period_months": 24
+  },
+  "audit_settings": {
+    "enable_audit_trail": true,
+    "audit_journal_changes": true,
+    "audit_account_changes": true,
+    "retention_period_days": 2555,
+    "sensitive_fields": ["balance", "amount", "salary"],
+    "exclude_users": []
+  }
+}

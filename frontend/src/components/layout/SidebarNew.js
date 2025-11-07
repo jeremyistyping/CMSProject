@@ -1,0 +1,260 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  Box,
+  CloseButton,
+  Flex,
+  Icon,
+  useColorModeValue,
+  Text,
+  Drawer,
+  DrawerContent,
+  useDisclosure,
+  BoxProps,
+  FlexProps,
+  Collapse,
+  DrawerOverlay,
+  DrawerCloseButton,
+} from '@chakra-ui/react';
+import {
+  FiTrendingUp,
+  FiCompass,
+  FiStar,
+  FiBell,
+  FiSettings,
+  FiMenu,
+  FiShoppingCart,
+  FiUsers,
+  FiDollarSign,
+  FiBarChart,
+  FiFileText,
+  FiHome,
+  FiLayers,
+  FiUser,
+} from 'react-icons/fi';
+import { useAuth } from '@/contexts/AuthContext';
+import { normalizeRole } from '@/utils/roles';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useTheme } from '@/contexts/SimpleThemeContext';
+import { usePermissions } from '@/hooks/usePermissions';
+
+// Menu structure - will be translated dynamically
+const getMenuGroups = (t) => [
+  {
+    title: t('navigation.dashboard'),
+    items: [
+      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'EMPLOYEE'] },
+    ]
+  },
+  {
+    title: 'Master Data',
+    items: [
+      { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
+      { name: t('navigation.products'), icon: FiLayers, href: '/products', module: 'products', permission: 'view', roles: ['ADMIN', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
+      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
+      { name: t('navigation.assets'), icon: FiStar, href: '/assets', module: 'assets', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+    ]
+  },
+  {
+    title: 'Financial',
+    items: [
+      { name: t('navigation.sales'), icon: FiDollarSign, href: '/sales', module: 'sales', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: t('navigation.purchases'), icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
+      { name: t('navigation.payments'), icon: FiTrendingUp, href: '/payments', module: 'payments', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+    ]
+  },
+  {
+    title: t('navigation.reports'),
+    items: [
+      { name: t('navigation.reports'), icon: FiBarChart, href: '/reports', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+    ]
+  },
+  {
+    title: 'System',
+    items: [
+      { name: t('navigation.users'), icon: FiUser, href: '/users', module: null, permission: null, roles: ['ADMIN'] },
+      { name: t('navigation.settings'), icon: FiSettings, href: '/settings', module: null, permission: null, roles: ['ADMIN'] },
+    ]
+  },
+];
+
+export default function Sidebar({ isOpen, onClose, display, width, collapsed, onToggleCollapse, variant, ...rest }) {
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const { canView, canMenu, loading: permissionLoading } = usePermissions();
+
+  // Get translated menu groups
+  const MenuGroups = getMenuGroups(t);
+
+  // Filter menu groups based on user permissions and role
+  const userRoleNormalized = user ? normalizeRole(user.role) : '';
+  const filteredGroups = MenuGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (!user) return false;
+      
+      // For modules with permission checking, use canMenu for menu visibility
+      // but still check canView for data access requirements
+      if (item.module && item.permission) {
+        return canView(item.module) && canMenu(item.module);
+      }
+      
+      // For system pages (users, settings) and dashboard, use role-based checking
+      return item.roles.some(role => normalizeRole(role) === userRoleNormalized);
+    })
+  })).filter(group => group.items.length > 0);
+
+  const SidebarContent = ({ onClose, ...rest }) => {
+    // Theme-aware colors
+    const sidebarBg = useColorModeValue('white', 'var(--bg-primary)');
+    const sidebarBorder = useColorModeValue('gray.200', 'var(--border-color)');
+    const sidebarShadow = useColorModeValue('sm', 'var(--shadow)');
+    
+    return (
+      <Box
+        transition="all 0.3s ease"
+        bg={sidebarBg}
+        borderRight="1px"
+        borderRightColor={sidebarBorder}
+        w={{ base: 'full', md: width || 60 }}
+        pos="fixed"
+        h="full"
+        overflowY="auto"
+        zIndex={1000}
+        className="sidebar"
+        boxShadow={sidebarShadow}
+        {...rest}>
+        <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+          <Text 
+            fontSize="xl" 
+            fontFamily="Inter" 
+            fontWeight="bold" 
+            color='var(--accent-color)'
+            letterSpacing="tight"
+          >
+            Accounting App
+          </Text>
+          <CloseButton 
+            display={{ base: 'flex', md: 'none' }} 
+            onClick={onClose} 
+            color={useColorModeValue('gray.600', 'var(--text-secondary)')}
+            _hover={{ bg: useColorModeValue('gray.100', 'var(--bg-tertiary)') }}
+          />
+        </Flex>
+        
+        {filteredGroups.map((group, index) => (
+          <Box key={group.title} mb={6}>
+            <Text
+              fontSize="xs"
+              fontWeight="semibold"
+              color={useColorModeValue('gray.500', 'var(--text-secondary)')}
+              textTransform="uppercase"
+              mx="4"
+              mb="3"
+              letterSpacing="wider"
+              opacity={0.8}
+            >
+              {group.title}
+            </Text>
+            {group.items.map((link) => (
+              <NavItem key={link.name} icon={link.icon} href={link.href} isActive={pathname === link.href}>
+                {link.name}
+              </NavItem>
+            ))}
+          </Box>
+        ))}
+      </Box>
+    );
+  };
+
+  const NavItem = ({ icon, children, href, isActive, ...rest }) => {
+    const handleClick = (e) => {
+      e.preventDefault();
+      console.log('NavItem clicked:', href);
+      router.push(href);
+    };
+    
+    // Theme-aware colors for nav items
+    const activeBg = 'var(--accent-color)';
+    const activeColor = 'white';
+    const inactiveColor = useColorModeValue('gray.700', 'var(--text-secondary)');
+    const hoverBg = useColorModeValue('gray.100', 'var(--bg-tertiary)');
+    const hoverColor = useColorModeValue('gray.900', 'var(--text-primary)');
+    const iconColor = useColorModeValue('gray.500', 'var(--text-secondary)');
+    const iconActiveColor = 'white';
+    const iconHoverColor = useColorModeValue('gray.700', 'var(--text-primary)');
+
+    return (
+      <Flex
+        onClick={handleClick}
+        align="center"
+        p="3"
+        mx="4"
+        borderRadius="lg"
+        role="group"
+        cursor="pointer"
+        className="sidebar-item"
+        bg={isActive ? activeBg : 'transparent'}
+        color={isActive ? activeColor : inactiveColor}
+        borderLeft="3px solid"
+        borderLeftColor={isActive ? 'var(--accent-color)' : 'transparent'}
+        _hover={{
+          bg: isActive ? 'var(--accent-color)' : hoverBg,
+          color: isActive ? 'white' : hoverColor,
+          transform: 'translateX(4px)',
+        }}
+        transition="all 0.2s ease"
+        fontWeight="medium"
+        fontSize="sm"
+        pointerEvents="auto"
+        zIndex={10}
+        {...rest}>
+        {icon && (
+          <Icon
+            mr="3"
+            fontSize="18"
+            color={isActive ? iconActiveColor : iconColor}
+            _groupHover={{
+              color: isActive ? 'white' : iconHoverColor,
+            }}
+            as={icon}
+            transition="all 0.2s ease"
+          />
+        )}
+        {children}
+      </Flex>
+    );
+  };
+
+  if (variant === 'drawer') {
+    return (
+      <Drawer
+        autoFocus={false}
+        isOpen={isOpen}
+        placement="left"
+        onClose={onClose}
+        returnFocusOnClose={false}
+        onOverlayClick={onClose}
+        size="full">
+        <DrawerOverlay />
+        <DrawerContent>
+          <SidebarContent onClose={onClose} />
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <SidebarContent
+      onClose={() => onClose}
+      display={display}
+    />
+  );
+}

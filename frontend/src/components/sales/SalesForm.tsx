@@ -1,0 +1,1961 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  Button,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
+  FormHelperText,
+  Input,
+  Select,
+  Textarea,
+  VStack,
+  HStack,
+  Box,
+  Divider,
+  Text,
+  IconButton,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  useToast,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Switch,
+  Badge,
+  Flex,
+  Card,
+  CardHeader,
+  CardBody,
+  Heading,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  Icon,
+  useColorModeValue
+} from '@chakra-ui/react';
+import CurrencyInput from '@/components/common/CurrencyInput';
+import ErrorAlert, { ErrorDetail } from '@/components/common/ErrorAlert';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { FiPlus, FiTrash2, FiSave, FiX, FiDollarSign, FiShoppingCart, FiFileText } from 'react-icons/fi';
+import salesService, { 
+  Sale, 
+  SaleCreateRequest, 
+  SaleUpdateRequest, 
+  SaleItemRequest,
+  SaleItemUpdateRequest 
+} from '@/services/salesService';
+import invoiceTypeService, { InvoiceType } from '@/services/invoiceTypeService';
+import ErrorHandler, { ParsedValidationError } from '@/utils/errorHandler';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePeriodValidation } from '@/hooks/usePeriodValidation';
+import { ReopenPeriodDialog } from '@/components/periods/ReopenPeriodDialog';
+
+interface SalesFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: () => void;
+  sale?: Sale | null;
+}
+
+interface FormData {
+  customer_id: number;
+  sales_person_id?: number;
+  invoice_type_id?: number;
+  type: string;
+  date: string;
+  due_date?: string;
+  valid_until?: string;
+  currency: string;
+  exchange_rate: number;
+  discount_percent: number;
+  // Payment method and accounting fields
+  payment_method_type: 'CASH' | 'BANK' | 'CREDIT';
+  cash_bank_id?: number;
+  // Legacy tax fields (for backward compatibility)
+  ppn_percent: number;
+  pph_percent: number;
+  pph_type?: string;
+  // Enhanced tax configuration
+  ppn_rate: number;
+  other_tax_additions: number;
+  pph21_rate: number;
+  pph23_rate: number;
+  other_tax_deductions: number;
+  payment_terms: string;
+  payment_method?: string;
+  shipping_method?: string;
+  shipping_cost: number;
+  billing_address?: string;
+  shipping_address?: string;
+  notes?: string;
+  internal_notes?: string;
+  reference?: string;
+  items: Array<{
+    id?: number;
+    product_id: number;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    discount_percent: number;
+    taxable: boolean;
+    revenue_account_id?: number;
+    delete?: boolean;
+  }>;
+}
+
+const SalesForm: React.FC<SalesFormProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  sale
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [salesPersons, setSalesPersons] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [cashBankAccounts, setCashBankAccounts] = useState<any[]>([]);
+  const [invoiceTypes, setInvoiceTypes] = useState<InvoiceType[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [validationError, setValidationError] = useState<ParsedValidationError | null>(null);
+  const toast = useToast();
+  const { user, token } = useAuth();
+  const modalBodyRef = useRef<HTMLDivElement>(null);
+  
+  // Period validation hook
+  const { 
+    handlePeriodError, 
+    reopenDialogOpen, 
+    periodToReopen, 
+    closeReopenDialog 
+  } = usePeriodValidation({ 
+    showToast: true,
+    toast
+  });
+  
+  // Color mode values for dark mode support
+  const modalBg = useColorModeValue('white', 'gray.800');
+  const headerBg = useColorModeValue('blue.50', 'gray.700');
+  const headingColor = useColorModeValue('blue.700', 'blue.300');
+  const subHeadingColor = useColorModeValue('gray.600', 'gray.300');
+  const textColor = useColorModeValue('gray.600', 'gray.400');
+  const inputBg = useColorModeValue('gray.50', 'gray.600');
+  const inputFocusBg = useColorModeValue('white', 'gray.500');
+  const tableBg = useColorModeValue('white', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const footerBg = useColorModeValue('white', 'gray.800');
+  const shadowColor = useColorModeValue('rgba(0, 0, 0, 0.1)', 'rgba(0, 0, 0, 0.3)');
+  const alertBg = useColorModeValue('blue.50', 'blue.900');
+  const alertBorderColor = useColorModeValue('blue.200', 'blue.700');
+  const scrollTrackBg = useColorModeValue('#f7fafc', '#2d3748');
+  const scrollThumbBg = useColorModeValue('#cbd5e0', '#4a5568');
+  const scrollThumbHoverBg = useColorModeValue('#a0aec0', '#718096');
+  
+  // Tooltip descriptions for sales form fields
+  const tooltips = {
+    customer: 'Pilih customer/pelanggan untuk transaksi ini',
+    salesPerson: 'Sales person yang menangani transaksi (opsional)',
+    invoiceType: 'Jenis invoice: Invoice (standar), Quotation (penawaran), atau Sales Order',
+    date: 'Tanggal transaksi penjualan',
+    dueDate: 'Tanggal jatuh tempo pembayaran (untuk invoice kredit)',
+    paymentMethod: 'Metode pembayaran: Cash (tunai), Bank (transfer bank), atau Credit (kredit/hutang)',
+    cashBank: 'Pilih akun kas/bank tujuan pembayaran',
+    currency: 'Mata uang transaksi (default: IDR)',
+    exchangeRate: 'Kurs konversi untuk mata uang asing',
+    discount: 'Diskon global untuk seluruh transaksi (dalam persen)',
+    ppnRate: 'Tarif PPN/Pajak Pertambahan Nilai (default: 11%)',
+    otherTaxAdditions: 'Pajak tambahan lainnya (dalam nominal)',
+    pph21Rate: 'Tarif PPh 21 untuk pemotongan pajak penghasilan',
+    pph23Rate: 'Tarif PPh 23 untuk pemotongan pajak jasa',
+    otherTaxDeductions: 'Potongan pajak lainnya (dalam nominal)',
+    shippingCost: 'Biaya pengiriman barang',
+    notes: 'Catatan atau keterangan tambahan untuk customer',
+    internalNotes: 'Catatan internal (tidak terlihat oleh customer)',
+    product: 'Pilih produk/jasa yang dijual',
+    quantity: 'Jumlah unit produk',
+    unitPrice: 'Harga per unit (sebelum diskon dan pajak)',
+    itemDiscount: 'Diskon untuk item ini (dalam persen)',
+    taxable: 'Centang jika item ini dikenakan pajak (PPN)',
+    revenueAccount: 'Akun pendapatan untuk item ini (opsional, default dari produk)',
+  };
+  
+  // Check if user has permission to create/edit sales - using lowercase for consistency
+  const userRole = user?.role?.toLowerCase();
+  const canCreateSales = userRole === 'finance' || userRole === 'director' || userRole === 'admin';
+  const canEditSales = userRole === 'admin' || userRole === 'finance' || userRole === 'director';
+  
+  // For new sales, check create permission; for editing, check edit permission
+  const hasPermission = sale ? canEditSales : canCreateSales;
+  
+  // If modal is opened but user doesn't have permission, close it and show error
+  useEffect(() => {
+    if (isOpen && user && !hasPermission) {
+      const action = sale ? 'edit' : 'create';
+      toast({
+        title: 'Access Denied',
+        description: `You do not have permission to ${action} sales. Contact your administrator for access.`,
+        status: 'error',
+        duration: 5000,
+      });
+      onClose();
+    }
+  }, [isOpen, user, hasPermission, sale, toast, onClose]);
+  
+  // Don't render the form if user doesn't have permission
+  if (!hasPermission && user) {
+    return null;
+  }
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    control,
+    formState: { errors }
+  } = useForm<FormData>({
+    defaultValues: {
+      type: 'INVOICE',
+      currency: 'IDR',
+      exchange_rate: 1,
+      discount_percent: 0,
+      // Legacy tax fields
+      ppn_percent: 11,
+      pph_percent: 0,
+      // Enhanced tax configuration
+      ppn_rate: 11,
+      other_tax_additions: 0,
+      pph21_rate: 0,
+      pph23_rate: 0,
+      other_tax_deductions: 0,
+      payment_terms: 'NET_30',
+      payment_method_type: 'CREDIT' as 'CASH' | 'BANK' | 'CREDIT',
+      shipping_cost: 0,
+      items: [
+        {
+          product_id: 0,
+          description: '',
+          quantity: 1,
+          unit_price: 0,
+          discount_percent: 0,
+          taxable: true
+        }
+      ]
+    }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'items'
+  });
+
+  const watchItems = watch('items');
+  const watchDiscountPercent = watch('discount_percent');
+  // Legacy tax fields
+  const watchPPNPercent = watch('ppn_percent');
+  const watchPPhPercent = watch('pph_percent');
+  // Enhanced tax configuration
+  const watchPPNRate = watch('ppn_rate');
+  const watchOtherTaxAdditions = watch('other_tax_additions');
+  const watchPPh21Rate = watch('pph21_rate');
+  const watchPPh23Rate = watch('pph23_rate');
+  const watchOtherTaxDeductions = watch('other_tax_deductions');
+  const watchShippingCost = watch('shipping_cost');
+  const watchPaymentTerms = watch('payment_terms');
+  const watchPaymentMethodType = watch('payment_method_type');
+  const watchCashBankId = watch('cash_bank_id');
+  const watchDate = watch('date');
+  const watchType = watch('type');
+  const watchDueDate = watch('due_date');
+  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('percentage');
+
+  useEffect(() => {
+    if (isOpen) {
+      loadFormData();
+      if (sale) {
+        populateFormWithSale(sale);
+      } else {
+        resetForm();
+      }
+    }
+  }, [isOpen, sale]);
+
+  // Auto-calculate due date based on payment terms and date
+  useEffect(() => {
+    if (watchDate && watchPaymentTerms && watchPaymentTerms !== 'CUSTOM' && !watchDueDate) {
+      const calculatedDueDate = calculateDueDateFromPaymentTerms(watchDate, watchPaymentTerms);
+      if (calculatedDueDate) {
+        setValue('due_date', calculatedDueDate);
+      }
+    }
+  }, [watchDate, watchPaymentTerms, setValue]);
+
+  // Reset due date when payment terms change (except for CUSTOM)
+  useEffect(() => {
+    if (watchPaymentTerms && watchPaymentTerms !== 'CUSTOM' && watchDate) {
+      const calculatedDueDate = calculateDueDateFromPaymentTerms(watchDate, watchPaymentTerms);
+      if (calculatedDueDate) {
+        setValue('due_date', calculatedDueDate);
+      }
+    }
+  }, [watchPaymentTerms, watchDate, setValue]);
+
+  // Ensure modal body is scrollable when content overflows
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const modalBody = modalBodyRef.current;
+        if (modalBody) {
+          const isOverflowing = modalBody.scrollHeight > modalBody.clientHeight;
+          if (isOverflowing) {
+            modalBody.style.overflowY = 'scroll';
+          }
+        }
+      }, 100);
+    }
+  }, [isOpen, fields.length]);
+
+  const loadFormData = async () => {
+    if (!token) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please login to access this feature.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+      return;
+    }
+
+    setLoadingData(true);
+    
+    try {
+      console.log('SalesForm: Starting to load form data...');
+      
+      // Load all data concurrently with proper error handling
+      const [customersResult, productsResult, salesPersonsResult, accountsResult, cashBankResult, invoiceTypesResult] = await Promise.allSettled([
+        // Load customers
+        (async () => {
+          console.log('SalesForm: Loading customers...');
+          const contactService = await import('@/services/contactService');
+          const result = await contactService.default.getContacts(token, 'CUSTOMER');
+          console.log('SalesForm: Customers loaded:', result?.length || 0);
+          return result;
+        })(),
+        
+        // Load products with fallback for permission errors
+        (async () => {
+          try {
+            console.log('SalesForm: Loading products with token...');
+            const productService = await import('@/services/productService');
+            const result = await productService.default.getProducts({}, token);
+            console.log('SalesForm: Products loaded:', result?.data?.length || 0);
+            return result;
+          } catch (error: any) {
+            console.warn('SalesForm: Failed to load products, using empty list:', error?.message || error);
+            // Return empty result for any error
+            return { data: [] }; // Empty products array
+          }
+        })(),
+        
+        // Load sales persons from contacts (employees)
+        (async () => {
+          console.log('SalesForm: Loading sales persons (employees)...');
+          const contactService = await import('@/services/contactService');
+          const result = await contactService.default.getContacts(token, 'EMPLOYEE');
+          console.log('SalesForm: Sales persons loaded:', result?.length || 0);
+          return result;
+        })(),
+        
+        // Load revenue accounts
+        (async () => {
+          console.log('SalesForm: Loading revenue accounts...');
+          const accountService = await import('@/services/accountService');
+          const result = await accountService.default.getAccounts(token, 'REVENUE');
+          console.log('SalesForm: Revenue accounts loaded:', result?.length || 0);
+          return result;
+        })(),
+        
+        // Load cash & bank accounts for payment method selection
+        (async () => {
+          console.log('SalesForm: Loading cash & bank accounts...');
+          const cashBankService = await import('@/services/cashbankService');
+          const result = await cashBankService.default.getCashBankAccounts();
+          console.log('SalesForm: Cash & bank accounts loaded:', result?.length || 0);
+          return result;
+        })(),
+        
+        // Load invoice types
+        (async () => {
+          console.log('SalesForm: Loading invoice types...');
+          const invoiceTypeService = await import('@/services/invoiceTypeService');
+          const result = await invoiceTypeService.default.getInvoiceTypes();
+          console.log('SalesForm: Invoice types loaded:', result?.length || 0);
+          return result;
+        })()
+      ]);
+
+      // Process customers
+      if (customersResult.status === 'fulfilled' && Array.isArray(customersResult.value)) {
+        setCustomers(customersResult.value);
+      } else {
+        console.warn('Failed to load customers:', customersResult.status === 'rejected' ? customersResult.reason : 'No data');
+        setCustomers([]);
+      }
+
+      // Process products
+      if (productsResult.status === 'fulfilled' && productsResult.value?.data && Array.isArray(productsResult.value.data)) {
+        setProducts(productsResult.value.data);
+      } else {
+        console.warn('Failed to load products:', productsResult.status === 'rejected' ? productsResult.reason : 'No data');
+        setProducts([]);
+      }
+
+      // Process sales persons
+      if (salesPersonsResult.status === 'fulfilled' && Array.isArray(salesPersonsResult.value)) {
+        const salesPersonsData = salesPersonsResult.value.map(contact => ({
+          ...contact,
+          name: contact.name || contact.company_name || 'Unknown Employee'
+        }));
+        setSalesPersons(salesPersonsData);
+      } else {
+        console.warn('Failed to load sales persons:', salesPersonsResult.status === 'rejected' ? salesPersonsResult.reason : 'No data');
+        setSalesPersons([]);
+      }
+
+      // Process accounts
+      if (accountsResult.status === 'fulfilled' && Array.isArray(accountsResult.value)) {
+        console.log('SalesForm: Revenue accounts loaded successfully:', accountsResult.value);
+        setAccounts(accountsResult.value);
+      } else {
+        console.warn('Failed to load accounts:', accountsResult.status === 'rejected' ? accountsResult.reason : 'No data');
+        console.log('SalesForm: AccountsResult details:', accountsResult);
+        setAccounts([]);
+      }
+
+      // Process cash & bank accounts
+      if (cashBankResult.status === 'fulfilled' && Array.isArray(cashBankResult.value)) {
+        setCashBankAccounts(cashBankResult.value);
+      } else {
+        console.warn('Failed to load cash & bank accounts:', cashBankResult.status === 'rejected' ? cashBankResult.reason : 'No data');
+        setCashBankAccounts([]);
+      }
+
+      // Process invoice types
+      if (invoiceTypesResult.status === 'fulfilled' && Array.isArray(invoiceTypesResult.value)) {
+        setInvoiceTypes(invoiceTypesResult.value);
+      } else {
+        console.warn('Failed to load invoice types:', invoiceTypesResult.status === 'rejected' ? invoiceTypesResult.reason : 'No data');
+        setInvoiceTypes([]);
+      }
+
+    } catch (error: any) {
+      console.error('Error loading form data:', error);
+      toast({
+        title: 'Loading Error',
+        description: 'Failed to load form data. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      });
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const populateFormWithSale = (saleData: Sale) => {
+    reset({
+      customer_id: saleData.customer_id,
+      sales_person_id: saleData.sales_person_id,
+      invoice_type_id: saleData.invoice_type_id,
+      type: saleData.type,
+      date: saleData.date.split('T')[0],
+      due_date: saleData.due_date ? saleData.due_date.split('T')[0] : undefined,
+      valid_until: saleData.valid_until ? saleData.valid_until.split('T')[0] : undefined,
+      currency: saleData.currency,
+      exchange_rate: saleData.exchange_rate,
+      discount_percent: saleData.discount_percent,
+      // Legacy tax fields
+      ppn_percent: saleData.ppn_percent,
+      pph_percent: saleData.pph_percent,
+      pph_type: saleData.pph_type,
+      // Enhanced tax configuration
+      ppn_rate: saleData.ppn_rate || saleData.ppn_percent || 11,
+      other_tax_additions: saleData.other_tax_additions || 0,
+      pph21_rate: saleData.pph21_rate || 0,
+      pph23_rate: saleData.pph23_rate || 0,
+      other_tax_deductions: saleData.other_tax_deductions || 0,
+      payment_terms: saleData.payment_terms,
+      payment_method: saleData.payment_method,
+      payment_method_type: saleData.payment_method_type || 'CREDIT',
+      cash_bank_id: saleData.cash_bank_id,
+      shipping_method: saleData.shipping_method,
+      shipping_cost: saleData.shipping_cost,
+      billing_address: saleData.billing_address,
+      shipping_address: saleData.shipping_address,
+      notes: saleData.notes,
+      internal_notes: saleData.internal_notes,
+      reference: saleData.reference,
+      items: saleData.sale_items?.map(item => ({
+        id: item.id,
+        product_id: item.product_id,
+        description: item.description || '',
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount_percent: item.discount_percent,
+        taxable: item.taxable,
+        revenue_account_id: item.revenue_account_id
+      })) || []
+    });
+  };
+
+
+  const resetForm = () => {
+    reset({
+      type: 'INVOICE',
+      date: new Date().toISOString().split('T')[0],
+      currency: 'IDR',
+      exchange_rate: 1,
+      discount_percent: 0,
+      // Legacy tax fields
+      ppn_percent: 11,
+      pph_percent: 0,
+      // Enhanced tax configuration
+      ppn_rate: 11,
+      other_tax_additions: 0,
+      pph21_rate: 0,
+      pph23_rate: 0,
+      other_tax_deductions: 0,
+      payment_terms: 'NET_30',
+      payment_method_type: 'CREDIT' as 'CASH' | 'BANK' | 'CREDIT',
+      shipping_cost: 0,
+      items: [
+        {
+          product_id: 0,
+          description: '',
+          quantity: 1,
+          unit_price: 0,
+          discount_percent: 0,
+          taxable: true
+        }
+      ]
+    });
+  };
+
+  const handleProductChange = (index: number, productId: number) => {
+    const product = products.find(p => p.id === parseInt(productId.toString()));
+    if (product) {
+      setValue(`items.${index}.product_id`, product.id);
+      setValue(`items.${index}.description`, product.name);
+      setValue(`items.${index}.unit_price`, product.price);
+    } else {
+      // When manual entry is selected (productId = 0), clear the fields
+      setValue(`items.${index}.product_id`, 0);
+      setValue(`items.${index}.description`, '');
+      setValue(`items.${index}.unit_price`, 0);
+    }
+  };
+
+  // Helper function to check if item is manual entry
+  const isManualEntry = (index: number) => {
+    return !watchItems[index]?.product_id || watchItems[index]?.product_id === 0;
+  };
+
+  const calculateLineTotal = (item: any) => {
+    const subtotal = item.quantity * item.unit_price;
+    const discountAmount = subtotal * (item.discount_percent / 100);
+    return subtotal - discountAmount;
+  };
+
+  const calculateSubtotal = () => {
+    return watchItems.reduce((sum, item) => sum + calculateLineTotal(item), 0);
+  };
+
+  // Calculate subtotal for taxable items only
+  const calculateTaxableSubtotal = () => {
+    return watchItems.reduce((sum, item) => {
+      if (item.taxable !== false) { // Default to true if undefined
+        return sum + calculateLineTotal(item);
+      }
+      return sum;
+    }, 0);
+  };
+
+  // Calculate subtotal for non-taxable items
+  const calculateNonTaxableSubtotal = () => {
+    return watchItems.reduce((sum, item) => {
+      if (item.taxable === false) {
+        return sum + calculateLineTotal(item);
+      }
+      return sum;
+    }, 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    
+    // Calculate global discount based on type (percentage or amount)
+    const globalDiscount = discountType === 'percentage' 
+      ? subtotal * (watchDiscountPercent / 100)
+      : Math.min(watchDiscountPercent || 0, subtotal); // Can't discount more than subtotal
+    
+    const afterDiscount = subtotal - globalDiscount;
+    
+    // Tax calculations using enhanced fields (same as Tax Summary)
+    const ppnRate = watchPPNRate || watchPPNPercent || 11;
+    const ppnAmount = afterDiscount * (ppnRate / 100);
+    const otherAdditions = watchOtherTaxAdditions || 0;
+    const totalAdditions = ppnAmount + otherAdditions;
+    
+    const pph21Amount = afterDiscount * (watchPPh21Rate / 100);
+    const pph23Amount = afterDiscount * (watchPPh23Rate / 100);
+    const otherDeductions = watchOtherTaxDeductions || 0;
+    const totalDeductions = pph21Amount + pph23Amount + otherDeductions;
+    
+    const finalTotal = afterDiscount + totalAdditions - totalDeductions + watchShippingCost;
+    
+    return finalTotal;
+  };
+
+  // Helper function to get global discount amount for display
+  const getGlobalDiscountAmount = () => {
+    const subtotal = calculateSubtotal();
+    return discountType === 'percentage' 
+      ? subtotal * (watchDiscountPercent / 100)
+      : Math.min(watchDiscountPercent || 0, subtotal);
+  };
+
+  // Helper function to calculate due date from payment terms
+  const calculateDueDateFromPaymentTerms = (date: string, terms: string): string | null => {
+    if (!date || terms === 'COD' || terms === 'CUSTOM') return null;
+    
+    const baseDate = new Date(date);
+    let days = 0;
+    
+    switch (terms) {
+      case 'NET_15': days = 15; break;
+      case 'NET_30': days = 30; break;
+      case 'NET_60': days = 60; break;
+      case 'NET_90': days = 90; break;
+      default: return null;
+    }
+    
+    const dueDate = new Date(baseDate);
+    dueDate.setDate(dueDate.getDate() + days);
+    return dueDate.toISOString().split('T')[0];
+  };
+
+  // Helper function to get payment terms explanation
+  const getPaymentTermsExplanation = (terms: string): string => {
+    switch (terms) {
+      case 'COD':
+        return 'Customer pays immediately upon delivery';
+      case 'NET_15':
+        return 'Customer has 15 days from invoice date to pay';
+      case 'NET_30':
+        return 'Customer has 30 days from invoice date to pay';
+      case 'NET_60':
+        return 'Customer has 60 days from invoice date to pay';
+      case 'NET_90':
+        return 'Customer has 90 days from invoice date to pay';
+      default:
+        return '';
+    }
+  };
+
+  // Helper function to get field labels based on transaction type
+  const getDateFieldLabel = (type: string): string => {
+    switch (type) {
+      case 'QUOTE':
+      case 'QUOTATION':
+        return 'Quote Date';
+      case 'INVOICE':
+        return 'Invoice Date';
+      case 'SALES_ORDER':
+        return 'Order Date';
+      default:
+        return 'Transaction Date';
+    }
+  };
+
+  // Check if due date is auto-calculated
+  const isDueDateAutoCalculated = watchPaymentTerms && watchPaymentTerms !== 'CUSTOM' && watchPaymentTerms !== 'COD';
+
+  const addItem = () => {
+    append({
+      product_id: 0,
+      description: '',
+      quantity: 1,
+      unit_price: 0,
+      discount_percent: 0,
+      taxable: true
+    });
+  };
+
+  const removeItem = (index: number) => {
+    if (fields.length > 1) {
+      remove(index);
+    }
+  };
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      setLoading(true);
+
+      // Validate items - allow items without product_id if products are not available
+      const validItems = data.items.filter(item => {
+        // If products are available, require product_id
+        if (products.length > 0) {
+          return item.product_id > 0;
+        }
+        // If no products available, just check for description and price
+        return item.description && item.description.trim() !== '' && item.unit_price > 0;
+      });
+      
+      if (validItems.length === 0) {
+        const errorMsg = products.length > 0 
+          ? 'At least one item with a selected product is required'
+          : 'At least one item with description and price is required';
+        ErrorHandler.handleValidationError([errorMsg], toast, 'sales form');
+        return;
+      }
+
+      // Additional validation
+      const validationErrors = salesService.validateSaleData({
+        ...data,
+        items: validItems.map(item => ({
+          product_id: item.product_id,
+          description: item.description || '',
+          quantity: Math.max(1, Math.floor(item.quantity || 1)), // Ensure positive integer
+          unit_price: Math.min(999999999999.99, Math.max(0, item.unit_price || 0)), // Cap to prevent overflow
+          discount: Math.min(999999.99, Math.max(0, item.discount_percent || 0)), // Legacy field as flat amount
+          discount_percent: Math.min(100, Math.max(0, item.discount_percent || 0)), // New field as percentage
+          tax: 0, // Tax will be calculated by backend based on taxable flag
+          taxable: item.taxable !== false, // Default to true if not specified
+          revenue_account_id: item.revenue_account_id || 0
+        }))
+      });
+
+      if (validationErrors.length > 0) {
+        ErrorHandler.handleValidationError(validationErrors, toast, 'sales form');
+        return;
+      }
+
+      if (sale) {
+      // Update existing sale
+      const updateData: SaleUpdateRequest = {
+        customer_id: data.customer_id,
+        sales_person_id: data.sales_person_id,
+        date: data.date ? `${data.date}T00:00:00Z` : undefined, // Convert to ISO datetime format
+        due_date: data.due_date ? `${data.due_date}T00:00:00Z` : undefined,
+        valid_until: data.valid_until ? `${data.valid_until}T00:00:00Z` : undefined,
+          discount_percent: data.discount_percent,
+          // Legacy tax fields
+          ppn_percent: data.ppn_percent,
+          pph_percent: data.pph_percent,
+          pph_type: data.pph_type,
+          // Enhanced tax configuration
+          ppn_rate: data.ppn_rate,
+          other_tax_additions: data.other_tax_additions,
+          pph21_rate: data.pph21_rate,
+          pph23_rate: data.pph23_rate,
+          other_tax_deductions: data.other_tax_deductions,
+          payment_terms: data.payment_terms,
+          payment_method: data.payment_method,
+          payment_method_type: data.payment_method_type,
+          cash_bank_id: data.cash_bank_id,
+          shipping_method: data.shipping_method,
+          shipping_cost: data.shipping_cost,
+          billing_address: data.billing_address,
+          shipping_address: data.shipping_address,
+          notes: data.notes,
+          internal_notes: data.internal_notes,
+          reference: data.reference,
+          items: validItems.map(item => ({
+            id: item.id,
+            product_id: item.product_id,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            discount: item.discount_percent || item.discount || 0, // Map to backend field
+            tax: 0, // Tax will be calculated by backend based on taxable flag
+            revenue_account_id: item.revenue_account_id,
+            delete: item.delete || false
+          }))
+        };
+
+        await salesService.updateSale(sale.id, updateData);
+        ErrorHandler.handleSuccess('Sale has been updated successfully', toast, 'update sale');
+      } else {
+        // Create new sale
+        const createData: SaleCreateRequest = {
+          customer_id: data.customer_id,
+          sales_person_id: data.sales_person_id,
+          invoice_type_id: data.invoice_type_id,
+          type: data.type,
+          date: `${data.date}T00:00:00Z`, // Convert to ISO datetime format for Go backend
+          due_date: data.due_date ? `${data.due_date}T00:00:00Z` : undefined,
+          valid_until: data.valid_until ? `${data.valid_until}T00:00:00Z` : undefined,
+          currency: data.currency,
+          exchange_rate: data.exchange_rate,
+          discount_percent: data.discount_percent,
+          // Legacy tax fields  
+          ppn_percent: data.ppn_percent,
+          pph_percent: data.pph_percent,
+          pph_type: data.pph_type,
+          // Enhanced tax configuration
+          ppn_rate: data.ppn_rate,
+          other_tax_additions: data.other_tax_additions,
+          pph21_rate: data.pph21_rate,
+          pph23_rate: data.pph23_rate,
+          other_tax_deductions: data.other_tax_deductions,
+          payment_terms: data.payment_terms,
+          payment_method: data.payment_method,
+          payment_method_type: data.payment_method_type,
+          cash_bank_id: data.cash_bank_id,
+          shipping_method: data.shipping_method,
+          shipping_cost: data.shipping_cost,
+          billing_address: data.billing_address,
+          shipping_address: data.shipping_address,
+          notes: data.notes,
+          internal_notes: data.internal_notes,
+          reference: data.reference,
+          items: validItems.map(item => ({
+            product_id: item.product_id,
+            description: item.description || '',
+            quantity: Math.max(1, Math.floor(item.quantity || 1)), // Ensure positive integer
+            unit_price: Math.min(999999999999.99, Math.max(0, item.unit_price || 0)), // Cap to prevent overflow
+            discount: Math.min(999999.99, Math.max(0, item.discount_percent || 0)), // Legacy field as flat amount
+            discount_percent: Math.min(100, Math.max(0, item.discount_percent || 0)), // New field as percentage
+            tax: 0, // Tax will be calculated by backend based on taxable flag
+            taxable: item.taxable !== false, // Default to true if not specified
+            revenue_account_id: item.revenue_account_id || 0
+          }))
+        };
+
+        await salesService.createSale(createData);
+        ErrorHandler.handleSuccess('Sale has been created successfully', toast, 'create sale');
+      }
+
+      // Clear any validation errors on success
+      setValidationError(null);
+      
+      onSave();
+      onClose();
+    } catch (error: any) {
+      console.error('SalesForm submission error:', error);
+      
+      // Check if it's a period validation error
+      if (handlePeriodError(error, () => handleSubmit(onSubmit)())) {
+        // Period error was handled, show reopen dialog if needed
+        setLoading(false);
+        return;
+      }
+      
+      // Log detailed error information for debugging
+      if (error.response) {
+        console.error('Error response:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+        console.error('Raw error response data:', error.response.data);
+        console.error('Error response status text:', error.response.statusText);
+      } else {
+        console.error('No response data available:', error.message);
+      }
+      
+      // Clear any previous validation errors
+      setValidationError(null);
+      
+      // Handle different error formats
+      let errorObj = error;
+      if (typeof error === 'string') {
+        errorObj = { message: error };
+      } else if (!error) {
+        errorObj = { message: 'An unknown error occurred' };
+      }
+      
+      // Parse the error for display
+      let parsedError;
+      try {
+        parsedError = ErrorHandler.parseValidationError(errorObj);
+      } catch (parseError) {
+        console.error('Error parsing validation error:', parseError);
+        // Fallback error structure
+        parsedError = {
+          type: 'unknown',
+          title: 'Error',
+          message: errorObj?.response?.data?.error || errorObj?.message || 'An unexpected error occurred',
+          errors: [],
+          canRetry: true,
+          suggestions: ['Please check your input and try again']
+        };
+      }
+      
+      console.log('Parsed error:', parsedError);
+      
+      // If it's a validation error, show the ErrorAlert instead of toast
+      if (parsedError.type === 'validation' || parsedError.type === 'business' || error?.response?.status === 400) {
+        setValidationError(parsedError);
+        
+        // Scroll to the top so user can see the error
+        if (modalBodyRef.current) {
+          modalBodyRef.current.scrollTop = 0;
+        }
+      } else {
+        // For other errors, continue using toast notifications
+        ErrorHandler.handleSaveError('sale', errorObj, toast, !!sale);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    // Clear validation errors when closing
+    setValidationError(null);
+    reset();
+    onClose();
+  };
+
+  return (
+    <>
+    <Modal
+      isOpen={isOpen} 
+      onClose={handleClose} 
+      size="6xl" 
+      isCentered
+      closeOnOverlayClick={false}
+      scrollBehavior="inside"
+      motionPreset="slideInBottom"
+      blockScrollOnMount={false}
+    >
+      <ModalOverlay 
+        bg="blackAlpha.700" 
+        backdropFilter="blur(4px)"
+        onWheel={(e) => e.stopPropagation()}
+      />
+      <ModalContent 
+        maxH="95vh" 
+        minH="80vh"
+        mx={4} 
+        my={2} 
+        borderRadius="xl"
+        bg={modalBg}
+        shadow="2xl"
+        overflow="hidden"
+        display="flex"
+        flexDirection="column"
+        w="full"
+        maxW="6xl"
+      >
+        <ModalHeader 
+          bg={headerBg} 
+          borderBottomWidth={1} 
+          borderColor={borderColor}
+          pb={4}
+          pt={6}
+        >
+          <HStack justify="space-between" align="center">
+            <Box>
+              <Heading size="lg" color={headingColor}>
+                {sale ? 'Edit Sale Transaction' : 'Create New Sale'}
+              </Heading>
+              <Text color={textColor} fontSize="sm" mt={1}>
+                {sale ? 'Modify existing sale details and items' : 'Create a new sales transaction with items and pricing'}
+              </Text>
+            </Box>
+            <Badge colorScheme="blue" variant="solid" px={3} py={1} borderRadius="md">
+              <Icon as={FiShoppingCart} mr={1} />
+              Sale Form
+            </Badge>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton />
+
+        <form onSubmit={handleSubmit(onSubmit)} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Hidden type field with default value */}
+          <input type="hidden" {...register('type')} value="INVOICE" />
+          
+          <ModalBody 
+            ref={modalBodyRef}
+            flex="1" 
+            overflowY="auto" 
+            px={6} 
+            py={4}
+            pb={8}
+            maxH="calc(95vh - 200px)"
+            minH="400px"
+            sx={{
+              // Enable mouse wheel scrolling
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'smooth',
+              
+              // Force scrollbar to be visible
+              overflowY: 'scroll !important',
+              
+              // Custom scrollbar styles
+              '&::-webkit-scrollbar': {
+                width: '8px',
+                display: 'block',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: scrollTrackBg,
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: scrollThumbBg,
+                borderRadius: '4px',
+                '&:hover': {
+                  background: scrollThumbHoverBg,
+                },
+              },
+            }}
+            onWheel={(e) => {
+              // Allow natural scroll behavior
+              const target = e.currentTarget;
+              const isScrollable = target.scrollHeight > target.clientHeight;
+              if (isScrollable) {
+                // Let the natural scroll happen
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <VStack spacing={6} align="stretch">
+              {/* Error Alert */}
+              {validationError && (
+                <ErrorAlert
+                  title={validationError.title}
+                  message={validationError.message}
+                  errors={validationError.errors}
+                  type={validationError.type === 'validation' ? 'error' : 'warning'}
+                  onClose={() => setValidationError(null)}
+                  dismissible={true}
+                  className="mb-4"
+                />
+              )}
+              
+              {/* Basic Information */}
+              <Box>
+                <Heading size="md" mb={4} color={subHeadingColor}>
+                  📋 Basic Information
+                </Heading>
+                <VStack spacing={4}>
+                  <HStack w="full" spacing={4}>
+                      <FormControl isRequired isInvalid={!!errors.customer_id}>
+                        <FormLabel>Customer</FormLabel>
+                        <Select
+                          {...register('customer_id', {
+                            required: 'Customer is required',
+                            setValueAs: value => parseInt(value) || 0
+                          })}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                          isDisabled={loadingData}
+                        >
+                          <option value="">
+                            {loadingData ? 'Loading customers...' : 
+                             customers.length === 0 ? 'No customers available' : 'Select customer'}
+                          </option>
+                          {customers.map(customer => (
+                            <option key={customer.id} value={customer.id}>
+                              {customer.code} - {customer.name}
+                            </option>
+                          ))}
+                        </Select>
+                        <FormErrorMessage>{errors.customer_id?.message}</FormErrorMessage>
+                        <FormHelperText color={textColor}>
+                          Choose the customer for this transaction
+                        </FormHelperText>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Sales Person</FormLabel>
+                        <Select
+                          {...register('sales_person_id', {
+                            setValueAs: value => value ? parseInt(value) : undefined
+                          })}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                          isDisabled={loadingData}
+                        >
+                          <option value="">
+                            {loadingData ? 'Loading sales persons...' : 
+                             salesPersons.length === 0 ? 'No sales persons available' : 'Select sales person'}
+                          </option>
+                          {salesPersons.map(person => (
+                            <option key={person.id} value={person.id}>
+                              {person.name}
+                            </option>
+                          ))}
+                        </Select>
+                        <FormHelperText color={textColor}>
+                          Assign a sales representative (optional)
+                        </FormHelperText>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Invoice Type</FormLabel>
+                        <Select
+                          {...register('invoice_type_id', {
+                            setValueAs: value => value ? parseInt(value) : undefined
+                          })}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                          isDisabled={loadingData}
+                        >
+                          <option value="">
+                            {loadingData ? 'Loading invoice types...' : 
+                             invoiceTypes.length === 0 ? 'No invoice types available' : 'Select invoice type'}
+                          </option>
+                          {invoiceTypes.map(invoiceType => (
+                            <option key={invoiceType.id} value={invoiceType.id}>
+                              {invoiceType.name} ({invoiceType.code})
+                            </option>
+                          ))}
+                        </Select>
+                        <FormHelperText color={textColor}>
+                          Choose invoice type for custom numbering format (optional)
+                        </FormHelperText>
+                      </FormControl>
+                  </HStack>
+                  
+                  <HStack w="full" spacing={4}>
+                      <FormControl isRequired isInvalid={!!errors.date}>
+                        <FormLabel>{getDateFieldLabel(watchType)}</FormLabel>
+                        <Input
+                          type="date"
+                          {...register('date', {
+                            required: 'Date is required'
+                          })}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                        />
+                        <FormErrorMessage>{errors.date?.message}</FormErrorMessage>
+                        <FormHelperText color={textColor}>
+                          When this transaction occurred
+                        </FormHelperText>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>
+                          Due Date
+                          {isDueDateAutoCalculated && (
+                            <Badge ml={2} colorScheme="green" size="sm">Auto</Badge>
+                          )}
+                        </FormLabel>
+                        <Input
+                          type="date"
+                          {...register('due_date')}
+                          bg={isDueDateAutoCalculated ? 'gray.100' : inputBg}
+                          _focus={{ bg: isDueDateAutoCalculated ? 'gray.100' : inputFocusBg }}
+                          isReadOnly={isDueDateAutoCalculated}
+                        />
+                        <FormHelperText color={isDueDateAutoCalculated ? 'green.600' : textColor}>
+                          {isDueDateAutoCalculated 
+                            ? 'Auto-calculated from Payment Terms' 
+                            : 'When payment is due (leave empty for auto-calculation)'}
+                        </FormHelperText>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Valid Until</FormLabel>
+                        <Input
+                          type="date"
+                          {...register('valid_until')}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                        />
+                        <FormHelperText color={textColor}>
+                          For quotes: when this offer expires
+                        </FormHelperText>
+                      </FormControl>
+                  </HStack>
+                </VStack>
+              </Box>
+
+              <Divider />
+
+              {/* Items Section */}
+              <Box>
+                <Flex justify="space-between" align="center" mb={4}>
+                  <Heading size="md" color={subHeadingColor}>
+                    🛍️ Sale Items
+                  </Heading>
+                  <Button
+                    size="sm"
+                    colorScheme="blue"
+                    leftIcon={<FiPlus />}
+                    onClick={addItem}
+                  >
+                    Add Item
+                  </Button>
+                </Flex>
+
+                {/* Products warning if empty */}
+                {!loadingData && products.length === 0 && (
+                  <Alert status="warning" mb={4} borderRadius="md" bg={alertBg} borderColor={alertBorderColor}>
+                    <AlertIcon />
+                    <AlertDescription fontSize="sm">
+                      Products are not available. You can still create sales by manually entering product information in the description field.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Box 
+                  overflowX="auto" 
+                  border="1px" 
+                  borderColor={borderColor} 
+                  borderRadius="md"
+                  bg={tableBg}
+                  shadow="sm"
+                  css={{
+                    '&::-webkit-scrollbar': {
+                      height: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: scrollTrackBg,
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: scrollThumbBg,
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      background: scrollThumbHoverBg,
+                    },
+                  }}
+                >
+                  <Table variant="simple" size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Product</Th>
+                        <Th>Description</Th>
+                        <Th>Qty</Th>
+                        <Th>Unit Price</Th>
+                        <Th>Discount %</Th>
+                        <Th>Taxable</Th>
+                        <Th>Revenue Account</Th>
+                        <Th>Line Total</Th>
+                        <Th width="60px">Action</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {fields.map((field, index) => (
+                        <Tr key={field.id}>
+                          <Td>
+                            <VStack spacing={1}>
+                              <Select
+                                size="sm"
+                                {...register(`items.${index}.product_id`, {
+                                  setValueAs: value => parseInt(value) || 0
+                                })}
+                                onChange={(e) => handleProductChange(index, parseInt(e.target.value))}
+                                bg={inputBg}
+                                _focus={{ bg: inputFocusBg }}
+                                placeholder="Select product"
+                              >
+                                <option value="">Manual entry</option>
+                                {products.map(product => (
+                                  <option key={product.id} value={product.id}>
+                                    {product.code} - {product.name}
+                                  </option>
+                                ))}
+                              </Select>
+                              {isManualEntry(index) && (
+                                <Badge colorScheme="orange" size="xs">
+                                  Manual
+                                </Badge>
+                              )}
+                            </VStack>
+                          </Td>
+                          <Td>
+                            <Input
+                              size="sm"
+                              {...register(`items.${index}.description`, {
+                                required: 'Description is required'
+                              })}
+                              placeholder={isManualEntry(index) 
+                                ? "Enter item description manually" 
+                                : "Item description"}
+                              bg={isManualEntry(index) ? 'orange.50' : inputBg}
+                              _focus={{ bg: isManualEntry(index) ? 'orange.100' : inputFocusBg }}
+                              borderColor={isManualEntry(index) ? 'orange.200' : 'gray.200'}
+                            />
+                          </Td>
+                          <Td>
+                            <NumberInput size="sm" min={1}>
+                              <NumberInputField
+                                {...register(`items.${index}.quantity`, {
+                                  required: 'Quantity is required',
+                                  min: 1,
+                                  setValueAs: value => parseInt(value) || 1
+                                })}
+                              />
+                              <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                              </NumberInputStepper>
+                            </NumberInput>
+                          </Td>
+                          <Td>
+                            <CurrencyInput
+                              value={watchItems[index]?.unit_price || 0}
+                              onChange={(value) => setValue(`items.${index}.unit_price`, value)}
+                              placeholder="Rp 10.000"
+                              size="sm"
+                              min={0}
+                              showLabel={false}
+                            />
+                          </Td>
+                          <Td>
+                            <NumberInput size="sm" min={0} max={100}>
+                              <NumberInputField
+                                {...register(`items.${index}.discount_percent`, {
+                                  setValueAs: value => parseFloat(value) || 0
+                                })}
+                              />
+                            </NumberInput>
+                          </Td>
+                          <Td>
+                            <VStack spacing={1} align="center">
+                              <Switch
+                                size="sm"
+                                {...register(`items.${index}.taxable`)}
+                                colorScheme="green"
+                              />
+                              <Text fontSize="xs" color={watchItems[index]?.taxable !== false ? 'green.600' : 'gray.500'}>
+                                {watchItems[index]?.taxable !== false ? 'Tax' : 'No Tax'}
+                              </Text>
+                            </VStack>
+                          </Td>
+                          <Td>
+                            <Select
+                              size="sm"
+                              {...register(`items.${index}.revenue_account_id`, {
+                                setValueAs: value => parseInt(value) || 0
+                              })}
+                              bg={inputBg}
+                              _focus={{ bg: inputFocusBg }}
+                              placeholder="Select account"
+                            >
+                              <option value="">Choose revenue account</option>
+                              {accounts.map(account => (
+                                <option key={account.id} value={account.id}>
+                                  {account.code} - {account.name}
+                                </option>
+                              ))}
+                            </Select>
+                          </Td>
+                          <Td>
+                            <Text fontSize="sm" fontWeight="medium" color="green.600">
+                              {salesService.formatCurrency(calculateLineTotal(watchItems[index] || {}))}
+                            </Text>
+                          </Td>
+                          <Td>
+                            <IconButton
+                              size="sm"
+                              colorScheme="red"
+                              variant="ghost"
+                              icon={<FiTrash2 />}
+                              onClick={() => removeItem(index)}
+                              isDisabled={fields.length === 1}
+                              aria-label="Remove item"
+                            />
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </Box>
+              </Box>
+
+              <Divider />
+
+              {/* Enhanced Tax Configuration (similar to Purchase Form) */}
+              <Card>
+                <CardHeader pb={3}>
+                  <Heading size="md" color={subHeadingColor}>
+                    💰 Tax Configuration
+                  </Heading>
+                </CardHeader>
+                <CardBody pt={0}>
+                  <VStack spacing={4} align="stretch">
+                    {/* Global Discount */}
+                    <FormControl>
+                      <FormLabel>
+                        Global Discount 
+                        <Badge ml={2} colorScheme="blue" size="sm" cursor="pointer" 
+                               onClick={() => setDiscountType(discountType === 'percentage' ? 'amount' : 'percentage')}>
+                          {discountType === 'percentage' ? '%' : 'Rp'}
+                        </Badge>
+                      </FormLabel>
+                      {discountType === 'percentage' ? (
+                        <NumberInput min={0} max={100} size="sm">
+                          <NumberInputField
+                            {...register('discount_percent', {
+                              setValueAs: value => parseFloat(value) || 0
+                            })}
+                            bg={inputBg}
+                            _focus={{ bg: inputFocusBg }}
+                            placeholder="0"
+                          />
+                        </NumberInput>
+                      ) : (
+                        <CurrencyInput
+                          value={watchDiscountPercent || 0}
+                          onChange={(value) => setValue('discount_percent', value)}
+                          placeholder="Rp 0"
+                          min={0}
+                          showLabel={false}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                          size="sm"
+                        />
+                      )}
+                      <FormHelperText fontSize="xs" color={textColor}>
+                        {discountType === 'percentage' 
+                          ? 'Percentage discount applied to entire order'
+                          : 'Fixed amount discount applied to entire order'
+                        } (Click badge to toggle)
+                      </FormHelperText>
+                    </FormControl>
+
+                    <Divider />
+
+                    {/* Tax Additions (Penambahan) */}
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" color="green.600" mb={3}>
+                        ➕ Tax Additions (Penambahan)
+                      </Text>
+                      <HStack w="full" spacing={4}>
+                        <FormControl>
+                          <FormLabel fontSize="sm">PPN Rate (%)</FormLabel>
+                          <NumberInput
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            size="sm"
+                          >
+                            <NumberInputField
+                              {...register('ppn_rate', {
+                                setValueAs: value => parseFloat(value) || 0
+                              })}
+                              placeholder="11"
+                            />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                          <FormHelperText fontSize="xs">Pajak Pertambahan Nilai (default 11%)</FormHelperText>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel fontSize="sm">Other Tax Additions (IDR)</FormLabel>
+                          <CurrencyInput
+                            value={watchOtherTaxAdditions || 0}
+                            onChange={(value) => setValue('other_tax_additions', value)}
+                            placeholder="Rp 0"
+                            min={0}
+                            showLabel={false}
+                            size="sm"
+                          />
+                          <FormHelperText fontSize="xs">Pajak tambahan lainnya (flat amount)</FormHelperText>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel fontSize="sm">Shipping Cost</FormLabel>
+                          <CurrencyInput
+                            value={watchShippingCost || 0}
+                            onChange={(value) => setValue('shipping_cost', value)}
+                            placeholder="Rp 0"
+                            min={0}
+                            showLabel={false}
+                            size="sm"
+                          />
+                          <FormHelperText fontSize="xs">Biaya pengiriman/delivery</FormHelperText>
+                        </FormControl>
+                      </HStack>
+                    </Box>
+
+                    <Divider />
+
+                    {/* Tax Deductions (Pemotongan) */}
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" color="red.600" mb={3}>
+                        ➖ Tax Deductions (Pemotongan)
+                      </Text>
+                      <HStack w="full" spacing={4}>
+                        <FormControl>
+                          <FormLabel fontSize="sm">PPh 21 Rate (%)</FormLabel>
+                          <NumberInput
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            size="sm"
+                          >
+                            <NumberInputField
+                              {...register('pph21_rate', {
+                                setValueAs: value => parseFloat(value) || 0
+                              })}
+                              placeholder="2"
+                            />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                          <FormHelperText fontSize="xs">PPh 21: 2% jasa konstruksi, 15% dividen/bunga</FormHelperText>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel fontSize="sm">PPh 23 Rate (%)</FormLabel>
+                          <NumberInput
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            size="sm"
+                          >
+                            <NumberInputField
+                              {...register('pph23_rate', {
+                                setValueAs: value => parseFloat(value) || 0
+                              })}
+                              placeholder="2"
+                            />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                          <FormHelperText fontSize="xs">PPh 23: 2% jasa umum, 15% dividen/bunga/royalti</FormHelperText>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel fontSize="sm">Other Tax Deductions (IDR)</FormLabel>
+                          <CurrencyInput
+                            value={watchOtherTaxDeductions || 0}
+                            onChange={(value) => setValue('other_tax_deductions', value)}
+                            placeholder="Rp 0"
+                            min={0}
+                            showLabel={false}
+                            size="sm"
+                          />
+                          <FormHelperText fontSize="xs">Potongan pajak lainnya (flat amount)</FormHelperText>
+                        </FormControl>
+                      </HStack>
+                    </Box>
+
+                    {/* Tax Summary Calculation */}
+                    {calculateSubtotal() > 0 && (
+                      <Box mt={4} p={4} bg={alertBg} borderRadius="md" border="1px solid" borderColor={alertBorderColor}>
+                        <VStack spacing={2} align="stretch">
+                          <Text fontSize="sm" fontWeight="semibold" color={subHeadingColor}>Tax Summary:</Text>
+                          {(() => {
+                            const subtotal = calculateSubtotal();
+                            const discountAmount = discountType === 'percentage' 
+                              ? subtotal * (watchDiscountPercent / 100)
+                              : Math.min(watchDiscountPercent || 0, subtotal);
+                            const afterDiscount = subtotal - discountAmount;
+                            
+                            // Tax calculations using enhanced fields
+                            const ppnRate = watchPPNRate || watchPPNPercent || 11;
+                            const ppnAmount = afterDiscount * (ppnRate / 100);
+                            const otherAdditions = watchOtherTaxAdditions || 0;
+                            const totalAdditions = ppnAmount + otherAdditions;
+                            
+                            const pph21Amount = afterDiscount * (watchPPh21Rate / 100);
+                            const pph23Amount = afterDiscount * (watchPPh23Rate / 100);
+                            const otherDeductions = watchOtherTaxDeductions || 0;
+                            const totalDeductions = pph21Amount + pph23Amount + otherDeductions;
+                            
+                            const finalTotal = afterDiscount + totalAdditions - totalDeductions + watchShippingCost;
+                            
+                            return (
+                              <VStack spacing={2} fontSize="xs">
+                                <HStack justify="space-between" w="full">
+                                  <Text color={textColor}>Subtotal:</Text>
+                                  <Text color={textColor}>{salesService.formatCurrency(subtotal)}</Text>
+                                </HStack>
+                                {discountAmount > 0 && (
+                                  <HStack justify="space-between" w="full">
+                                    <Text color={textColor}>Global Discount:</Text>
+                                    <Text color="red.500">-{salesService.formatCurrency(discountAmount)}</Text>
+                                  </HStack>
+                                )}
+                                <HStack justify="space-between" w="full">
+                                  <Text color={textColor}>After Discount:</Text>
+                                  <Text color={textColor}>{salesService.formatCurrency(afterDiscount)}</Text>
+                                </HStack>
+                                
+                                <Divider />
+                                
+                                <HStack justify="space-between" w="full">
+                                  <Text color="green.600">+ PPN ({ppnRate}%):</Text>
+                                  <Text color="green.600">{salesService.formatCurrency(ppnAmount)}</Text>
+                                </HStack>
+                                {otherAdditions > 0 && (
+                                  <HStack justify="space-between" w="full">
+                                    <Text color="green.600">+ Other Additions:</Text>
+                                    <Text color="green.600">{salesService.formatCurrency(otherAdditions)}</Text>
+                                  </HStack>
+                                )}
+                                {pph21Amount > 0 && (
+                                  <HStack justify="space-between" w="full">
+                                    <Text color="red.600">- PPh21 ({watchPPh21Rate}%):</Text>
+                                    <Text color="red.600">-{salesService.formatCurrency(pph21Amount)}</Text>
+                                  </HStack>
+                                )}
+                                {pph23Amount > 0 && (
+                                  <HStack justify="space-between" w="full">
+                                    <Text color="red.600">- PPh23 ({watchPPh23Rate}%):</Text>
+                                    <Text color="red.600">-{salesService.formatCurrency(pph23Amount)}</Text>
+                                  </HStack>
+                                )}
+                                {otherDeductions > 0 && (
+                                  <HStack justify="space-between" w="full">
+                                    <Text color="red.600">- Other Deductions:</Text>
+                                    <Text color="red.600">-{salesService.formatCurrency(otherDeductions)}</Text>
+                                  </HStack>
+                                )}
+                                {watchShippingCost > 0 && (
+                                  <HStack justify="space-between" w="full">
+                                    <Text color={textColor}>+ Shipping Cost:</Text>
+                                    <Text color={textColor}>{salesService.formatCurrency(watchShippingCost)}</Text>
+                                  </HStack>
+                                )}
+                                
+                                <Divider />
+                                
+                                <HStack justify="space-between" w="full">
+                                  <Text fontWeight="bold" color={subHeadingColor}>Final Total:</Text>
+                                  <Text fontWeight="bold" color="blue.600">{salesService.formatCurrency(finalTotal)}</Text>
+                                </HStack>
+                              </VStack>
+                            );
+                          })()
+                          }
+                        </VStack>
+                      </Box>
+                    )}
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              <Divider />
+
+              {/* Additional Information */}
+              <Box>
+                <Heading size="md" mb={4} color={subHeadingColor}>
+                  📝 Additional Information
+                </Heading>
+                <VStack spacing={4}>
+                  <HStack w="full" spacing={4}>
+                      <FormControl>
+                        <FormLabel>Payment Terms</FormLabel>
+                        <Select 
+                          {...register('payment_terms')}
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                        >
+                          <option value="COD">COD (Cash on Delivery)</option>
+                          <option value="NET_15">NET 15 (15 days)</option>
+                          <option value="NET_30">NET 30 (30 days)</option>
+                          <option value="NET_60">NET 60 (60 days)</option>
+                          <option value="NET_90">NET 90 (90 days)</option>
+                          <option value="CUSTOM">Custom Due Date</option>
+                        </Select>
+                        <FormHelperText color={textColor}>
+                          How long customer has to pay
+                        </FormHelperText>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Reference</FormLabel>
+                        <Input
+                          {...register('reference')}
+                          placeholder="External reference number"
+                          bg={inputBg}
+                          _focus={{ bg: inputFocusBg }}
+                        />
+                        <FormHelperText color={textColor}>
+                          External reference (PO number, etc.)
+                        </FormHelperText>
+                      </FormControl>
+                  </HStack>
+
+                  {/* Double Entry Accounting Section */}
+                  <Box p={4} bg={alertBg} borderRadius="md" border="1px solid" borderColor={alertBorderColor}>
+                    <Text fontSize="md" fontWeight="semibold" color={subHeadingColor} mb={3}>
+                      🏦 Double Entry & Payment Method
+                    </Text>
+                    <VStack spacing={4} align="stretch">
+                      <Alert status="info" size="sm" borderRadius="md">
+                        <AlertIcon />
+                        <AlertDescription fontSize="sm">
+                          <Text><strong>Double Entry Logic:</strong></Text>
+                          <Text mt={1}>• <strong>Cash/Bank:</strong> Debit Cash/Bank Account, Credit Revenue Account</Text>
+                          <Text>• <strong>Credit:</strong> Debit Accounts Receivable, Credit Revenue Account</Text>
+                        </AlertDescription>
+                      </Alert>
+                      
+                      <HStack w="full" spacing={4}>
+                        <FormControl isRequired>
+                          <FormLabel>Payment Method</FormLabel>
+                          <Select
+                            {...register('payment_method_type', {
+                              required: 'Payment method is required'
+                            })}
+                            bg={inputBg}
+                            _focus={{ bg: inputFocusBg }}
+                          >
+                            <option value="CASH">Cash Payment</option>
+                            <option value="BANK">Bank Transfer</option>
+                            <option value="CREDIT">Credit (Accounts Receivable)</option>
+                          </Select>
+                          <FormHelperText color={textColor}>
+                            Choose payment method for proper double-entry recording
+                          </FormHelperText>
+                        </FormControl>
+
+                        {(watchPaymentMethodType === 'CASH' || watchPaymentMethodType === 'BANK') && (
+                          <FormControl isRequired>
+                            <FormLabel>
+                              {watchPaymentMethodType === 'CASH' ? 'Cash Account' : 'Bank Account'}
+                            </FormLabel>
+                            <Select
+                              {...register('cash_bank_id', {
+                                required: `${watchPaymentMethodType === 'CASH' ? 'Cash' : 'Bank'} account is required`,
+                                setValueAs: value => parseInt(value) || undefined
+                              })}
+                              bg={inputBg}
+                              _focus={{ bg: inputFocusBg }}
+                              isDisabled={loadingData}
+                            >
+                              <option value="">
+                                {loadingData ? `Loading ${watchPaymentMethodType.toLowerCase()} accounts...` : 
+                                 cashBankAccounts.length === 0 ? `No ${watchPaymentMethodType.toLowerCase()} accounts available` : 
+                                 `Select ${watchPaymentMethodType.toLowerCase()} account`}
+                              </option>
+                              {cashBankAccounts
+                                .filter(account => 
+                                  watchPaymentMethodType === 'CASH' ? 
+                                    account.type === 'CASH' : 
+                                    account.type === 'BANK'
+                                )
+                                .map(account => (
+                                  <option key={account.id} value={account.id}>
+                                    {account.code} - {account.name}
+                                    {account.bank_name && ` (${account.bank_name})`}
+                                  </option>
+                              ))}
+                            </Select>
+                            <FormHelperText color={textColor}>
+                              Which {watchPaymentMethodType.toLowerCase()} account will receive the money
+                            </FormHelperText>
+                          </FormControl>
+                        )}
+
+                        {watchPaymentMethodType === 'CREDIT' && (
+                          <FormControl>
+                            <FormLabel>Bank Account for Invoice (optional)</FormLabel>
+                            <Select
+                              {...register('cash_bank_id', {
+                                setValueAs: value => parseInt(value) || undefined
+                              })}
+                              bg={inputBg}
+                              _focus={{ bg: inputFocusBg }}
+                              isDisabled={loadingData}
+                            >
+                              <option value="">
+                                {loadingData ? 'Loading bank accounts...' : 
+                                 cashBankAccounts.length === 0 ? 'No bank accounts available' : 'Select bank account'}
+                              </option>
+                              {cashBankAccounts
+                                .filter(account => account.type === 'BANK')
+                                .map(account => (
+                                  <option key={account.id} value={account.id}>
+                                    {account.code} - {account.name}
+                                    {account.bank_name && ` (${account.bank_name})`}
+                                  </option>
+                              ))}
+                            </Select>
+                            <FormHelperText color={textColor}>
+                              Bank tujuan transfer yang akan dicetak pada invoice. Jika kosong, sistem akan menampilkan bank aktif pertama.
+                            </FormHelperText>
+                          </FormControl>
+                        )}
+                      </HStack>
+                      
+                      {watchPaymentMethodType === 'CREDIT' && (
+                        <Alert status="warning" size="sm" borderRadius="md">
+                          <AlertIcon />
+                          <AlertDescription fontSize="sm">
+                            <Text><strong>Credit Sale:</strong> Creates accounts receivable that requires follow-up payment collection.</Text>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {(watchPaymentMethodType === 'CASH' || watchPaymentMethodType === 'BANK') && (
+                        <Alert status="success" size="sm" borderRadius="md">
+                          <AlertIcon />
+                          <AlertDescription fontSize="sm">
+                            <Text><strong>Immediate Payment:</strong> Money will be recorded as received in the selected {watchPaymentMethodType.toLowerCase()} account.</Text>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </VStack>
+                  </Box>
+
+                  {/* Payment Terms Explanation */}
+                  {watchPaymentTerms && watchPaymentTerms !== 'CUSTOM' && getPaymentTermsExplanation(watchPaymentTerms) && (
+                    <Alert status="info" borderRadius="md" bg={alertBg} borderColor={alertBorderColor}>
+                      <AlertIcon color="blue.500" />
+                      <AlertDescription fontSize="sm">
+                        <Text><strong>Payment Terms:</strong> {getPaymentTermsExplanation(watchPaymentTerms)}</Text>
+                        {watchDate && isDueDateAutoCalculated && (
+                          <Text mt={1} color="green.600">
+                            <strong>Due Date:</strong> {salesService.formatDate(calculateDueDateFromPaymentTerms(watchDate, watchPaymentTerms) || '')}
+                          </Text>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <FormControl>
+                    <FormLabel>Notes</FormLabel>
+                    <Textarea
+                      {...register('notes')}
+                      placeholder="Customer-visible notes"
+                      rows={3}
+                      bg={inputBg}
+                      _focus={{ bg: inputFocusBg }}
+                    />
+                    <FormHelperText color={textColor}>
+                      Notes visible to customer on invoice
+                    </FormHelperText>
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Internal Notes</FormLabel>
+                    <Textarea
+                      {...register('internal_notes')}
+                      placeholder="Internal notes (not visible to customer)"
+                      rows={3}
+                      bg={inputBg}
+                      _focus={{ bg: inputFocusBg }}
+                    />
+                    <FormHelperText color={textColor}>
+                      Internal notes (not visible to customer)
+                    </FormHelperText>
+                  </FormControl>
+                </VStack>
+              </Box>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter 
+            position="sticky"
+            bottom={0}
+            borderTopWidth={2} 
+            borderColor={borderColor} 
+            bg={footerBg}
+            boxShadow={`0 -4px 12px ${shadowColor}`}
+            px={6}
+            py={4}
+            mt={6}
+            flexShrink={0}
+            zIndex={10}
+          >
+            <HStack justify="space-between" spacing={4} w="full">
+              {/* Left side - Form info */}
+              <HStack spacing={2}>
+                <Text fontSize="sm" color={textColor}>
+                  {loadingData ? 'Loading...' : `${fields.length} item${fields.length !== 1 ? 's' : ''}`}
+                </Text>
+                {calculateSubtotal() > 0 && (
+                  <Text fontSize="sm" color="blue.600" fontWeight="medium">
+                    Total: {salesService.formatCurrency(calculateTotal())}
+                  </Text>
+                )}
+              </HStack>
+              
+              {/* Right side - Action buttons */}
+              <HStack spacing={3}>
+                <Button
+                  leftIcon={<FiX />}
+                  onClick={handleClose}
+                  variant="outline"
+                  size="lg"
+                  isDisabled={loading}
+                  colorScheme="gray"
+                  minW="120px"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  leftIcon={loading ? undefined : <FiSave />}
+                  type="submit"
+                  colorScheme="blue"
+                  size="lg"
+                  isLoading={loading}
+                  loadingText={sale ? "Updating..." : "Creating..."}
+                  minW="150px"
+                  shadow="md"
+                  _hover={{
+                    shadow: "lg",
+                    transform: "translateY(-1px)",
+                  }}
+                  _active={{
+                    transform: "translateY(0)",
+                  }}
+                >
+                  {sale ? 'Update Sale' : 'Create Sale'}
+                </Button>
+              </HStack>
+            </HStack>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+    
+    {/* Period Reopen Dialog */}
+    {periodToReopen && (
+      <ReopenPeriodDialog
+        isOpen={reopenDialogOpen}
+        onClose={closeReopenDialog}
+        startDate={periodToReopen.period.split(' to ')[0] || ''}
+        endDate={periodToReopen.period.split(' to ')[1] || ''}
+        onSuccess={() => {
+          // After successful reopen, retry the form submission
+          handleSubmit(onSubmit)();
+        }}
+      />
+    )}
+    </>
+  );
+};
+
+export default SalesForm;

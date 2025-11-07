@@ -1,0 +1,85 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuthService } from '@/hooks/useAuthService';
+import { UserRole } from '@/contexts/AuthContext';
+import { normalizeRoles } from '@/utils/roles';
+import SimpleNavbar from './SimpleNavbar';
+import Sidebar from './SidebarNew';
+import ProtectedRoute from '../auth/ProtectedRoute';
+import { Box, useDisclosure, useBreakpointValue, useColorModeValue } from '@chakra-ui/react';
+
+interface SimpleLayoutProps {
+  children: React.ReactNode;
+  allowedRoles?: (UserRole | string)[];
+  showSidebar?: boolean;
+  requireAuth?: boolean;
+}
+
+const SimpleLayout: React.FC<SimpleLayoutProps> = ({ 
+  children, 
+  allowedRoles = [], 
+  showSidebar = true,
+  requireAuth = true 
+}) => {
+  useAuthService(); // Setup unauthorized handler
+  const { user } = useAuth();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const normalizedAllowed = normalizeRoles(allowedRoles as string[]);
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  
+  // Dynamic background colors based on theme
+  const bgColor = useColorModeValue('var(--bg-secondary)', 'var(--bg-primary)');
+
+  // If authentication is not required, render content directly
+  if (!requireAuth) {
+    return (
+      <Box minH="100vh" bg={bgColor} transition="background-color 0.3s ease">
+        {children}
+      </Box>
+    );
+  }
+
+  return (
+    <ProtectedRoute allowedRoles={normalizedAllowed as any}>
+      <Box minH="100vh" bg={bgColor} transition="background-color 0.3s ease">
+        {/* Sidebar for desktop */}
+        {showSidebar && !isMobile && user && (
+          <Sidebar 
+            onClose={onClose} 
+            display={{ base: 'none', md: 'block' }}
+            width={60}
+          />
+        )}
+
+        {/* Mobile drawer sidebar */}
+        {showSidebar && user && (
+          <Sidebar
+            isOpen={isOpen}
+            onClose={onClose}
+            variant="drawer"
+          />
+        )}
+
+        {/* Main content */}
+        <Box ml={{ base: 0, md: showSidebar ? 60 : 0 }}>
+          {/* Top navigation bar - always show if user is authenticated */}
+          {user && (
+            <SimpleNavbar 
+              onMenuClick={showSidebar ? onOpen : undefined} 
+              isMenuOpen={isOpen} 
+            />
+          )}
+          
+          {/* Page content */}
+          <Box p={user ? 6 : 0}>
+            {children}
+          </Box>
+        </Box>
+      </Box>
+    </ProtectedRoute>
+  );
+};
+
+export default SimpleLayout;

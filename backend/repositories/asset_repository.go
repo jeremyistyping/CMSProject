@@ -1,0 +1,156 @@
+package repositories
+
+import (
+	"app-sistem-akuntansi/models"
+	"errors"
+	"gorm.io/gorm"
+)
+
+type AssetRepositoryInterface interface {
+	FindAll() ([]models.Asset, error)
+	FindByID(id uint) (*models.Asset, error)
+	FindByCode(code string) (*models.Asset, error)
+	Create(asset *models.Asset) error
+	Update(asset *models.Asset) error
+	Delete(id uint) error
+	GetActiveAssets() ([]models.Asset, error)
+	GetAssetsByCategory(category string) ([]models.Asset, error)
+	GetAssetsForDepreciation() ([]models.Asset, error)
+	Count() (int64, error)
+	GetTotalValue() (float64, error)
+}
+
+type AssetRepository struct {
+	db *gorm.DB
+}
+
+func NewAssetRepository(db *gorm.DB) AssetRepositoryInterface {
+	return &AssetRepository{db: db}
+}
+
+// FindAll retrieves all assets with preloaded relations
+func (r *AssetRepository) FindAll() ([]models.Asset, error) {
+	var assets []models.Asset
+	err := r.db.Preload("AssetAccount").Preload("DepreciationAccount").Find(&assets).Error
+	return assets, err
+}
+
+// FindByID retrieves asset by ID with relations
+func (r *AssetRepository) FindByID(id uint) (*models.Asset, error) {
+	var asset models.Asset
+	err := r.db.Preload("AssetAccount").Preload("DepreciationAccount").First(&asset, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("asset not found")
+		}
+		return nil, err
+	}
+	return &asset, nil
+}
+
+// FindByCode retrieves asset by code
+func (r *AssetRepository) FindByCode(code string) (*models.Asset, error) {
+	var asset models.Asset
+	err := r.db.Where("code = ?", code).First(&asset).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("asset not found")
+		}
+		return nil, err
+	}
+	return &asset, nil
+}
+
+// Create creates a new asset
+func (r *AssetRepository) Create(asset *models.Asset) error {
+	// Let the database handle unique constraint checking to prevent race conditions
+	// The service layer handles retries if there's a unique constraint violation
+	return r.db.Create(asset).Error
+}
+
+// Update updates an existing asset
+func (r *AssetRepository) Update(asset *models.Asset) error {
+	// Check if asset exists
+	var existingAsset models.Asset
+	err := r.db.First(&existingAsset, asset.ID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("asset not found")
+		}
+		return err
+	}
+
+	// Check if code is being changed and if new code already exists
+	if existingAsset.Code != asset.Code {
+		var codeCheck models.Asset
+		err := r.db.Where("code = ? AND id != ?", asset.Code, asset.ID).First(&codeCheck).Error
+		if err == nil {
+			return errors.New("asset code already exists")
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+	}
+
+	return r.db.Save(asset).Error
+}
+
+// Delete soft deletes an asset
+func (r *AssetRepository) Delete(id uint) error {
+	// Check if asset exists
+	var asset models.Asset
+	err := r.db.First(&asset, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("asset not found")
+		}
+		return err
+	}
+
+	return r.db.Delete(&asset).Error
+}
+
+// GetActiveAssets retrieves all active assets
+func (r *AssetRepository) GetActiveAssets() ([]models.Asset, error) {
+	var assets []models.Asset
+	err := r.db.Where("is_active = ? AND status = ?", true, models.AssetStatusActive).
+		Preload("AssetAccount").Preload("DepreciationAccount").
+		Find(&assets).Error
+	return assets, err
+}
+
+// GetAssetsByCategory retrieves assets by category
+func (r *AssetRepository) GetAssetsByCategory(category string) ([]models.Asset, error) {
+	var assets []models.Asset
+	err := r.db.Where("category = ? AND is_active = ?", category, true).
+		Preload("AssetAccount").Preload("DepreciationAccount").
+		Find(&assets).Error
+	return assets, err
+}
+
+// GetAssetsForDepreciation retrieves assets that need depreciation calculation
+func (r *AssetRepository) GetAssetsForDepreciation() ([]models.Asset, error) {
+	var assets []models.Asset
+	err := r.db.Where("is_active = ? AND status = ? AND useful_life > 0", 
+		true, models.AssetStatusActive).
+		Preload("AssetAccount").Preload("DepreciationAccount").
+		Find(&assets).Error
+	return assets, err
+}
+
+// Count returns total number of assets
+func (r *AssetRepository) Count() (int64, error) {
+	var count int64
+	err := r.db.Model(&models.Asset{}).Count(&count).Error
+	return count, err
+}
+
+// GetTotalValue calculates total value of all active assets
+func (r *AssetRepository) GetTotalValue() (float64, error) {
+	var totalValue float64
+	err := r.db.Model(&models.Asset{}).
+		Where("is_active = ? AND status = ?", true, models.AssetStatusActive).
+		Select("COALESCE(SUM(purchase_price - accumulated_depreciation), 0)").
+		Scan(&totalValue).Error
+	return totalValue, err
+}
