@@ -34,6 +34,8 @@ import {
   FiHome,
   FiLayers,
   FiUser,
+  FiPackage,
+  FiTarget,
 } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { normalizeRole } from '@/utils/roles';
@@ -132,15 +134,57 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
         boxShadow={sidebarShadow}
         {...rest}>
         <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-          <Text 
-            fontSize="xl" 
-            fontFamily="Inter" 
-            fontWeight="bold" 
-            color='var(--accent-color)'
-            letterSpacing="tight"
-          >
-            Accounting App
-          </Text>
+          <Flex alignItems="center" gap={3}>
+            {/* Logo Icon */}
+            <Flex
+              w="40px"
+              h="40px"
+              bg="linear-gradient(135deg, var(--accent-color) 0%, #667eea 100%)"
+              borderRadius="lg"
+              alignItems="center"
+              justifyContent="center"
+              boxShadow="0 4px 12px rgba(0, 0, 0, 0.15)"
+              position="relative"
+              _before={{
+                content: '""',
+                position: 'absolute',
+                inset: '-2px',
+                bg: 'linear-gradient(135deg, var(--accent-color), #667eea)',
+                borderRadius: 'lg',
+                opacity: 0.3,
+                filter: 'blur(8px)',
+                zIndex: -1
+              }}
+            >
+              <Icon as={FiTarget} color="white" fontSize="20px" fontWeight="bold" />
+            </Flex>
+            
+            {/* Logo Text */}
+            <Flex direction="column" gap={0}>
+              <Text 
+                fontSize="lg" 
+                fontFamily="'Poppins', 'Inter', sans-serif" 
+                fontWeight="700" 
+                color={useColorModeValue('gray.800', 'white')}
+                letterSpacing="tight"
+                lineHeight="1.2"
+              >
+                Unipro
+              </Text>
+              <Text 
+                fontSize="xs" 
+                fontFamily="'Poppins', 'Inter', sans-serif" 
+                fontWeight="500" 
+                color={useColorModeValue('gray.500', 'var(--text-secondary)')}
+                letterSpacing="wide"
+                lineHeight="1"
+                textTransform="uppercase"
+              >
+                Project Manager
+              </Text>
+            </Flex>
+          </Flex>
+          
           <CloseButton 
             display={{ base: 'flex', md: 'none' }} 
             onClick={onClose} 

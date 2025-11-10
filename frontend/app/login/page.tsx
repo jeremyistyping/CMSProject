@@ -48,28 +48,25 @@ const LoginContent = () => {
   const router = useRouter();
   const toast = useToast();
   
-  // Color mode values for theming
-  const bgGradient = useColorModeValue(
-    'linear(to-br, blue.50, purple.50, pink.50)',
-    'linear(to-br, gray.900, blue.900, purple.900)'
-  );
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const headingColor = useColorModeValue('gray.800', 'white');
-  const textColor = useColorModeValue('gray.600', 'gray.300');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const inputBg = useColorModeValue('white', 'gray.700');
-  const featureCardBg = useColorModeValue('white', 'gray.700');
-  const iconColor = useColorModeValue('blue.500', 'blue.300');
-  const accentColor = useColorModeValue('blue.500', 'blue.400');
-  const inputHoverBorderColor = useColorModeValue('blue.300', 'blue.500');
-  const inputPlaceholderColor = useColorModeValue('gray.400', 'gray.500');
-  const buttonHoverBg = useColorModeValue('blue.600', 'blue.300');
-  const decorativeElementBg1 = useColorModeValue('blue.100', 'blue.800');
-  const decorativeElementBg2 = useColorModeValue('purple.100', 'purple.800');
-  const passwordToggleHoverBg = useColorModeValue('gray.100', 'gray.600');
+  // Black themed design - Fixed colors (no light mode)
+  const bgGradient = 'linear(to-br, gray.900, black, gray.900)';
+  const cardBg = 'gray.900';
+  const headingColor = 'white';
+  const textColor = 'gray.300';
+  const borderColor = 'gray.700';
+  const inputBg = 'gray.800';
+  const featureCardBg = 'gray.800';
+  const iconColor = 'cyan.400';
+  const accentColor = 'cyan.500';
+  const inputHoverBorderColor = 'cyan.500';
+  const inputPlaceholderColor = 'gray.500';
+  const buttonHoverBg = 'cyan.600';
+  const decorativeElementBg1 = 'rgba(6, 182, 212, 0.1)'; // cyan with opacity
+  const decorativeElementBg2 = 'rgba(139, 92, 246, 0.1)'; // purple with opacity
+  const passwordToggleHoverBg = 'gray.700';
   // Error alert colors
-  const errorAlertBg = useColorModeValue('red.50', 'red.900');
-  const errorAlertBorderColor = useColorModeValue('red.200', 'red.700');
+  const errorAlertBg = 'red.900';
+  const errorAlertBorderColor = 'red.700';
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -178,10 +175,10 @@ const LoginContent = () => {
                       fontWeight="bold"
                       letterSpacing="tight"
                     >
-                      Sistem Akuntansi
+                      Unipro Project Manager
                     </Heading>
                     <Text color={textColor} fontSize="sm" fontWeight="medium">
-                      Comprehensive Accounting Solution
+                      Cost Control Management System
                     </Text>
                   </VStack>
                 </HStack>
@@ -192,9 +189,9 @@ const LoginContent = () => {
                   mb={8}
                   lineHeight="tall"
                 >
-                  Manage your business finances with confidence. 
-                  Our advanced accounting system provides comprehensive 
-                  financial management tools for modern businesses.
+                  Streamline your project cost management with precision. 
+                  Our comprehensive cost control system provides powerful 
+                  tools for tracking, analyzing, and optimizing project expenses.
                 </Text>
               </Box>
               
@@ -218,17 +215,17 @@ const LoginContent = () => {
                         <Center 
                           w={10} 
                           h={10} 
-                          bg={useColorModeValue('blue.50', 'blue.900')} 
+                          bg="gray.700"
                           borderRadius="lg"
                         >
                           <FiShield color={iconColor} size={20} />
                         </Center>
                         <VStack align="start" spacing={0}>
                           <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Secure Access
+                            Budget Control
                           </Text>
                           <Text color={textColor} fontSize="xs">
-                            Role-based permissions
+                            Real-time budget tracking
                           </Text>
                         </VStack>
                       </HStack>
@@ -248,17 +245,17 @@ const LoginContent = () => {
                         <Center 
                           w={10} 
                           h={10} 
-                          bg={useColorModeValue('green.50', 'green.900')} 
+                          bg="gray.700"
                           borderRadius="lg"
                         >
                           <FiTrendingUp color={iconColor} size={20} />
                         </Center>
                         <VStack align="start" spacing={0}>
                           <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Real-time Analytics
+                            Cost Analytics
                           </Text>
                           <Text color={textColor} fontSize="xs">
-                            Track performance
+                            Track project expenses
                           </Text>
                         </VStack>
                       </HStack>
@@ -278,17 +275,17 @@ const LoginContent = () => {
                         <Center 
                           w={10} 
                           h={10} 
-                          bg={useColorModeValue('purple.50', 'purple.900')} 
+                          bg="gray.700"
                           borderRadius="lg"
                         >
                           <FiUsers color={iconColor} size={20} />
                         </Center>
                         <VStack align="start" spacing={0}>
                           <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Multi-user Support
+                            Project Management
                           </Text>
                           <Text color={textColor} fontSize="xs">
-                            Collaborative workflow
+                            Multi-project tracking
                           </Text>
                         </VStack>
                       </HStack>
@@ -308,17 +305,17 @@ const LoginContent = () => {
                         <Center 
                           w={10} 
                           h={10} 
-                          bg={useColorModeValue('orange.50', 'orange.900')} 
+                          bg="gray.700"
                           borderRadius="lg"
                         >
                           <FiLock color={iconColor} size={20} />
                         </Center>
                         <VStack align="start" spacing={0}>
                           <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Approval Workflow
+                            Cost Approval
                           </Text>
                           <Text color={textColor} fontSize="xs">
-                            Automated approval
+                            Automated cost control
                           </Text>
                         </VStack>
                       </HStack>
@@ -330,24 +327,16 @@ const LoginContent = () => {
                 <Box pt={6}>
                   <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} wrap="wrap">
                     <Badge 
-                      colorScheme="green" 
+                      colorScheme="cyan" 
                       px={3} 
                       py={1} 
                       borderRadius="full"
                       fontSize="xs"
                       fontWeight="semibold"
+                      bg="cyan.900"
+                      color="cyan.200"
                     >
                       ✓ Secure
-                    </Badge>
-                    <Badge 
-                      colorScheme="blue" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                    >
-                      ✓ Fast
                     </Badge>
                     <Badge 
                       colorScheme="purple" 
@@ -356,6 +345,20 @@ const LoginContent = () => {
                       borderRadius="full"
                       fontSize="xs"
                       fontWeight="semibold"
+                      bg="purple.900"
+                      color="purple.200"
+                    >
+                      ✓ Fast
+                    </Badge>
+                    <Badge 
+                      colorScheme="teal" 
+                      px={3} 
+                      py={1} 
+                      borderRadius="full"
+                      fontSize="xs"
+                      fontWeight="semibold"
+                      bg="teal.900"
+                      color="teal.200"
                     >
                       ✓ Reliable
                     </Badge>
@@ -427,7 +430,7 @@ const LoginContent = () => {
                         fontSize="md"
                         fontWeight="medium"
                       >
-                        Sign in to access your accounting dashboard
+                        Sign in to access your cost control dashboard
                       </Text>
                     </VStack>
                   </VStack>
@@ -470,6 +473,7 @@ const LoginContent = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={isSubmitting}
                             bg={inputBg}
+                            color="white"
                             borderWidth="2px"
                             borderColor={borderColor}
                             borderRadius="xl"
@@ -481,7 +485,8 @@ const LoginContent = () => {
                             _focus={{
                               borderColor: accentColor,
                               boxShadow: `0 0 0 1px ${accentColor}`,
-                              bg: inputBg
+                              bg: inputBg,
+                              color: 'white'
                             }}
                             _placeholder={{
                               color: inputPlaceholderColor
@@ -517,6 +522,7 @@ const LoginContent = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={isSubmitting}
                             bg={inputBg}
+                            color="white"
                             borderWidth="2px"
                             borderColor={borderColor}
                             borderRadius="xl"
@@ -528,7 +534,8 @@ const LoginContent = () => {
                             _focus={{
                               borderColor: accentColor,
                               boxShadow: `0 0 0 1px ${accentColor}`,
-                              bg: inputBg
+                              bg: inputBg,
+                              color: 'white'
                             }}
                             _placeholder={{
                               color: inputPlaceholderColor
