@@ -106,6 +106,29 @@ const theme = extendTheme({
         lineHeight: 'base',
       },
     },
+    Alert: {
+      baseStyle: {
+        container: {
+          bg: 'white',
+          color: 'gray.800',
+          borderRadius: 'md',
+        },
+      },
+      variants: {
+        solid: {
+          container: {
+            bg: 'white !important',
+            color: 'gray.800 !important',
+          },
+        },
+        'left-accent': {
+          container: {
+            bg: 'white !important',
+            color: 'gray.800 !important',
+          },
+        },
+      },
+    },
   },
 });
 

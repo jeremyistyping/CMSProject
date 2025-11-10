@@ -50,7 +50,17 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
   }
 
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider 
+      theme={theme}
+      toastOptions={{
+        defaultOptions: {
+          position: 'top-right',
+          duration: 3000,
+          isClosable: true,
+          variant: 'solid',
+        },
+      }}
+    >
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>

@@ -25,6 +25,7 @@ import {
   VStack,
   HStack,
   Divider,
+  useColorMode,
   useColorModeValue,
   Card,
   CardBody,
@@ -47,6 +48,7 @@ const LoginContent = () => {
   const { login, isAuthenticated } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const { colorMode } = useColorMode();
   
   // Black themed design - Fixed colors (no light mode)
   const bgGradient = 'linear(to-br, gray.900, black, gray.900)';
@@ -93,11 +95,26 @@ const LoginContent = () => {
       }
       
       toast({
-        title: 'Login Successful',
-        description: "Welcome back!",
-        status: 'success',
+        render: () => (
+          <Box
+            color={colorMode === 'dark' ? 'gray.800' : 'white'}
+            p={4}
+            bg={colorMode === 'dark' ? 'white' : 'green.500'}
+            borderRadius='md'
+            boxShadow='lg'
+          >
+            <HStack spacing={3}>
+              <Box as='span' fontSize='xl' color={colorMode === 'dark' ? 'green.500' : 'white'}>✓</Box>
+              <VStack align='start' spacing={0}>
+                <Text fontWeight='bold' fontSize='sm'>Login Successful</Text>
+                <Text fontSize='sm'>Welcome back!</Text>
+              </VStack>
+            </HStack>
+          </Box>
+        ),
         duration: 3000,
         isClosable: true,
+        position: 'bottom',
       });
       
       router.push('/dashboard');
@@ -107,11 +124,28 @@ const LoginContent = () => {
       setError(errorMessage);
       
       toast({
-        title: 'Login Failed',
-        description: errorMessage,
-        status: 'error',
+        render: () => (
+          <Box
+            color={colorMode === 'dark' ? 'gray.800' : 'white'}
+            p={4}
+            bg={colorMode === 'dark' ? 'white' : 'red.500'}
+            borderRadius='md'
+            boxShadow='lg'
+            borderLeft={colorMode === 'dark' ? '4px solid' : 'none'}
+            borderLeftColor={colorMode === 'dark' ? 'red.500' : 'transparent'}
+          >
+            <HStack spacing={3}>
+              <Box as='span' fontSize='xl' color={colorMode === 'dark' ? 'red.500' : 'white'}>✕</Box>
+              <VStack align='start' spacing={0}>
+                <Text fontWeight='bold' fontSize='sm'>Login Failed</Text>
+                <Text fontSize='sm'>{errorMessage}</Text>
+              </VStack>
+            </HStack>
+          </Box>
+        ),
         duration: 5000,
         isClosable: true,
+        position: 'bottom',
       });
     } finally {
       setIsSubmitting(false);
