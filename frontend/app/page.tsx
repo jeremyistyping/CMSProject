@@ -1,20 +1,29 @@
 'use client';
 
 import React from 'react';
-import { redirect } from 'next/navigation';
 
 // Simple redirect page - let Next.js handle the redirect
 export default function Home() {
-  // Check if we're on client side and redirect accordingly
+  const [mounted, setMounted] = React.useState(false);
+
+  // Wait for client-side mount to avoid hydration mismatch
   React.useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    setMounted(true);
+  }, []);
+
+  // After mount, check token and redirect
+  React.useEffect(() => {
+    if (!mounted) return;
+
+    const token = localStorage.getItem('token');
     if (token) {
       window.location.replace('/dashboard');
     } else {
       window.location.replace('/login');
     }
-  }, []);
+  }, [mounted]);
 
+  // Always render the same content on server and initial client render
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">

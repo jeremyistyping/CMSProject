@@ -36,6 +36,7 @@ import {
   FiUser,
   FiPackage,
   FiTarget,
+  FiFolder,
 } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { normalizeRole } from '@/utils/roles';
@@ -49,6 +50,12 @@ const getMenuGroups = (t) => [
     title: t('navigation.dashboard'),
     items: [
       { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'EMPLOYEE'] },
+    ]
+  },
+  {
+    title: 'Project Management',
+    items: [
+      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR', 'EMPLOYEE'] },
     ]
   },
   {

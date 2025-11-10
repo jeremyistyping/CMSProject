@@ -19,34 +19,9 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
   }, []);
 
   if (!mounted) {
-    // Use neutral styles during SSR to avoid hydration mismatches
-    // We'll use a light theme by default on server to match most common case
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f7f7f7',
-        color: '#1a1d23',
-        transition: 'background-color 0.3s ease, color 0.3s ease'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '2rem'
-        }}>
-          <div style={{
-            fontSize: '1.25rem',
-            fontWeight: '600',
-            marginBottom: '0.5rem'
-          }}>Accounting System</div>
-          <div style={{
-            fontSize: '0.875rem',
-            opacity: 0.7
-          }}>Loading...</div>
-        </div>
-      </div>
-    );
+    // Return null during SSR to avoid hydration mismatches
+    // The actual content will render after hydration
+    return null;
   }
 
   return (

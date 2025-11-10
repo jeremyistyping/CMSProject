@@ -625,7 +625,7 @@ const SettingsPage: React.FC = () => {
                       onChange={(e) => handleFormChange('company_name', e.target.value)}
                       placeholder="Enter company name"
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     />
                   </FormControl>
@@ -641,7 +641,7 @@ const SettingsPage: React.FC = () => {
                       placeholder="Enter company address"
                       rows={3}
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     />
                   </FormControl>
@@ -657,7 +657,7 @@ const SettingsPage: React.FC = () => {
                       placeholder="Enter phone number"
                       type="tel"
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     />
                   </FormControl>
@@ -673,7 +673,7 @@ const SettingsPage: React.FC = () => {
                       placeholder="Enter email address"
                       type="email"
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     />
                   </FormControl>
@@ -688,7 +688,7 @@ const SettingsPage: React.FC = () => {
                       onChange={(e) => handleFormChange('tax_number', e.target.value)}
                       placeholder="Enter tax number (optional)"
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     />
                   </FormControl>
@@ -714,7 +714,7 @@ const SettingsPage: React.FC = () => {
                       value={formData?.date_format || settings?.date_format || 'YYYY-MM-DD'}
                       onChange={(e) => handleFormChange('date_format', e.target.value)}
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     >
                       <option value="YYYY-MM-DD">YYYY-MM-DD</option>
@@ -743,7 +743,7 @@ const SettingsPage: React.FC = () => {
                           handleFormChange('fiscal_year_start', isoToMonthDayString(iso));
                         }}
                         variant="filled"
-                        _hover={{ bg: 'gray.100' }}
+                        _hover={{ borderColor: 'blue.300' }}
                         _focus={{ bg: 'white', borderColor: 'blue.500' }}
                       />
                     </InputGroup>
@@ -789,7 +789,7 @@ const SettingsPage: React.FC = () => {
                     >
                       <NumberInputField 
                         variant="filled"
-                        _hover={{ bg: 'gray.100' }}
+                        _hover={{ borderColor: 'blue.300' }}
                         _focus={{ bg: 'white', borderColor: 'blue.500' }}
                       />
                       <NumberInputStepper>
@@ -813,7 +813,7 @@ const SettingsPage: React.FC = () => {
                         handleFormChange('language', e.target.value);
                       }}
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     >
                       <option value="id">{t('settings.indonesian')}</option>
@@ -949,7 +949,7 @@ const SettingsPage: React.FC = () => {
                       value={periodEndDate}
                       onChange={(e) => setPeriodEndDate(e.target.value)}
                       variant="filled"
-                      _hover={{ bg: 'gray.100' }}
+                      _hover={{ borderColor: 'blue.300' }}
                       _focus={{ bg: 'white', borderColor: 'blue.500' }}
                     />
                     <FormHelperText fontSize="xs">

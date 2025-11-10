@@ -43,6 +43,16 @@ export default function RootLayout({
               } catch (e) {
                 console.warn('Theme initialization error:', e);
               }
+              
+              // Mark as hydrated to prevent FOUC
+              window.addEventListener('DOMContentLoaded', function() {
+                document.documentElement.classList.add('hydrated');
+              });
+              
+              // Fallback if DOMContentLoaded already fired
+              if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                document.documentElement.classList.add('hydrated');
+              }
             `,
           }}
         />

@@ -13,6 +13,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Prevent Flash of Unstyled Content (FOUC) during hydration */
+html:not(.hydrated) {
+  visibility: hidden;
+}
+
+html.hydrated {
+  visibility: visible;
+}
+
 body {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;

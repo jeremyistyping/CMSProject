@@ -1163,6 +1163,9 @@ unifiedSalesPaymentService := services.NewUnifiedSalesPaymentService(db)
 				balanceHealth.GET("/detailed-report", balanceHealthController.DetailedReport)
 				balanceHealth.POST("/scheduled-maintenance", balanceHealthController.ScheduledMaintenance)
 			}
+			
+			// 🏗️  Project Management routes
+			SetupProjectRoutes(protected, db)
 		}
 	}
 

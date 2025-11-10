@@ -665,6 +665,9 @@ func AutoMigrate(db *gorm.DB) {
 		&models.AssetCategory{},
 		&models.Asset{},
 		
+		// Projects
+		&models.Project{},
+		
 		// Cash & Bank
 		&models.CashBank{},
 		&models.CashBankTransaction{},
