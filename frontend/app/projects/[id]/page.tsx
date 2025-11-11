@@ -41,6 +41,8 @@ import {
 import Layout from '@/components/layout/UnifiedLayout';
 import projectService from '@/services/projectService';
 import { Project } from '@/types/project';
+import UpdateProgressModal from '@/components/projects/UpdateProgressModal';
+import DailyUpdatesTab from '@/components/projects/DailyUpdatesTab';
 
 // Mock data untuk demo
 const MOCK_PROJECT: Project = {
@@ -72,12 +74,13 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
   const textColor = useColorModeValue('gray.800', 'var(--text-primary)');
   const subtextColor = useColorModeValue('gray.500', 'var(--text-secondary)');
-  const tabBgColor = useColorModeValue('blue.500', 'blue.400');
+  const tabBgColor = useColorModeValue('green.500', 'green.400');
 
   useEffect(() => {
     if (projectId) {
@@ -133,6 +136,19 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleUpdateProgress = () => {
+    setIsProgressModalOpen(true);
+  };
+
+  const handleProgressModalClose = () => {
+    setIsProgressModalOpen(false);
+  };
+
+  const handleProgressUpdateSuccess = () => {
+    // Refresh project data after progress update
+    fetchProject();
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -153,7 +169,7 @@ export default function ProjectDetailPage() {
     return (
       <Layout>
         <Center h="50vh">
-          <Spinner size="xl" color="blue.500" />
+          <Spinner size="xl" color="green.500" />
         </Center>
       </Layout>
     );
@@ -190,7 +206,7 @@ export default function ProjectDetailPage() {
               <HStack justify="space-between">
                 <VStack align="start" spacing={2}>
                   <HStack spacing={3}>
-                    <Icon as={FiBarChart} boxSize={8} color="blue.500" />
+                    <Icon as={FiBarChart} boxSize={8} color="green.500" />
                     <Heading size="xl" color={textColor}>
                       {project.project_name}
                     </Heading>
@@ -218,7 +234,7 @@ export default function ProjectDetailPage() {
                   >
                     Archive Project
                   </Button>
-                  <Button leftIcon={<FiEdit />} colorScheme="blue" onClick={handleEdit}>
+                  <Button leftIcon={<FiEdit />} colorScheme="green" onClick={handleEdit}>
                     Edit Project
                   </Button>
                 </HStack>
@@ -238,7 +254,7 @@ export default function ProjectDetailPage() {
                   </VStack>
                 </HStack>
                 <HStack spacing={2}>
-                  <Icon as={FiCalendar} color="blue.500" boxSize={5} />
+                  <Icon as={FiCalendar} color="green.500" boxSize={5} />
                   <VStack align="start" spacing={0}>
                     <Text fontSize="xs" color={subtextColor}>
                       Deadline
@@ -326,7 +342,7 @@ export default function ProjectDetailPage() {
                       <Heading size="md" color={textColor}>
                         Project Progress
                       </Heading>
-                      <Button size="sm" colorScheme="blue">
+                      <Button size="sm" colorScheme="green" onClick={handleUpdateProgress}>
                         Update Progress
                       </Button>
                     </HStack>
@@ -337,7 +353,7 @@ export default function ProjectDetailPage() {
                         <CardBody>
                           <VStack align="stretch" spacing={3}>
                             <HStack justify="space-between">
-                              <Icon as={FiBarChart} color="blue.500" boxSize={6} />
+                              <Icon as={FiBarChart} color="green.500" boxSize={6} />
                               <Text fontSize="2xl" fontWeight="bold" color={textColor}>
                                 {project.overall_progress}%
                               </Text>
@@ -464,17 +480,7 @@ export default function ProjectDetailPage() {
 
               {/* Daily Updates Tab */}
               <TabPanel p={6}>
-                <Center h="400px">
-                  <VStack spacing={4}>
-                    <Icon as={FiFileText} boxSize={16} color="gray.400" />
-                    <Text color={subtextColor} fontSize="lg">
-                      Daily Updates
-                    </Text>
-                    <Text color={subtextColor} fontSize="sm">
-                      Feature coming soon
-                    </Text>
-                  </VStack>
-                </Center>
+                <DailyUpdatesTab projectId={projectId} />
               </TabPanel>
 
               {/* Milestones Tab */}
@@ -539,6 +545,16 @@ export default function ProjectDetailPage() {
             </TabPanels>
           </Tabs>
         </Card>
+
+        {/* Update Progress Modal */}
+        {project && (
+          <UpdateProgressModal
+            isOpen={isProgressModalOpen}
+            onClose={handleProgressModalClose}
+            project={project}
+            onSuccess={handleProgressUpdateSuccess}
+          />
+        )}
       </Box>
     </Layout>
   );

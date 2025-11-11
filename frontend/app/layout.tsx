@@ -3,7 +3,7 @@ import "./globals.css";
 import ClientProviders from './ClientProviders';
 
 export const metadata: Metadata = {
-  title: "Unipro Project Manager - Cost Control Management System",
+  title: "Unipro - Cost Control Management System",
   description: "Professional project cost control and management system",
 };
 

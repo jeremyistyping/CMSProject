@@ -146,7 +146,7 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
             <Flex
               w="40px"
               h="40px"
-              bg="linear-gradient(135deg, var(--accent-color) 0%, #667eea 100%)"
+              bg="linear-gradient(135deg, var(--accent-color) 0%, #059669 100%)"
               borderRadius="lg"
               alignItems="center"
               justifyContent="center"
@@ -156,7 +156,7 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
                 content: '""',
                 position: 'absolute',
                 inset: '-2px',
-                bg: 'linear-gradient(135deg, var(--accent-color), #667eea)',
+                bg: 'linear-gradient(135deg, var(--accent-color), #059669)',
                 borderRadius: 'lg',
                 opacity: 0.3,
                 filter: 'blur(8px)',
@@ -177,17 +177,6 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
                 lineHeight="1.2"
               >
                 Unipro
-              </Text>
-              <Text 
-                fontSize="xs" 
-                fontFamily="'Poppins', 'Inter', sans-serif" 
-                fontWeight="500" 
-                color={useColorModeValue('gray.500', 'var(--text-secondary)')}
-                letterSpacing="wide"
-                lineHeight="1"
-                textTransform="uppercase"
-              >
-                Project Manager
               </Text>
             </Flex>
           </Flex>

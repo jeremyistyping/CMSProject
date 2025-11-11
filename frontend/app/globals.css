@@ -38,7 +38,7 @@ body {
   --text-primary: #212529;
   --text-secondary: #6c757d;
   --border-color: #dee2e6;
-  --accent-color: #007bff;
+  --accent-color: #10b981;
   --success-color: #28a745;
   --warning-color: #ffc107;
   --danger-color: #dc3545;
@@ -49,7 +49,7 @@ body {
   --chart-grid: #e0e0e0;
   --chart-text: #333333;
   --chart-bg: #ffffff;
-  --chart-primary: #2196F3;
+  --chart-primary: #10b981;
   --chart-secondary: #28a745;
   --chart-tertiary: #ffc107;
   --chart-quaternary: #dc3545;
@@ -63,7 +63,7 @@ body {
   --text-primary: #e9ecef;
   --text-secondary: #adb5bd;
   --border-color: #495057;
-  --accent-color: #4dabf7;
+  --accent-color: #34d399;
   --success-color: #51cf66;
   --warning-color: #ffd43b;
   --danger-color: #ff6b6b;
@@ -74,7 +74,7 @@ body {
   --chart-grid: #495057;
   --chart-text: #e9ecef;
   --chart-bg: #242930;
-  --chart-primary: #4dabf7;
+  --chart-primary: #34d399;
   --chart-secondary: #51cf66;
   --chart-tertiary: #ffd43b;
   --chart-quaternary: #ff6b6b;
@@ -375,7 +375,7 @@ body {
 .form-textarea:focus {
   outline: none;
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .form-input::placeholder,

@@ -36,6 +36,7 @@ export default function ProjectsPage() {
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
   const textColor = useColorModeValue('gray.800', 'var(--text-primary)');
   const subtextColor = useColorModeValue('gray.500', 'var(--text-secondary)');
+  const progressBgColor = useColorModeValue('gray.200', 'gray.700');
 
   useEffect(() => {
     fetchProjects();
@@ -92,7 +93,7 @@ export default function ProjectsPage() {
       case 'active':
         return 'green';
       case 'completed':
-        return 'blue';
+        return 'green';
       case 'on-hold':
         return 'yellow';
       case 'archived':
@@ -105,9 +106,6 @@ export default function ProjectsPage() {
   if (loading) {
     return (
       <Layout>
-        <Center h="50vh">
-          <Spinner size="xl" color="blue.500" />
-        </Center>
       </Layout>
     );
   }
@@ -125,7 +123,7 @@ export default function ProjectsPage() {
           </VStack>
           <Button
             leftIcon={<FiPlus />}
-            colorScheme="blue"
+            colorScheme="green"
             size="lg"
             onClick={handleCreateProject}
           >
@@ -141,7 +139,7 @@ export default function ProjectsPage() {
               <Text color={subtextColor} fontSize="lg">
                 No projects yet
               </Text>
-              <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleCreateProject}>
+              <Button leftIcon={<FiPlus />} colorScheme="green" onClick={handleCreateProject}>
                 Create Your First Project
               </Button>
             </VStack>
@@ -158,7 +156,7 @@ export default function ProjectsPage() {
                 _hover={{
                   transform: 'translateY(-4px)',
                   shadow: 'lg',
-                  borderColor: 'blue.400',
+                  borderColor: 'green.400',
                 }}
                 cursor="pointer"
                 onClick={() => handleViewProject(project.id)}
@@ -203,14 +201,14 @@ export default function ProjectsPage() {
                       <Box
                         w="full"
                         h="8px"
-                        bg={useColorModeValue('gray.200', 'gray.700')}
+                        bg={progressBgColor}
                         borderRadius="full"
                         overflow="hidden"
                       >
                         <Box
                           w={`${project.overall_progress}%`}
                           h="full"
-                          bg="blue.500"
+                          bg="green.500"
                           transition="width 0.3s"
                         />
                       </Box>
@@ -230,7 +228,7 @@ export default function ProjectsPage() {
                         </VStack>
                       </HStack>
                       <HStack flex={1} spacing={2}>
-                        <Icon as={FiCalendar} color="blue.500" />
+                        <Icon as={FiCalendar} color="green.500" />
                         <VStack align="start" spacing={0}>
                           <Text fontSize="xs" color={subtextColor}>
                             Deadline
@@ -246,7 +244,7 @@ export default function ProjectsPage() {
                     <Button
                       rightIcon={<FiArrowRight />}
                       variant="ghost"
-                      colorScheme="blue"
+                      colorScheme="green"
                       size="sm"
                       w="full"
                     >

@@ -58,12 +58,12 @@ const LoginContent = () => {
   const borderColor = 'gray.700';
   const inputBg = 'gray.800';
   const featureCardBg = 'gray.800';
-  const iconColor = 'cyan.400';
-  const accentColor = 'cyan.500';
-  const inputHoverBorderColor = 'cyan.500';
+  const iconColor = 'green.400';
+  const accentColor = 'green.500';
+  const inputHoverBorderColor = 'green.500';
   const inputPlaceholderColor = 'gray.500';
-  const buttonHoverBg = 'cyan.600';
-  const decorativeElementBg1 = 'rgba(6, 182, 212, 0.1)'; // cyan with opacity
+  const buttonHoverBg = 'green.600';
+  const decorativeElementBg1 = 'rgba(16, 185, 129, 0.1)'; // green with opacity
   const decorativeElementBg2 = 'rgba(139, 92, 246, 0.1)'; // purple with opacity
   const passwordToggleHoverBg = 'gray.700';
   // Error alert colors
@@ -209,7 +209,7 @@ const LoginContent = () => {
                       fontWeight="bold"
                       letterSpacing="tight"
                     >
-                      Unipro Project Manager
+                      Unipro
                     </Heading>
                     <Text color={textColor} fontSize="sm" fontWeight="medium">
                       Cost Control Management System
@@ -361,38 +361,38 @@ const LoginContent = () => {
                 <Box pt={6}>
                   <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} wrap="wrap">
                     <Badge 
-                      colorScheme="cyan" 
+                      colorScheme="green" 
                       px={3} 
                       py={1} 
                       borderRadius="full"
                       fontSize="xs"
                       fontWeight="semibold"
-                      bg="cyan.900"
-                      color="cyan.200"
+                      bg="green.900"
+                      color="green.200"
                     >
                       ✓ Secure
                     </Badge>
                     <Badge 
-                      colorScheme="purple" 
+                      colorScheme="green" 
                       px={3} 
                       py={1} 
                       borderRadius="full"
                       fontSize="xs"
                       fontWeight="semibold"
-                      bg="purple.900"
-                      color="purple.200"
+                      bg="green.900"
+                      color="green.200"
                     >
                       ✓ Fast
                     </Badge>
                     <Badge 
-                      colorScheme="teal" 
+                      colorScheme="green" 
                       px={3} 
                       py={1} 
                       borderRadius="full"
                       fontSize="xs"
                       fontWeight="semibold"
-                      bg="teal.900"
-                      color="teal.200"
+                      bg="green.900"
+                      color="green.200"
                     >
                       ✓ Reliable
                     </Badge>

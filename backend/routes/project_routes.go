@@ -16,6 +16,10 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	projectService := services.NewProjectService(projectRepo)
 	projectController := controllers.NewProjectController(projectService)
 	
+	// Initialize Daily Update service and controller
+	dailyUpdateService := services.NewDailyUpdateService(db)
+	dailyUpdateController := controllers.NewDailyUpdateController(dailyUpdateService)
+	
 	// Project routes
 	projects := router.Group("/projects")
 	{
@@ -35,6 +39,13 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		
 		// Delete routes
 		projects.DELETE("/:id", projectController.DeleteProject)     // DELETE /api/v1/projects/:id
+		
+		// Daily Updates routes (nested under projects)
+		projects.GET("/:projectId/daily-updates", dailyUpdateController.GetDailyUpdates)       // GET /api/v1/projects/:projectId/daily-updates
+		projects.GET("/:projectId/daily-updates/:id", dailyUpdateController.GetDailyUpdate)   // GET /api/v1/projects/:projectId/daily-updates/:id
+		projects.POST("/:projectId/daily-updates", dailyUpdateController.CreateDailyUpdate)   // POST /api/v1/projects/:projectId/daily-updates
+		projects.PUT("/:projectId/daily-updates/:id", dailyUpdateController.UpdateDailyUpdate) // PUT /api/v1/projects/:projectId/daily-updates/:id
+		projects.DELETE("/:projectId/daily-updates/:id", dailyUpdateController.DeleteDailyUpdate) // DELETE /api/v1/projects/:projectId/daily-updates/:id
 	}
 }
 
