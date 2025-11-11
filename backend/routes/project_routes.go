@@ -41,11 +41,11 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		projects.DELETE("/:id", projectController.DeleteProject)     // DELETE /api/v1/projects/:id
 		
 		// Daily Updates routes (nested under projects)
-		projects.GET("/:projectId/daily-updates", dailyUpdateController.GetDailyUpdates)       // GET /api/v1/projects/:projectId/daily-updates
-		projects.GET("/:projectId/daily-updates/:id", dailyUpdateController.GetDailyUpdate)   // GET /api/v1/projects/:projectId/daily-updates/:id
-		projects.POST("/:projectId/daily-updates", dailyUpdateController.CreateDailyUpdate)   // POST /api/v1/projects/:projectId/daily-updates
-		projects.PUT("/:projectId/daily-updates/:id", dailyUpdateController.UpdateDailyUpdate) // PUT /api/v1/projects/:projectId/daily-updates/:id
-		projects.DELETE("/:projectId/daily-updates/:id", dailyUpdateController.DeleteDailyUpdate) // DELETE /api/v1/projects/:projectId/daily-updates/:id
+		projects.GET("/:id/daily-updates", dailyUpdateController.GetDailyUpdates)       // GET /api/v1/projects/:id/daily-updates
+		projects.GET("/:id/daily-updates/:updateId", dailyUpdateController.GetDailyUpdate)   // GET /api/v1/projects/:id/daily-updates/:updateId
+		projects.POST("/:id/daily-updates", dailyUpdateController.CreateDailyUpdate)   // POST /api/v1/projects/:id/daily-updates
+		projects.PUT("/:id/daily-updates/:updateId", dailyUpdateController.UpdateDailyUpdate) // PUT /api/v1/projects/:id/daily-updates/:updateId
+		projects.DELETE("/:id/daily-updates/:updateId", dailyUpdateController.DeleteDailyUpdate) // DELETE /api/v1/projects/:id/daily-updates/:updateId
 	}
 }
 
