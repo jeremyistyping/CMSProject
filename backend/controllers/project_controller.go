@@ -86,7 +86,16 @@ func (pc *ProjectController) CreateProject(c *gin.Context) {
 		return
 	}
 	
-	c.JSON(http.StatusCreated, project)
+	// Ensure the created project is returned with all fields including ID
+	// Fetch the created project from database to get the complete data
+	createdProject, err := pc.service.GetProjectByID(project.ID)
+	if err != nil {
+		// If we can't fetch it, return what we have (with ID from Create)
+		c.JSON(http.StatusCreated, project)
+		return
+	}
+	
+	c.JSON(http.StatusCreated, createdProject)
 }
 
 // UpdateProject godoc

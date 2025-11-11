@@ -1,4 +1,4 @@
-import api from './apiClient';
+import api from './api';
 import { Project, ProjectFormData, Milestone, DailyUpdate, WeeklyReport, TimelineSchedule, TechnicalData } from '@/types/project';
 
 const PROJECT_ENDPOINT = '/api/v1/projects';
