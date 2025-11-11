@@ -10,6 +10,13 @@ export const projectService = {
     return response.data;
   },
 
+  async getActiveProjects(): Promise<Project[]> {
+    const response = await api.get(PROJECT_ENDPOINT, {
+      params: { status: 'active' }
+    });
+    return response.data;
+  },
+
   async getProjectById(id: string): Promise<Project> {
     const response = await api.get(`${PROJECT_ENDPOINT}/${id}`);
     return response.data;

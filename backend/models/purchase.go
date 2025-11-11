@@ -8,6 +8,7 @@ import (
 type Purchase struct {
 	ID           uint           `json:"id" gorm:"primaryKey"`
 	Code         string         `json:"code" gorm:"unique;not null;size:20"`
+	ProjectID    *uint          `json:"project_id" gorm:"index"` // Link to project for cost tracking
 	VendorID     uint           `json:"vendor_id" gorm:"not null;index"`
 	UserID       uint           `json:"user_id" gorm:"not null;index"`
 	Date         time.Time      `json:"date"`
@@ -53,25 +54,41 @@ type Purchase struct {
 	
 	// Approval fields
 	RequiresApproval      bool        `json:"requires_approval" gorm:"default:false"`
-	ApprovalStatus        string      `json:"approval_status" gorm:"size:20;default:'NOT_STARTED'"`
+	ApprovalStatus        string      `json:"approval_status" gorm:"size:30;default:'NOT_STARTED'"`
 	ApprovalAmountBasis   string      `json:"approval_amount_basis" gorm:"size:40;default:'SUBTOTAL_BEFORE_DISCOUNT'"`
 	ApprovalBaseAmount    float64     `json:"approval_base_amount" gorm:"type:decimal(15,2);default:0"`
 	ApprovalRequestID     *uint       `json:"approval_request_id" gorm:"index"`
 	ApprovedBy            *uint       `json:"approved_by" gorm:"index"`
 	ApprovedAt            *time.Time  `json:"approved_at"`
 	
+	// Cost Control approval fields
+	CostControlApprovedBy *uint       `json:"cost_control_approved_by" gorm:"index"`
+	CostControlApprovedAt *time.Time  `json:"cost_control_approved_at"`
+	CostControlComments   string      `json:"cost_control_comments" gorm:"type:text"`
+	
+	// GM approval fields
+	GMApprovedBy          *uint       `json:"gm_approved_by" gorm:"index"`
+	GMApprovedAt          *time.Time  `json:"gm_approved_at"`
+	GMComments            string      `json:"gm_comments" gorm:"type:text"`
+	
+	// Current approval step tracker
+	CurrentApprovalStep   string      `json:"current_approval_step" gorm:"size:20;default:'NONE'"` // NONE, COST_CONTROL, GM, COMPLETED
+	
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relations
-	Vendor          Contact          `json:"vendor" gorm:"foreignKey:VendorID"`
-	User            User             `json:"user" gorm:"foreignKey:UserID"`
-	PurchaseItems   []PurchaseItem   `json:"purchase_items" gorm:"foreignKey:PurchaseID"`
-	BankAccount     *CashBank        `json:"bank_account,omitempty" gorm:"foreignKey:BankAccountID"`
-	CreditAccount   *Account         `json:"credit_account,omitempty" gorm:"foreignKey:CreditAccountID"`
-	ApprovalRequest *ApprovalRequest `json:"approval_request,omitempty" gorm:"foreignKey:ApprovalRequestID"`
-	Approver        *User            `json:"approver,omitempty" gorm:"foreignKey:ApprovedBy"`
+	Project              *Project         `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
+	Vendor               Contact          `json:"vendor" gorm:"foreignKey:VendorID"`
+	User                 User             `json:"user" gorm:"foreignKey:UserID"`
+	PurchaseItems        []PurchaseItem   `json:"purchase_items" gorm:"foreignKey:PurchaseID"`
+	BankAccount          *CashBank        `json:"bank_account,omitempty" gorm:"foreignKey:BankAccountID"`
+	CreditAccount        *Account         `json:"credit_account,omitempty" gorm:"foreignKey:CreditAccountID"`
+	ApprovalRequest      *ApprovalRequest `json:"approval_request,omitempty" gorm:"foreignKey:ApprovalRequestID"`
+	Approver             *User            `json:"approver,omitempty" gorm:"foreignKey:ApprovedBy"`
+	CostControlApprover  *User            `json:"cost_control_approver,omitempty" gorm:"foreignKey:CostControlApprovedBy"`
+	GMApprover           *User            `json:"gm_approver,omitempty" gorm:"foreignKey:GMApprovedBy"`
 }
 
 type PurchaseItem struct {
@@ -131,11 +148,25 @@ const (
 
 // Purchase Approval Status Constants
 const (
-	PurchaseApprovalNotStarted = "NOT_STARTED"
-	PurchaseApprovalNotRequired = "NOT_REQUIRED"
-	PurchaseApprovalPending     = "PENDING"
-	PurchaseApprovalApproved    = "APPROVED"
-	PurchaseApprovalRejected    = "REJECTED"
+	PurchaseApprovalNotStarted      = "NOT_STARTED"
+	PurchaseApprovalNotRequired     = "NOT_REQUIRED"
+	PurchaseApprovalPending         = "PENDING"
+	PurchaseApprovalPendingCC       = "PENDING_COST_CONTROL"  // Waiting Cost Control approval
+	PurchaseApprovalApprovedCC      = "APPROVED_COST_CONTROL" // CC approved, waiting GM
+	PurchaseApprovalPendingGM       = "PENDING_GM"            // Waiting GM approval
+	PurchaseApprovalApprovedGM      = "APPROVED_GM"           // GM approved (final)
+	PurchaseApprovalApproved        = "APPROVED"              // Fully approved
+	PurchaseApprovalRejected        = "REJECTED"
+	PurchaseApprovalRejectedCC      = "REJECTED_BY_CC"        // Rejected by Cost Control
+	PurchaseApprovalRejectedGM      = "REJECTED_BY_GM"        // Rejected by GM
+)
+
+// Purchase Approval Step Constants
+const (
+	PurchaseApprovalStepNone        = "NONE"
+	PurchaseApprovalStepCostControl = "COST_CONTROL"
+	PurchaseApprovalStepGM          = "GM"
+	PurchaseApprovalStepCompleted   = "COMPLETED"
 )
 
 // Purchase Matching Status Constants
@@ -169,6 +200,7 @@ type PurchaseFilter struct {
 }
 
 type PurchaseCreateRequest struct {
+	ProjectID    *uint                    `json:"project_id"` // Optional: link to project
 	VendorID     uint                     `json:"vendor_id" binding:"required"`
 	Date         time.Time                `json:"date" binding:"required"`
 	DueDate      time.Time                `json:"due_date"`
@@ -197,6 +229,7 @@ type PurchaseCreateRequest struct {
 }
 
 type PurchaseUpdateRequest struct {
+	ProjectID    *uint                    `json:"project_id"`
 	VendorID     *uint                    `json:"vendor_id"`
 	Date         *time.Time               `json:"date"`
 	DueDate      *time.Time               `json:"due_date"`

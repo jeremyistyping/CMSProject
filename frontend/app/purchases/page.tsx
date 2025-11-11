@@ -95,6 +95,8 @@ import { ApprovalPanel } from '@/components/approval/ApprovalPanel';
 import PurchasePaymentForm from '@/components/purchase/PurchasePaymentForm';
 import contactService from '@/services/contactService';
 import productService, { Product } from '@/services/productService';
+import projectService from '@/services/projectService';
+import { Project } from '@/types/project';
 import accountService from '@/services/accountService';
 import { Account as GLAccount, AccountCatalogItem } from '@/types/account';
 import approvalService from '@/services/approvalService';
@@ -110,6 +112,7 @@ import { API_ENDPOINTS } from '@/config/api';
 
 // Types for form data
 interface PurchaseFormData {
+  project_id: string;
   vendor_id: string;
   date: string;
   due_date: string;
@@ -465,6 +468,9 @@ const PurchasesPage: React.FC = () => {
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState<Purchase | null>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [expenseAccounts, setExpenseAccounts] = useState<GLAccount[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -476,6 +482,7 @@ const PurchasesPage: React.FC = () => {
   const [loadingBankAccounts, setLoadingBankAccounts] = useState(false);
   const [loadingCreditAccounts, setLoadingCreditAccounts] = useState(false);  // New loading state
   const [formData, setFormData] = useState<PurchaseFormData>({
+    project_id: '',
     vendor_id: '',
     date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -1477,6 +1484,29 @@ const PurchasesPage: React.FC = () => {
     }
   };
 
+  // Fetch projects (active projects only)
+  const fetchProjects = async () => {
+    if (!token) return;
+    
+    try {
+      setLoadingProjects(true);
+      const data = await projectService.getActiveProjects();
+      const projectsList: Project[] = Array.isArray(data) ? data : [];
+      setProjects(projectsList);
+    } catch (err: any) {
+      console.error('Error fetching projects:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch projects',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
   // Fetch products for dropdown
   const fetchProductsList = async () => {
     try {
@@ -2103,6 +2133,7 @@ const PurchasesPage: React.FC = () => {
       
       // Set form data for editing
       setFormData({
+        project_id: detailResponse.project_id?.toString() || '',
         vendor_id: detailResponse.vendor_id?.toString() || '',
         date: detailResponse.date.split('T')[0], // Format for date input
         due_date: detailResponse.due_date ? detailResponse.due_date.split('T')[0] : '',
@@ -2138,6 +2169,7 @@ const PurchasesPage: React.FC = () => {
         }]
       });
       
+    await fetchProjects(); // Load projects for dropdown
     await fetchVendors(); // Load vendors for dropdown
     await fetchProductsList(); // Load products for dropdown
     await fetchExpenseAccounts(); // Load expense accounts for dropdown
@@ -2159,6 +2191,7 @@ const PurchasesPage: React.FC = () => {
 const handleCreate = async () => {
     // Reset form data
     setFormData({
+      project_id: '',
       vendor_id: '',
       date: new Date().toISOString().split('T')[0], // Today's date
       due_date: '',
@@ -2186,6 +2219,7 @@ const handleCreate = async () => {
       items: []
     });
     setSelectedPurchase(null);
+    await fetchProjects(); // Load projects for dropdown
     await fetchVendors(); // Load vendors for dropdown
     await fetchProductsList(); // Load products for dropdown
     await fetchExpenseAccounts(); // Load expense accounts for dropdown
@@ -2239,6 +2273,7 @@ const handleCreate = async () => {
       
       // Format the payload with proper tax rates
       const payload = {
+        project_id: formData.project_id ? parseInt(formData.project_id) : undefined,
         vendor_id: parseInt(formData.vendor_id),
         date: formData.date ? `${formData.date}T00:00:00Z` : new Date().toISOString(),
         due_date: formData.due_date ? `${formData.due_date}T00:00:00Z` : undefined,
@@ -4329,6 +4364,55 @@ const handleCreate = async () => {
                   </CardHeader>
                   <CardBody pt={0}>
                     <SimpleGrid columns={3} spacing={4}>
+                      <FormControl>
+                        <FormLabel fontSize="sm" fontWeight="medium">
+                          Project
+                          <Tooltip label="Link purchase to a project for cost tracking">
+                            <Icon as={FiAlertCircle} ml={2} boxSize={3} color="blue.500" />
+                          </Tooltip>
+                        </FormLabel>
+                        {loadingProjects ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <Select
+                            placeholder="Select project (optional)"
+                            value={formData.project_id}
+                            onChange={(e) => {
+                              const projectId = e.target.value;
+                              setFormData({...formData, project_id: projectId});
+                              const project = projects.find(p => p.id?.toString() === projectId);
+                              setSelectedProject(project || null);
+                            }}
+                            size="sm"
+                          >
+                            {projects.map(project => (
+                              <option key={project.id} value={project.id}>
+                                {project.project_name} - {project.city}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                        <FormHelperText fontSize="xs" color="gray.500">
+                          Optional: Select project untuk tracking budget dan material cost
+                        </FormHelperText>
+                        {selectedProject && (
+                          <Alert status="info" mt={2} borderRadius="md" fontSize="sm">
+                            <Box>
+                              <Text fontWeight="medium">
+                                Budget: Rp {selectedProject.budget?.toLocaleString('id-ID')}
+                              </Text>
+                              <Text fontSize="xs">
+                                Terpakai: Rp {selectedProject.actual_cost?.toLocaleString('id-ID')} 
+                                ({selectedProject.budget ? ((selectedProject.actual_cost || 0) / selectedProject.budget * 100).toFixed(1) : '0'}%)
+                              </Text>
+                              <Text fontSize="xs" color={selectedProject.variance && selectedProject.variance >= 0 ? 'green.600' : 'red.600'}>
+                                Sisa Budget: Rp {selectedProject.variance?.toLocaleString('id-ID')}
+                              </Text>
+                            </Box>
+                          </Alert>
+                        )}
+                      </FormControl>
+
                       <FormControl isRequired>
                         <FormLabel fontSize="sm" fontWeight="medium">Vendor</FormLabel>
                         <HStack spacing={2}>

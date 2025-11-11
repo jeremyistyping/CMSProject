@@ -48,7 +48,7 @@ type ModulePermission struct {
 // GetDefaultPermissions returns default permissions based on role
 func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	permissions := make(map[string]*ModulePermission)
-	modules := []string{"accounts", "products", "contacts", "assets", "sales", "purchases", "payments", "cash_bank", "reports", "settings"}
+	modules := []string{"accounts", "products", "contacts", "assets", "sales", "purchases", "payments", "cash_bank", "cost_control", "reports", "settings"}
 	
 	switch role {
 	case "admin":
@@ -66,7 +66,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 		}
 	case "finance", "finance_manager":
 		// Finance and Finance Manager have full access to financial modules
-		financialModules := []string{"accounts", "payments", "cash_bank", "sales", "purchases"}
+		financialModules := []string{"accounts", "payments", "cash_bank", "sales", "purchases", "cost_control"}
 		for _, module := range modules {
 			if contains(financialModules, module) {
 				permissions[module] = &ModulePermission{
@@ -249,6 +249,66 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanApprove: true,
 					CanExport:  true,
 					CanMenu:    false, // No menu access to other modules
+				}
+			}
+		}
+	case "cost_control":
+		// Cost Control has full access to purchases, cost_control module, and view access to projects/reports
+		for _, module := range modules {
+			if module == "purchases" {
+				// Full access to purchases - primary responsibility
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false, // Cannot create purchases
+					CanEdit:    false, // Cannot edit purchases
+					CanDelete:  false,
+					CanApprove: true,  // KEY: Can approve purchases (first step)
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "cost_control" {
+				// Full access to cost control dashboard
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "accounts" || module == "contacts" || module == "products" {
+				// View access to master data for reference
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    false, // No direct menu access
+				}
+			} else if module == "reports" {
+				// Can view reports for cost analysis
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else {
+				// No access to other modules
+				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
 				}
 			}
 		}
