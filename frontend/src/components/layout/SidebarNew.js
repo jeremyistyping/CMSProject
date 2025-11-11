@@ -37,6 +37,7 @@ import {
   FiPackage,
   FiTarget,
   FiFolder,
+  FiCheckSquare,
 } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { normalizeRole } from '@/utils/roles';
@@ -62,17 +63,14 @@ const getMenuGroups = (t) => [
     title: 'Master Data',
     items: [
       { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
-      { name: t('navigation.products'), icon: FiLayers, href: '/products', module: 'products', permission: 'view', roles: ['ADMIN', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
       { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
-      { name: t('navigation.assets'), icon: FiStar, href: '/assets', module: 'assets', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
     ]
   },
   {
     title: 'Financial',
     items: [
-      { name: t('navigation.sales'), icon: FiDollarSign, href: '/sales', module: 'sales', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
       { name: t('navigation.purchases'), icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
-      { name: t('navigation.payments'), icon: FiTrendingUp, href: '/payments', module: 'payments', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: 'Cost Control', icon: FiCheckSquare, href: '/cost-control', module: 'cost_control', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
       { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
     ]
   },

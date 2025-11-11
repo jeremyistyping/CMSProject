@@ -10,7 +10,7 @@ type User struct {
 	Username     string         `json:"username" gorm:"unique;not null;size:50"`
 	Email        string         `json:"email" gorm:"unique;not null;size:100"`
 	Password     string         `json:"-" gorm:"not null;size:255"`
-	Role         string         `json:"role" gorm:"not null;default:'employee';size:20"` // admin, director, finance, employee, inventory_manager
+	Role         string         `json:"role" gorm:"not null;default:'employee';size:30"` // admin, director, finance, cost_control, employee, inventory_manager
 	FirstName    string         `json:"first_name" gorm:"size:50"`
 	LastName     string         `json:"last_name" gorm:"size:50"`
 	Phone        string         `json:"phone" gorm:"size:20"`

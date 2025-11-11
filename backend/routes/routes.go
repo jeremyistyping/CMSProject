@@ -1166,6 +1166,9 @@ unifiedSalesPaymentService := services.NewUnifiedSalesPaymentService(db)
 			
 			// 🏗️  Project Management routes
 			SetupProjectRoutes(protected, db)
+			
+			// 📊 Project Reports routes
+			SetupProjectReportRoutes(protected, db, jwtManager)
 		}
 	}
 

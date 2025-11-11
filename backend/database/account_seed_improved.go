@@ -26,64 +26,88 @@ func SeedAccountsImproved(db *gorm.DB) error {
 			return fmt.Errorf("pre-seed duplicate check failed: %v", err)
 		}
 		
-		// Normalize all account names to UPPERCASE to ensure consistency
+		// COA untuk Cost Control Padel Bandung - Project Construction Management
 		accounts := []models.Account{
-			// ASSETS (1xxx)
-			{Code: "1000", Name: strings.ToUpper("ASSETS"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 1, IsHeader: true, IsActive: true},
-			{Code: "1100", Name: strings.ToUpper("CURRENT ASSETS"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: true, IsActive: true},
-			{Code: "1101", Name: strings.ToUpper("KAS"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: true, IsActive: true, Balance: 0},
-			{Code: "1102", Name: strings.ToUpper("BANK"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: true, IsActive: true, Balance: 0},
-			{Code: "1200", Name: strings.ToUpper("ACCOUNTS RECEIVABLE"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: true, IsActive: true},
-			{Code: "1201", Name: strings.ToUpper("PIUTANG USAHA"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
+			// ========================================
+			// 1000 - ASET LANCAR (CURRENT ASSETS)
+			// ========================================
+			{Code: "1000", Name: strings.ToUpper("ASET LANCAR"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 1, IsHeader: true, IsActive: true},
 			
-			// Tax Prepaid Accounts (Prepaid taxes/Input VAT)
-			{Code: "1114", Name: strings.ToUpper("PPh 21 DIBAYAR DIMUKA"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "1115", Name: strings.ToUpper("PPh 23 DIBAYAR DIMUKA"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "1116", Name: strings.ToUpper("POTONGAN PAJAK LAINNYA DIBAYAR DIMUKA"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "1240", Name: strings.ToUpper("PPN MASUKAN"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
+			// Kas & Bank
+			{Code: "1101", Name: strings.ToUpper("KAS PROYEK"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Uang tunai site"},
+			{Code: "1102", Name: strings.ToUpper("BANK"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Transfer project"},
+			{Code: "1201", Name: strings.ToUpper("DEPOSIT"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "DP supplier / sewa"},
 			
-			// Inventory
-			{Code: "1301", Name: strings.ToUpper("PERSEDIAAN BARANG DAGANGAN"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
+			// Tax Prepaid Accounts
+			{Code: "1114", Name: strings.ToUpper("PPh 21 DIBAYAR DIMUKA"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "1115", Name: strings.ToUpper("PPh 23 DIBAYAR DIMUKA"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "1240", Name: strings.ToUpper("PPN MASUKAN"), Type: models.AccountTypeAsset, Category: models.CategoryCurrentAsset, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
 
-			{Code: "1500", Name: strings.ToUpper("FIXED ASSETS"), Type: models.AccountTypeAsset, Category: models.CategoryFixedAsset, Level: 2, IsHeader: true, IsActive: true},
-			{Code: "1501", Name: strings.ToUpper("PERALATAN KANTOR"), Type: models.AccountTypeAsset, Category: models.CategoryFixedAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "1502", Name: strings.ToUpper("KENDARAAN"), Type: models.AccountTypeAsset, Category: models.CategoryFixedAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "1503", Name: strings.ToUpper("BANGUNAN"), Type: models.AccountTypeAsset, Category: models.CategoryFixedAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "1509", Name: strings.ToUpper("TRUK"), Type: models.AccountTypeAsset, Category: models.CategoryFixedAsset, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
+			// ========================================
+			// 2000 - KEWAJIBAN (LIABILITIES)
+			// ========================================
+			{Code: "2000", Name: strings.ToUpper("KEWAJIBAN"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 1, IsHeader: true, IsActive: true},
+			{Code: "2101", Name: strings.ToUpper("UTANG USAHA"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "2103", Name: strings.ToUpper("PPN KELUARAN"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "2104", Name: strings.ToUpper("PPh YANG DIPOTONG"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "2111", Name: strings.ToUpper("UTANG PPh 21"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "2112", Name: strings.ToUpper("UTANG PPh 23"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
 
-			// LIABILITIES (2xxx)
-			{Code: "2000", Name: strings.ToUpper("LIABILITIES"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 1, IsHeader: true, IsActive: true},
-			{Code: "2100", Name: strings.ToUpper("CURRENT LIABILITIES"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 2, IsHeader: true, IsActive: true},
-			{Code: "2101", Name: strings.ToUpper("UTANG USAHA"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "2103", Name: strings.ToUpper("PPN KELUARAN"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "2104", Name: strings.ToUpper("PPh YANG DIPOTONG"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "2107", Name: strings.ToUpper("PEMOTONGAN PAJAK LAINNYA"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "2108", Name: strings.ToUpper("PENAMBAHAN PAJAK LAINNYA"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			
-			// Specific withholding tax accounts for purchases
-			{Code: "2111", Name: strings.ToUpper("UTANG PPh 21"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "2112", Name: strings.ToUpper("UTANG PPh 23"), Type: models.AccountTypeLiability, Category: models.CategoryCurrentLiability, Level: 3, IsHeader: false, IsActive: true, Balance: 0},
-
-			// EQUITY (3xxx)
-			{Code: "3000", Name: strings.ToUpper("EQUITY"), Type: models.AccountTypeEquity, Category: models.CategoryEquity, Level: 1, IsHeader: true, IsActive: true},
+			// ========================================
+			// 3000 - EKUITAS (EQUITY)
+			// ========================================
+			{Code: "3000", Name: strings.ToUpper("EKUITAS"), Type: models.AccountTypeEquity, Category: models.CategoryEquity, Level: 1, IsHeader: true, IsActive: true},
 			{Code: "3101", Name: strings.ToUpper("MODAL PEMILIK"), Type: models.AccountTypeEquity, Category: models.CategoryEquity, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "3201", Name: strings.ToUpper("LABA DITAHAN"), Type: models.AccountTypeEquity, Category: models.CategoryEquity, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			{Code: "7000", Name: strings.ToUpper("LABA / RUGI PROYEK"), Type: models.AccountTypeEquity, Category: models.CategoryEquity, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Selisih income - cost"},
 
-			// REVENUE (4xxx)
-			{Code: "4000", Name: strings.ToUpper("REVENUE"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 1, IsHeader: true, IsActive: true},
-			{Code: "4101", Name: strings.ToUpper("PENDAPATAN PENJUALAN"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "4102", Name: strings.ToUpper("PENDAPATAN JASA/ONGKIR"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "4201", Name: strings.ToUpper("PENDAPATAN LAIN-LAIN"), Type: models.AccountTypeRevenue, Category: models.CategoryOtherIncome, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-		{Code: "4900", Name: strings.ToUpper("OTHER INCOME"), Type: models.AccountTypeRevenue, Category: models.CategoryOtherIncome, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			// ========================================
+			// 4000 - PENDAPATAN PROYEK (INCOME)
+			// ========================================
+			{Code: "4000", Name: strings.ToUpper("PENDAPATAN PROYEK (INCOME)"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 1, IsHeader: true, IsActive: true, Description: "Total kontrak, termin"},
+			{Code: "4101", Name: strings.ToUpper("PENDAPATAN TERMIN 1"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Termin proyek"},
+			{Code: "4102", Name: strings.ToUpper("PENDAPATAN TERMIN 2"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Pembayaran bertahap"},
+			{Code: "4201", Name: strings.ToUpper("RETENSI"), Type: models.AccountTypeRevenue, Category: models.CategoryOperatingRevenue, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Potongan retensi"},
 
-			// EXPENSES (5xxx)
-			{Code: "5000", Name: strings.ToUpper("EXPENSES"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 1, IsHeader: true, IsActive: true},
-			{Code: "5101", Name: strings.ToUpper("HARGA POKOK PENJUALAN"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "5201", Name: strings.ToUpper("BEBAN GAJI"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "5202", Name: strings.ToUpper("BEBAN LISTRIK"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "5203", Name: strings.ToUpper("BEBAN TELEPON"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "5204", Name: strings.ToUpper("BEBAN TRANSPORTASI"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
-			{Code: "5900", Name: strings.ToUpper("GENERAL EXPENSE"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0},
+			// ========================================
+			// 5000 - BEBAN LANGSUNG PROYEK (DIRECT COST)
+			// ========================================
+			{Code: "5000", Name: strings.ToUpper("BEBAN LANGSUNG PROYEK (DIRECT COST)"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 1, IsHeader: true, IsActive: true, Description: "Biaya yang langsung terkait proyek"},
+			
+			// 5100 - Material Bangunan
+			{Code: "5100", Name: strings.ToUpper("MATERIAL BANGUNAN"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: true, IsActive: true, Description: "Material, semen, baja, pipa, pasir"},
+			{Code: "5101", Name: strings.ToUpper("SEMEN & PASIR"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Material utama"},
+			{Code: "5102", Name: strings.ToUpper("BESI & BAJA"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Struktur"},
+			{Code: "5103", Name: strings.ToUpper("PLUMBING & FITTING"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Instalasi"},
+			{Code: "5104", Name: strings.ToUpper("KACA, ALUMINIUM"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Finishing"},
+			{Code: "5105", Name: strings.ToUpper("CAT & FINISHING"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Pengecatan"},
+			
+			// 5200 - Sewa Alat Berat / Equipment Hire
+			{Code: "5200", Name: strings.ToUpper("SEWA ALAT BERAT / EQUIPMENT HIRE"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: true, IsActive: true, Description: "Excavator, Crane, Mixer"},
+			{Code: "5201", Name: strings.ToUpper("SEWA ALAT BERAT"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Harian/Mingguan"},
+			{Code: "5202", Name: strings.ToUpper("TRANSPORT & MOBILISASI"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Mobilisasi alat"},
+			
+			// 5300 - Tenaga Kerja (Labour)
+			{Code: "5300", Name: strings.ToUpper("TENAGA KERJA (LABOUR)"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: true, IsActive: true, Description: "Upah mandor & pekerja"},
+			{Code: "5301", Name: strings.ToUpper("MANDOR"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Gaji mandor"},
+			{Code: "5302", Name: strings.ToUpper("TUKANG & HELPER"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Upah pekerja lapangan"},
+			{Code: "5303", Name: strings.ToUpper("OVERTIME & BONUS"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Tambahan jam kerja"},
+			
+			// 5400 - Biaya Operasional Site
+			{Code: "5400", Name: strings.ToUpper("BIAYA OPERASIONAL SITE"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: true, IsActive: true, Description: "Air kerja, listrik kerja, tol, bensin, kosan"},
+			{Code: "5401", Name: strings.ToUpper("AIR & LISTRIK KERJA"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Utilitas proyek"},
+			{Code: "5402", Name: strings.ToUpper("TRANSPORTASI & TOL"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Perjalanan tim"},
+			{Code: "5403", Name: strings.ToUpper("KONSUMSI & ENTERTAIN"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Konsumsi lapangan"},
+			{Code: "5404", Name: strings.ToUpper("AKOMODASI (KOSAN, HOTEL)"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Tempat tinggal tim"},
+			{Code: "5405", Name: strings.ToUpper("ATK & ALAT KECIL"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Meteran, spidol, helm, dll"},
+			{Code: "5406", Name: strings.ToUpper("KOMPENSASI & KEAMANAN"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 3, IsHeader: false, IsActive: true, Balance: 0, Description: "Gaji security, kompensasi"},
+			
+			// ========================================
+			// 6000 - OVERHEAD KANTOR & ADMIN
+			// ========================================
+			{Code: "6000", Name: strings.ToUpper("OVERHEAD KANTOR & ADMIN"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 1, IsHeader: true, IsActive: true, Description: "Admin, pajak, fee"},
+			{Code: "6101", Name: strings.ToUpper("ADMIN FEE"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Biaya transfer, admin bank"},
+			{Code: "6102", Name: strings.ToUpper("PAJAK PROYEK (PPH, PPN)"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Biaya pajak"},
+			{Code: "6103", Name: strings.ToUpper("FEE MARKETING"), Type: models.AccountTypeExpense, Category: models.CategoryOperatingExpense, Level: 2, IsHeader: false, IsActive: true, Balance: 0, Description: "Fee rekanan / marketing"},
 		}
 
 		// Verify no duplicates in seed data itself
@@ -231,41 +255,63 @@ func upsertAccount(tx *gorm.DB, account models.Account) (uint, bool, error) {
 // setParentRelationships sets parent-child relationships for accounts
 func setParentRelationships(tx *gorm.DB, accountMap map[string]uint) error {
 	parentChildMap := map[string]string{
-		"1100": "1000", // CURRENT ASSETS -> ASSETS
-		"1101": "1100", // Kas -> CURRENT ASSETS
-		"1102": "1100", // Bank -> CURRENT ASSETS
-		"1200": "1100", // ACCOUNTS RECEIVABLE -> CURRENT ASSETS
-		"1201": "1200", // Piutang Usaha -> ACCOUNTS RECEIVABLE
-		"1114": "1200", // PPh 21 Dibayar Dimuka -> ACCOUNTS RECEIVABLE
-		"1115": "1200", // PPh 23 Dibayar Dimuka -> ACCOUNTS RECEIVABLE
-		"1116": "1200", // Potongan Pajak Lainnya Dibayar Dimuka -> ACCOUNTS RECEIVABLE
-		"1240": "1100", // PPN Masukan -> CURRENT ASSETS
-		"1301": "1100", // Persediaan Barang Dagangan -> CURRENT ASSETS
-		"1500": "1000", // FIXED ASSETS -> ASSETS
-		"1501": "1500", // Peralatan Kantor -> FIXED ASSETS
-		"1502": "1500", // Kendaraan -> FIXED ASSETS
-		"1503": "1500", // Bangunan -> FIXED ASSETS
-		"1509": "1500", // TRUK -> FIXED ASSETS
-		"2100": "2000", // CURRENT LIABILITIES -> LIABILITIES
-		"2101": "2100", // Utang Usaha -> CURRENT LIABILITIES
-		"2103": "2100", // PPN Keluaran -> CURRENT LIABILITIES
-		"2104": "2100", // PPh Yang Dipotong -> CURRENT LIABILITIES
-		"2107": "2100", // Pemotongan Pajak Lainnya -> CURRENT LIABILITIES
-		"2108": "2100", // Penambahan Pajak Lainnya -> CURRENT LIABILITIES
-		"2111": "2100", // Utang PPh 21 -> CURRENT LIABILITIES
-		"2112": "2100", // Utang PPh 23 -> CURRENT LIABILITIES
-		"3101": "3000", // Modal Pemilik -> EQUITY
-		"3201": "3000", // Laba Ditahan -> EQUITY
-		"4101": "4000", // Pendapatan Penjualan -> REVENUE
-		"4102": "4000", // Pendapatan Jasa/Ongkir -> REVENUE
-		"4201": "4000", // Pendapatan Lain-lain -> REVENUE
-		"4900": "4000", // Other Income -> REVENUE
-		"5101": "5000", // Harga Pokok Penjualan -> EXPENSES
-		"5201": "5000", // Beban Gaji -> EXPENSES
-		"5202": "5000", // Beban Listrik -> EXPENSES
-		"5203": "5000", // Beban Telepon -> EXPENSES
-		"5204": "5000", // Beban Transportasi -> EXPENSES
-		"5900": "5000", // General Expense -> EXPENSES
+		// ASSETS hierarchy
+		"1101": "1000", // Kas Proyek -> ASET LANCAR
+		"1102": "1000", // Bank -> ASET LANCAR
+		"1201": "1000", // Deposit -> ASET LANCAR
+		"1114": "1000", // PPh 21 Dibayar Dimuka -> ASET LANCAR
+		"1115": "1000", // PPh 23 Dibayar Dimuka -> ASET LANCAR
+		"1240": "1000", // PPN Masukan -> ASET LANCAR
+		
+		// LIABILITIES hierarchy
+		"2101": "2000", // Utang Usaha -> KEWAJIBAN
+		"2103": "2000", // PPN Keluaran -> KEWAJIBAN
+		"2104": "2000", // PPh Yang Dipotong -> KEWAJIBAN
+		"2111": "2000", // Utang PPh 21 -> KEWAJIBAN
+		"2112": "2000", // Utang PPh 23 -> KEWAJIBAN
+		
+		// EQUITY hierarchy
+		"3101": "3000", // Modal Pemilik -> EKUITAS
+		"7000": "3000", // Laba / Rugi Proyek -> EKUITAS
+		
+		// REVENUE hierarchy
+		"4101": "4000", // Pendapatan Termin 1 -> PENDAPATAN PROYEK
+		"4102": "4000", // Pendapatan Termin 2 -> PENDAPATAN PROYEK
+		"4201": "4000", // Retensi -> PENDAPATAN PROYEK
+		
+		// EXPENSES - BEBAN LANGSUNG PROYEK hierarchy
+		// Material Bangunan
+		"5100": "5000", // MATERIAL BANGUNAN -> BEBAN LANGSUNG PROYEK
+		"5101": "5100", // Semen & Pasir -> MATERIAL BANGUNAN
+		"5102": "5100", // Besi & Baja -> MATERIAL BANGUNAN
+		"5103": "5100", // Plumbing & Fitting -> MATERIAL BANGUNAN
+		"5104": "5100", // Kaca, Aluminium -> MATERIAL BANGUNAN
+		"5105": "5100", // Cat & Finishing -> MATERIAL BANGUNAN
+		
+		// Sewa Alat Berat
+		"5200": "5000", // SEWA ALAT BERAT -> BEBAN LANGSUNG PROYEK
+		"5201": "5200", // Sewa Alat Berat -> SEWA ALAT BERAT / EQUIPMENT HIRE
+		"5202": "5200", // Transport & Mobilisasi -> SEWA ALAT BERAT / EQUIPMENT HIRE
+		
+		// Tenaga Kerja
+		"5300": "5000", // TENAGA KERJA -> BEBAN LANGSUNG PROYEK
+		"5301": "5300", // Mandor -> TENAGA KERJA
+		"5302": "5300", // Tukang & Helper -> TENAGA KERJA
+		"5303": "5300", // Overtime & Bonus -> TENAGA KERJA
+		
+		// Biaya Operasional Site
+		"5400": "5000", // BIAYA OPERASIONAL SITE -> BEBAN LANGSUNG PROYEK
+		"5401": "5400", // Air & Listrik Kerja -> BIAYA OPERASIONAL SITE
+		"5402": "5400", // Transportasi & Tol -> BIAYA OPERASIONAL SITE
+		"5403": "5400", // Konsumsi & Entertain -> BIAYA OPERASIONAL SITE
+		"5404": "5400", // Akomodasi -> BIAYA OPERASIONAL SITE
+		"5405": "5400", // ATK & Alat Kecil -> BIAYA OPERASIONAL SITE
+		"5406": "5400", // Kompensasi & Keamanan -> BIAYA OPERASIONAL SITE
+		
+		// OVERHEAD KANTOR & ADMIN
+		"6101": "6000", // Admin Fee -> OVERHEAD KANTOR & ADMIN
+		"6102": "6000", // Pajak Proyek -> OVERHEAD KANTOR & ADMIN
+		"6103": "6000", // Fee Marketing -> OVERHEAD KANTOR & ADMIN
 	}
 
 	for childCode, parentCode := range parentChildMap {
