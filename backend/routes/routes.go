@@ -1172,9 +1172,8 @@ unifiedSalesPaymentService := services.NewUnifiedSalesPaymentService(db)
 		}
 	}
 
-	// Static files (templates and uploads)
+	// Static files (templates only - uploads route is in main.go)
 	r.Static("/templates", "./templates")
-	r.Static("/uploads", "./uploads")
 
 // Global favicon handler to avoid 404s in all contexts (Swagger and non-Swagger)
 r.GET("/favicon.ico", func(c *gin.Context) { c.Status(http.StatusNoContent) })

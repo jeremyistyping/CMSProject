@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"gorm.io/gorm"
+	"github.com/lib/pq"
 )
 
 type DailyUpdateService interface {
@@ -72,7 +73,7 @@ func (s *dailyUpdateService) CreateDailyUpdate(dailyUpdate *models.DailyUpdate) 
 	
 	// Initialize photos array if nil
 	if dailyUpdate.Photos == nil {
-		dailyUpdate.Photos = []string{}
+		dailyUpdate.Photos = pq.StringArray{}
 	}
 	
 	// Create the daily update
@@ -107,7 +108,7 @@ func (s *dailyUpdateService) UpdateDailyUpdate(dailyUpdate *models.DailyUpdate) 
 	
 	// Initialize photos array if nil
 	if dailyUpdate.Photos == nil {
-		dailyUpdate.Photos = []string{}
+		dailyUpdate.Photos = pq.StringArray{}
 	}
 	
 	// Update the daily update

@@ -26,9 +26,10 @@ import {
   NumberDecrementStepper,
   Text,
 } from '@chakra-ui/react';
-import { FiSave } from 'react-icons/fi';
+import { FiSave, FiUpload, FiX, FiImage } from 'react-icons/fi';
 import projectService from '@/services/projectService';
 import { DailyUpdate } from '@/types/project';
+import PhotoUpload from './PhotoUpload';
 
 interface DailyUpdateModalProps {
   isOpen: boolean;
@@ -47,6 +48,11 @@ interface DailyUpdateFormData {
   issues: string;
 }
 
+interface PhotoPreview {
+  file: File;
+  preview: string;
+}
+
 const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
   isOpen,
   onClose,
@@ -56,6 +62,8 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
 }) => {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState<PhotoPreview[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
@@ -84,6 +92,8 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
         materials_used: dailyUpdate.materials_used,
         issues: dailyUpdate.issues,
       });
+      // Clear photos on edit mode (for now, we don't support editing photos)
+      setPhotoFiles([]);
     } else {
       // Add mode - reset form
       setFormData({
@@ -94,6 +104,7 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
         materials_used: '',
         issues: '',
       });
+      setPhotoFiles([]);
     }
   }, [dailyUpdate, isOpen]);
 
@@ -118,6 +129,16 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
     e.preventDefault();
 
     // Validation
+    if (!projectId) {
+      toast({
+        title: 'Error',
+        description: 'Project ID is missing',
+        status: 'error',
+        duration: 3000,
+      });
+      return;
+    }
+
     if (!formData.date) {
       toast({
         title: 'Validation Error',
@@ -138,18 +159,23 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
       return;
     }
 
+    console.log('Submitting daily update for project:', projectId);
+
     try {
       setLoading(true);
 
       const updateData = {
         ...formData,
         date: new Date(formData.date).toISOString(),
-        photos: [], // Photos feature can be added later
+        photos: [], // Will be handled separately for multipart upload
         created_by: 'Current User', // Should be from auth context
       };
 
+      console.log('Daily update data:', updateData);
+      console.log('Photos to upload:', photoFiles.length);
+
       if (dailyUpdate) {
-        // Update existing
+        // Update existing (no photo upload support for now)
         await projectService.updateDailyUpdate(projectId, dailyUpdate.id, updateData);
         toast({
           title: 'Success',
@@ -158,8 +184,9 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
           duration: 3000,
         });
       } else {
-        // Create new
-        await projectService.createDailyUpdate(projectId, updateData);
+        // Create new with photos
+        const photos = photoFiles.map(p => p.file);
+        await projectService.createDailyUpdate(projectId, updateData, photos);
         toast({
           title: 'Success',
           description: 'Daily update created successfully',
@@ -171,6 +198,9 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
       onSuccess();
     } catch (error: any) {
       console.error('Error saving daily update:', error);
+      console.error('Error response:', error?.response?.data);
+      console.error('Error status:', error?.response?.status);
+      console.error('Project ID:', projectId);
       
       // Backend not ready - show friendly message
       if (error?.response?.status === 404) {
@@ -181,10 +211,21 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
           duration: 5000,
           isClosable: true,
         });
+      } else if (error?.response?.status === 400) {
+        // Bad request - likely validation error
+        const errorMessage = error?.response?.data?.error || 'Invalid data. Please check all required fields.';
+        toast({
+          title: 'Validation Error',
+          description: errorMessage,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
       } else {
+        const errorMessage = error?.response?.data?.error || error?.message || 'Failed to save daily update';
         toast({
           title: 'Error',
-          description: error instanceof Error ? error.message : 'Failed to save daily update',
+          description: errorMessage,
           status: 'error',
           duration: 5000,
           isClosable: true,
@@ -392,6 +433,16 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
                   Report any problems encountered today (optional)
                 </Text>
               </FormControl>
+
+              {/* Photo Upload */}
+              {!dailyUpdate && (
+                <PhotoUpload
+                  photos={photoFiles}
+                  onPhotosChange={setPhotoFiles}
+                  isDisabled={loading}
+                  maxPhotos={10}
+                />
+              )}
             </VStack>
           </ModalBody>
 

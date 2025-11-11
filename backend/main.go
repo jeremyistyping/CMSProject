@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"path/filepath"
 
 	"app-sistem-akuntansi/config"
 	"app-sistem-akuntansi/database"
@@ -155,6 +156,17 @@ func main() {
 		log.Println("✅ Enhanced Swagger routes configured successfully!")
 	}
 
+	// Serve static files for uploads
+	// Use absolute path to ensure it works regardless of working directory
+	uploadDir := filepath.Join(".", "uploads")
+	if absPath, err := filepath.Abs(uploadDir); err == nil {
+		log.Printf("📁 Serving static files from: %s", absPath)
+		r.Static("/uploads", absPath)
+	} else {
+		log.Printf("⚠️ Warning: Could not get absolute path for uploads, using relative path")
+		r.Static("/uploads", "./uploads")
+	}
+	
 	// Setup routes
 	routes.SetupRoutes(r, db, startupService)
 

@@ -183,8 +183,229 @@ const LoginContent = () => {
       
       <Container maxW="7xl" py={8}>
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} alignItems="center" minH="80vh">
-          {/* Left side - Login Form (SWAPPED) */}
-          <Flex align="center" justify="center" py={8} order={{ base: 2, lg: 1 }}>
+          {/* Left side - Branding and Features */}
+          <Box order={{ base: 1, lg: 1 }}>
+          <ScaleFade initialScale={0.9} in={true}>
+            <VStack spacing={8} align="stretch">
+              {/* Company Branding */}
+              <Box textAlign={{ base: 'center', lg: 'left' }}>
+                <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} mb={6}>
+                  <Box
+                    w={12}
+                    h={12}
+                    bg={accentColor}
+                    borderRadius="xl"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    color="white"
+                    boxShadow="lg"
+                  >
+                    <FiPieChart size={24} />
+                  </Box>
+                  <VStack spacing={0} align={{ base: 'center', lg: 'flex-start' }}>
+                    <Heading 
+                      size="xl" 
+                      color={headingColor}
+                      fontWeight="bold"
+                      letterSpacing="tight"
+                    >
+                      Unipro
+                    </Heading>
+                    <Text color={textColor} fontSize="sm" fontWeight="medium">
+                      Cost Control Management System
+                    </Text>
+                  </VStack>
+                </HStack>
+                
+                <Text 
+                  fontSize="lg" 
+                  color={textColor} 
+                  mb={8}
+                  lineHeight="tall"
+                >
+                  Streamline your project cost management with precision. 
+                  Our comprehensive cost control system provides powerful 
+                  tools for tracking, analyzing, and optimizing project expenses.
+                </Text>
+              </Box>
+              
+              {/* Feature highlights */}
+              <VStack spacing={4} align="stretch">
+                <Heading size="md" color={headingColor} mb={2}>
+                  Key Features
+                </Heading>
+                
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  <Card 
+                    bg={featureCardBg} 
+                    shadow="sm" 
+                    borderWidth="1px" 
+                    borderColor={borderColor}
+                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                    transition="all 0.2s"
+                  >
+                    <CardBody p={4}>
+                      <HStack spacing={3}>
+                        <Center 
+                          w={10} 
+                          h={10} 
+                          bg="gray.700"
+                          borderRadius="lg"
+                        >
+                          <FiShield color={iconColor} size={20} />
+                        </Center>
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                            Budget Control
+                          </Text>
+                          <Text color={textColor} fontSize="xs">
+                            Real-time budget tracking
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card 
+                    bg={featureCardBg} 
+                    shadow="sm" 
+                    borderWidth="1px" 
+                    borderColor={borderColor}
+                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                    transition="all 0.2s"
+                  >
+                    <CardBody p={4}>
+                      <HStack spacing={3}>
+                        <Center 
+                          w={10} 
+                          h={10} 
+                          bg="gray.700"
+                          borderRadius="lg"
+                        >
+                          <FiTrendingUp color={iconColor} size={20} />
+                        </Center>
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                            Cost Analytics
+                          </Text>
+                          <Text color={textColor} fontSize="xs">
+                            Track project expenses
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card 
+                    bg={featureCardBg} 
+                    shadow="sm" 
+                    borderWidth="1px" 
+                    borderColor={borderColor}
+                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                    transition="all 0.2s"
+                  >
+                    <CardBody p={4}>
+                      <HStack spacing={3}>
+                        <Center 
+                          w={10} 
+                          h={10} 
+                          bg="gray.700"
+                          borderRadius="lg"
+                        >
+                          <FiUsers color={iconColor} size={20} />
+                        </Center>
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                            Project Management
+                          </Text>
+                          <Text color={textColor} fontSize="xs">
+                            Multi-project tracking
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card 
+                    bg={featureCardBg} 
+                    shadow="sm" 
+                    borderWidth="1px" 
+                    borderColor={borderColor}
+                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                    transition="all 0.2s"
+                  >
+                    <CardBody p={4}>
+                      <HStack spacing={3}>
+                        <Center 
+                          w={10} 
+                          h={10} 
+                          bg="gray.700"
+                          borderRadius="lg"
+                        >
+                          <FiLock color={iconColor} size={20} />
+                        </Center>
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                            Cost Approval
+                          </Text>
+                          <Text color={textColor} fontSize="xs">
+                            Automated cost control
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    </CardBody>
+                  </Card>
+                </SimpleGrid>
+                
+                {/* Trust badges */}
+                <Box pt={6}>
+                  <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} wrap="wrap">
+                    <Badge 
+                      colorScheme="green" 
+                      px={3} 
+                      py={1} 
+                      borderRadius="full"
+                      fontSize="xs"
+                      fontWeight="semibold"
+                      bg="green.900"
+                      color="green.200"
+                    >
+                      ✓ Secure
+                    </Badge>
+                    <Badge 
+                      colorScheme="green" 
+                      px={3} 
+                      py={1} 
+                      borderRadius="full"
+                      fontSize="xs"
+                      fontWeight="semibold"
+                      bg="green.900"
+                      color="green.200"
+                    >
+                      ✓ Fast
+                    </Badge>
+                    <Badge 
+                      colorScheme="green" 
+                      px={3} 
+                      py={1} 
+                      borderRadius="full"
+                      fontSize="xs"
+                      fontWeight="semibold"
+                      bg="green.900"
+                      color="green.200"
+                    >
+                      ✓ Reliable
+                    </Badge>
+                  </HStack>
+                </Box>
+              </VStack>
+            </VStack>
+          </ScaleFade>
+          </Box>
+          
+          {/* Right side - Login Form */}
+          <Flex align="center" justify="center" py={8} order={{ base: 2, lg: 2 }}>
             <ScaleFade initialScale={0.9} in={true}>
               <Card 
                 maxW="md"
@@ -455,227 +676,6 @@ const LoginContent = () => {
               </Card>
             </ScaleFade>
           </Flex>
-          
-          {/* Right side - Branding and Features (SWAPPED) */}
-          <Box order={{ base: 1, lg: 2 }}>
-          <ScaleFade initialScale={0.9} in={true}>
-            <VStack spacing={8} align="stretch">
-              {/* Company Branding */}
-              <Box textAlign={{ base: 'center', lg: 'left' }}>
-                <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} mb={6}>
-                  <Box
-                    w={12}
-                    h={12}
-                    bg={accentColor}
-                    borderRadius="xl"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    color="white"
-                    boxShadow="lg"
-                  >
-                    <FiPieChart size={24} />
-                  </Box>
-                  <VStack spacing={0} align={{ base: 'center', lg: 'flex-start' }}>
-                    <Heading 
-                      size="xl" 
-                      color={headingColor}
-                      fontWeight="bold"
-                      letterSpacing="tight"
-                    >
-                      Unipro
-                    </Heading>
-                    <Text color={textColor} fontSize="sm" fontWeight="medium">
-                      Cost Control Management System
-                    </Text>
-                  </VStack>
-                </HStack>
-                
-                <Text 
-                  fontSize="lg" 
-                  color={textColor} 
-                  mb={8}
-                  lineHeight="tall"
-                >
-                  Streamline your project cost management with precision. 
-                  Our comprehensive cost control system provides powerful 
-                  tools for tracking, analyzing, and optimizing project expenses.
-                </Text>
-              </Box>
-              
-              {/* Feature highlights */}
-              <VStack spacing={4} align="stretch">
-                <Heading size="md" color={headingColor} mb={2}>
-                  Key Features
-                </Heading>
-                
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiShield color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Budget Control
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Real-time budget tracking
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                  
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiTrendingUp color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Cost Analytics
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Track project expenses
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                  
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiUsers color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Project Management
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Multi-project tracking
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                  
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiLock color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Cost Approval
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Automated cost control
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                </SimpleGrid>
-                
-                {/* Trust badges */}
-                <Box pt={6}>
-                  <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} wrap="wrap">
-                    <Badge 
-                      colorScheme="green" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                      bg="green.900"
-                      color="green.200"
-                    >
-                      ✓ Secure
-                    </Badge>
-                    <Badge 
-                      colorScheme="green" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                      bg="green.900"
-                      color="green.200"
-                    >
-                      ✓ Fast
-                    </Badge>
-                    <Badge 
-                      colorScheme="green" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                      bg="green.900"
-                      color="green.200"
-                    >
-                      ✓ Reliable
-                    </Badge>
-                  </HStack>
-                </Box>
-              </VStack>
-            </VStack>
-          </ScaleFade>
-          </Box>
         </SimpleGrid>
       </Container>
     </Box>

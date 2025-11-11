@@ -3,23 +3,24 @@ package models
 import (
 	"time"
 	"gorm.io/gorm"
+	"github.com/lib/pq"
 )
 
 // DailyUpdate represents a daily construction project update
 type DailyUpdate struct {
-	ID               uint           `json:"id" gorm:"primaryKey"`
-	ProjectID        uint           `json:"project_id" gorm:"not null;index"`
-	Date             time.Time      `json:"date" gorm:"not null;index"`
-	Weather          string         `json:"weather" gorm:"not null;size:50"`
-	WorkersPresent   int            `json:"workers_present" gorm:"not null;default:0"`
-	WorkDescription  string         `json:"work_description" gorm:"type:text;not null"`
-	MaterialsUsed    string         `json:"materials_used" gorm:"type:text"`
-	Issues           string         `json:"issues" gorm:"type:text"`
-	Photos           []string       `json:"photos" gorm:"type:text[]"` // Array of photo URLs/paths
-	CreatedBy        string         `json:"created_by" gorm:"not null;size:100"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
+	ID               uint            `json:"id" gorm:"primaryKey"`
+	ProjectID        uint            `json:"project_id" gorm:"not null;index"`
+	Date             time.Time       `json:"date" gorm:"not null;index"`
+	Weather          string          `json:"weather" gorm:"not null;size:50"`
+	WorkersPresent   int             `json:"workers_present" gorm:"not null;default:0"`
+	WorkDescription  string          `json:"work_description" gorm:"type:text;not null"`
+	MaterialsUsed    string          `json:"materials_used" gorm:"type:text"`
+	Issues           string          `json:"issues" gorm:"type:text"`
+	Photos           pq.StringArray  `json:"photos" gorm:"type:text[]"` // PostgreSQL array of photo URLs/paths
+	CreatedBy        string          `json:"created_by" gorm:"not null;size:100"`
+	CreatedAt        time.Time       `json:"created_at"`
+	UpdatedAt        time.Time       `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt  `json:"-" gorm:"index"`
 	
 	// Relation
 	Project          *Project       `json:"project,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`

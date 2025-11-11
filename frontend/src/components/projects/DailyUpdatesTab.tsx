@@ -45,10 +45,14 @@ import {
   FiSun,
   FiCloud,
   FiCloudRain,
+  FiImage,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import projectService from '@/services/projectService';
 import { DailyUpdate } from '@/types/project';
 import DailyUpdateModal from './DailyUpdateModal';
+import PhotoGallery from './PhotoGallery';
 
 interface DailyUpdatesTabProps {
   projectId: string;
@@ -58,6 +62,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
   const toast = useToast();
   const { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const { isOpen: isPhotoGalleryOpen, onOpen: onPhotoGalleryOpen, onClose: onPhotoGalleryClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>([]);
@@ -65,6 +70,8 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
   const [selectedUpdate, setSelectedUpdate] = useState<DailyUpdate | null>(null);
   const [updateToDelete, setUpdateToDelete] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState('');
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
@@ -110,6 +117,22 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
   const handleEdit = (update: DailyUpdate) => {
     setSelectedUpdate(update);
     onModalOpen();
+  };
+
+  const handleViewPhotos = (photos: string[]) => {
+    setSelectedPhotos(photos);
+    onPhotoGalleryOpen();
+  };
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 400;
+      const newScrollPosition = scrollContainerRef.current.scrollLeft + (direction === 'right' ? scrollAmount : -scrollAmount);
+      scrollContainerRef.current.scrollTo({
+        left: newScrollPosition,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const handleDeleteClick = (updateId: string) => {
@@ -219,7 +242,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
           </HStack>
         </HStack>
 
-        {/* Daily Updates Table */}
+        {/* Daily Updates Cards with Horizontal Scroll */}
         {filteredUpdates.length === 0 ? (
           <Card borderWidth="1px" borderColor={borderColor}>
             <CardBody>
@@ -237,93 +260,197 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
             </CardBody>
           </Card>
         ) : (
-          <Card borderWidth="1px" borderColor={borderColor}>
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th color={subtextColor}>Date</Th>
-                    <Th color={subtextColor}>Weather</Th>
-                    <Th color={subtextColor}>Workers</Th>
-                    <Th color={subtextColor}>Work Description</Th>
-                    <Th color={subtextColor}>Issues</Th>
-                    <Th color={subtextColor}>Actions</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {filteredUpdates.map((update) => (
-                    <Tr key={update.id} _hover={{ bg: hoverBg }} transition="all 0.2s">
-                      <Td>
-                        <VStack align="start" spacing={0}>
-                          <Text fontSize="sm" fontWeight="medium" color={textColor}>
-                            {formatDate(update.date)}
-                          </Text>
-                          <Text fontSize="xs" color={subtextColor}>
-                            {update.created_by || 'Unknown'}
-                          </Text>
-                        </VStack>
-                      </Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <Icon as={getWeatherIcon(update.weather)} color="orange.500" />
-                          <Text fontSize="sm" color={textColor}>
-                            {update.weather}
-                          </Text>
+          <Box position="relative">
+            {/* Navigation Buttons */}
+            {filteredUpdates.length > 1 && (
+              <>
+                <IconButton
+                  icon={<FiChevronLeft />}
+                  aria-label="Scroll left"
+                  position="absolute"
+                  left="-4"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  zIndex={2}
+                  size="lg"
+                  colorScheme="green"
+                  variant="solid"
+                  boxShadow="lg"
+                  onClick={() => scroll('left')}
+                />
+                <IconButton
+                  icon={<FiChevronRight />}
+                  aria-label="Scroll right"
+                  position="absolute"
+                  right="-4"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  zIndex={2}
+                  size="lg"
+                  colorScheme="green"
+                  variant="solid"
+                  boxShadow="lg"
+                  onClick={() => scroll('right')}
+                />
+              </>
+            )}
+
+            {/* Scrollable Cards Container */}
+            <Box
+              ref={scrollContainerRef}
+              overflowX="auto"
+              overflowY="hidden"
+              css={{
+                '&::-webkit-scrollbar': {
+                  height: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#48BB78',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: '#38A169',
+                },
+              }}
+              pb={4}
+            >
+              <HStack spacing={4} align="stretch" minH="320px">
+                {filteredUpdates.map((update) => (
+                  <Card
+                    key={update.id}
+                    minW="380px"
+                    maxW="380px"
+                    borderWidth="1px"
+                    borderColor={borderColor}
+                    bg={bgColor}
+                    transition="all 0.3s"
+                    _hover={{
+                      boxShadow: 'xl',
+                      transform: 'translateY(-4px)',
+                      borderColor: 'green.400',
+                    }}
+                  >
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        {/* Header with Date and Actions */}
+                        <HStack justify="space-between">
+                          <VStack align="start" spacing={1}>
+                            <HStack>
+                              <Icon as={FiCalendar} color="green.500" />
+                              <Text fontSize="md" fontWeight="bold" color={textColor}>
+                                {formatDate(update.date)}
+                              </Text>
+                            </HStack>
+                            <Text fontSize="xs" color={subtextColor}>
+                              By: {update.created_by || 'Unknown'}
+                            </Text>
+                          </VStack>
+                          <Menu>
+                            <MenuButton
+                              as={IconButton}
+                              icon={<FiMoreVertical />}
+                              variant="ghost"
+                              size="sm"
+                              aria-label="Actions"
+                            />
+                            <MenuList>
+                              <MenuItem
+                                icon={<FiEdit />}
+                                onClick={() => handleEdit(update)}
+                              >
+                                Edit
+                              </MenuItem>
+                              <MenuItem
+                                icon={<FiTrash2 />}
+                                color="red.500"
+                                onClick={() => handleDeleteClick(update.id)}
+                              >
+                                Delete
+                              </MenuItem>
+                            </MenuList>
+                          </Menu>
                         </HStack>
-                      </Td>
-                      <Td>
-                        <Badge colorScheme="green" fontSize="sm">
-                          {update.workers_present} workers
-                        </Badge>
-                      </Td>
-                      <Td maxW="300px">
-                        <Text fontSize="sm" color={textColor} noOfLines={2}>
-                          {update.work_description}
-                        </Text>
-                      </Td>
-                      <Td maxW="200px">
-                        {update.issues ? (
-                          <Text fontSize="sm" color="red.500" noOfLines={2}>
-                            {update.issues}
+
+                        {/* Weather and Workers */}
+                        <HStack spacing={4}>
+                          <HStack spacing={2} flex={1}>
+                            <Icon as={getWeatherIcon(update.weather)} color="orange.500" boxSize={5} />
+                            <Text fontSize="sm" color={textColor}>
+                              {update.weather}
+                            </Text>
+                          </HStack>
+                          <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
+                            {update.workers_present} workers
+                          </Badge>
+                        </HStack>
+
+                        {/* Work Description */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="semibold" color={subtextColor} mb={1}>
+                            Work Description:
                           </Text>
-                        ) : (
-                          <Text fontSize="sm" color="green.500">
-                            No issues
+                          <Text fontSize="sm" color={textColor} noOfLines={3}>
+                            {update.work_description}
                           </Text>
-                        )}
-                      </Td>
-                      <Td>
-                        <Menu>
-                          <MenuButton
-                            as={IconButton}
-                            icon={<FiMoreVertical />}
-                            variant="ghost"
-                            size="sm"
-                            aria-label="Actions"
-                          />
-                          <MenuList>
-                            <MenuItem
-                              icon={<FiEdit />}
-                              onClick={() => handleEdit(update)}
+                        </Box>
+
+                        {/* Photos */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="semibold" color={subtextColor} mb={1}>
+                            Photos:
+                          </Text>
+                          {update.photos && update.photos.length > 0 ? (
+                            <HStack 
+                              spacing={2}
+                              p={2}
+                              borderWidth="1px"
+                              borderColor={borderColor}
+                              borderRadius="md"
+                              cursor="pointer"
+                              onClick={() => handleViewPhotos(update.photos)}
+                              _hover={{ bg: hoverBg, borderColor: 'blue.400' }}
+                              transition="all 0.2s"
                             >
-                              Edit
-                            </MenuItem>
-                            <MenuItem
-                              icon={<FiTrash2 />}
-                              color="red.500"
-                              onClick={() => handleDeleteClick(update.id)}
-                            >
-                              Delete
-                            </MenuItem>
-                          </MenuList>
-                        </Menu>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+                              <Icon as={FiImage} color="blue.500" boxSize={5} />
+                              <Badge colorScheme="blue" fontSize="sm">
+                                {update.photos.length} {update.photos.length === 1 ? 'photo' : 'photos'}
+                              </Badge>
+                              <Text fontSize="xs" color="blue.500" ml="auto">
+                                View →
+                              </Text>
+                            </HStack>
+                          ) : (
+                            <Text fontSize="sm" color="gray.400" fontStyle="italic">
+                              No photos
+                            </Text>
+                          )}
+                        </Box>
+
+                        {/* Issues */}
+                        <Box>
+                          <Text fontSize="xs" fontWeight="semibold" color={subtextColor} mb={1}>
+                            Issues:
+                          </Text>
+                          {update.issues ? (
+                            <Text fontSize="sm" color="red.500" noOfLines={2}>
+                              {update.issues}
+                            </Text>
+                          ) : (
+                            <Text fontSize="sm" color="green.500" fontStyle="italic">
+                              No issues reported
+                            </Text>
+                          )}
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ))}
+              </HStack>
             </Box>
-          </Card>
+          </Box>
         )}
       </VStack>
 
@@ -334,6 +461,14 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
         projectId={projectId}
         dailyUpdate={selectedUpdate}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* Photo Gallery Modal */}
+      <PhotoGallery
+        isOpen={isPhotoGalleryOpen}
+        onClose={onPhotoGalleryClose}
+        photos={selectedPhotos}
+        title="Daily Update Photos"
       />
 
       {/* Delete Confirmation Dialog */}

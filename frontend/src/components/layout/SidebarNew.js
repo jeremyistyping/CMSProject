@@ -219,15 +219,15 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
       router.push(href);
     };
     
-    // Theme-aware colors for nav items
-    const activeBg = 'var(--accent-color)';
+    // Theme-aware colors for nav items - ALL GREEN
+    const activeBg = 'green.500';
     const activeColor = 'white';
     const inactiveColor = useColorModeValue('gray.700', 'var(--text-secondary)');
-    const hoverBg = useColorModeValue('gray.100', 'var(--bg-tertiary)');
-    const hoverColor = useColorModeValue('gray.900', 'var(--text-primary)');
+    const hoverBg = useColorModeValue('green.50', 'green.900');
+    const hoverColor = useColorModeValue('green.700', 'green.200');
     const iconColor = useColorModeValue('gray.500', 'var(--text-secondary)');
     const iconActiveColor = 'white';
-    const iconHoverColor = useColorModeValue('gray.700', 'var(--text-primary)');
+    const iconHoverColor = useColorModeValue('green.600', 'green.300');
 
     return (
       <Flex
@@ -242,9 +242,9 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
         bg={isActive ? activeBg : 'transparent'}
         color={isActive ? activeColor : inactiveColor}
         borderLeft="3px solid"
-        borderLeftColor={isActive ? 'var(--accent-color)' : 'transparent'}
+        borderLeftColor={isActive ? 'green.500' : 'transparent'}
         _hover={{
-          bg: isActive ? 'var(--accent-color)' : hoverBg,
+          bg: isActive ? 'green.600' : hoverBg,
           color: isActive ? 'white' : hoverColor,
           transform: 'translateX(4px)',
         }}

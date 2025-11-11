@@ -3,10 +3,14 @@ package controllers
 import (
 	"app-sistem-akuntansi/models"
 	"app-sistem-akuntansi/services"
+	"app-sistem-akuntansi/utils"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 	
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 type DailyUpdateController struct {
@@ -31,9 +35,14 @@ func NewDailyUpdateController(service services.DailyUpdateService) *DailyUpdateC
 // @Failure 500 {object} map[string]interface{}
 // @Router /projects/{projectId}/daily-updates [get]
 func (dc *DailyUpdateController) GetDailyUpdates(c *gin.Context) {
-	projectID, err := strconv.ParseUint(c.Param("projectId"), 10, 32)
+	projectIDStr := c.Param("id")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "Invalid project ID",
+			"project_id": projectIDStr,
+			"details":    err.Error(),
+		})
 		return
 	}
 	
@@ -69,13 +78,13 @@ func (dc *DailyUpdateController) GetDailyUpdates(c *gin.Context) {
 // @Failure 404 {object} map[string]interface{}
 // @Router /projects/{projectId}/daily-updates/{id} [get]
 func (dc *DailyUpdateController) GetDailyUpdate(c *gin.Context) {
-	projectID, err := strconv.ParseUint(c.Param("projectId"), 10, 32)
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
 	
-	updateID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
 		return
@@ -103,26 +112,135 @@ func (dc *DailyUpdateController) GetDailyUpdate(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /projects/{projectId}/daily-updates [post]
 func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
-	projectID, err := strconv.ParseUint(c.Param("projectId"), 10, 32)
+	projectIDStr := c.Param("id")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "Invalid project ID",
+			"project_id": projectIDStr,
+			"details":    err.Error(),
+		})
 		return
 	}
 	
+	log.Printf("📝 CreateDailyUpdate - Project ID: %d, Content-Type: %s", projectID, c.GetHeader("Content-Type"))
+	
 	var dailyUpdate models.DailyUpdate
 	
-	if err := c.ShouldBindJSON(&dailyUpdate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	// Check Content-Type to determine how to parse
+	contentType := c.GetHeader("Content-Type")
+	
+	// Check if it's multipart/form-data (contains "multipart/form-data" prefix)
+	isMultipart := contentType != "" && (contentType == "multipart/form-data" || 
+		len(contentType) > 19 && contentType[:19] == "multipart/form-data")
+	
+	if !isMultipart && contentType == "application/json" {
+		// JSON request without files
+		if err := c.ShouldBindJSON(&dailyUpdate); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid request body",
+				"details": err.Error(),
+			})
+			return
+		}
+	} else {
+		// Multipart form data with files
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid multipart form",
+				"details": err.Error(),
+			})
+			return
+		}
+		
+		// Parse form fields
+		dateStr := c.PostForm("date")
+		if dateStr != "" {
+			// Try parsing ISO 8601 format first
+			parsedDate, err := time.Parse(time.RFC3339, dateStr)
+			if err != nil {
+				// Try parsing YYYY-MM-DD format
+				parsedDate, err = time.Parse("2006-01-02", dateStr)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{
+						"error":   "Invalid date format",
+						"details": "Expected ISO 8601 or YYYY-MM-DD format",
+					})
+					return
+				}
+			}
+			dailyUpdate.Date = parsedDate
+		}
+		
+		dailyUpdate.Weather = c.PostForm("weather")
+		dailyUpdate.WorkDescription = c.PostForm("work_description")
+		dailyUpdate.MaterialsUsed = c.PostForm("materials_used")
+		dailyUpdate.Issues = c.PostForm("issues")
+		dailyUpdate.CreatedBy = c.PostForm("created_by")
+		
+		log.Printf("📋 Parsed Data - Date: %v, Weather: %s, Workers: %d, Description: %s", dailyUpdate.Date, dailyUpdate.Weather, dailyUpdate.WorkersPresent, dailyUpdate.WorkDescription)
+		
+		// Parse workers_present
+		workersStr := c.PostForm("workers_present")
+		if workersStr != "" {
+			workers, err := strconv.Atoi(workersStr)
+			if err == nil {
+				dailyUpdate.WorkersPresent = workers
+			}
+		}
+		
+		// Handle photo uploads
+		files := form.File["photos"]
+		if len(files) > 0 {
+			config := utils.DefaultUploadConfig()
+			filePaths, err := utils.SaveMultipleFiles(files, config)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "Failed to upload photos",
+					"details": err.Error(),
+				})
+				return
+			}
+			// Convert file paths to public URLs
+			var photoURLs []string
+			for _, path := range filePaths {
+				photoURLs = append(photoURLs, utils.GetPublicURL(path))
+			}
+			dailyUpdate.Photos = pq.StringArray(photoURLs)
+		}
 	}
 	
 	// Set the project ID from URL param
 	dailyUpdate.ProjectID = uint(projectID)
 	
-	if err := dc.service.CreateDailyUpdate(&dailyUpdate); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Validate required fields
+	if dailyUpdate.Date.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Date is required",
+		})
 		return
 	}
+	
+	if dailyUpdate.WorkDescription == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Work description is required",
+		})
+		return
+	}
+	
+	log.Printf("💾 Calling service.CreateDailyUpdate...")
+	if err := dc.service.CreateDailyUpdate(&dailyUpdate); err != nil {
+		log.Printf("❌ Service error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":      "Failed to create daily update",
+			"details":    err.Error(),
+			"project_id": projectID,
+		})
+		return
+	}
+	
+	log.Printf("✅ Daily update created successfully - ID: %d", dailyUpdate.ID)
 	
 	c.JSON(http.StatusCreated, dailyUpdate)
 }
@@ -141,13 +259,13 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 // @Failure 404 {object} map[string]interface{}
 // @Router /projects/{projectId}/daily-updates/{id} [put]
 func (dc *DailyUpdateController) UpdateDailyUpdate(c *gin.Context) {
-	projectID, err := strconv.ParseUint(c.Param("projectId"), 10, 32)
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
 	
-	updateID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
 		return
@@ -182,13 +300,13 @@ func (dc *DailyUpdateController) UpdateDailyUpdate(c *gin.Context) {
 // @Failure 404 {object} map[string]interface{}
 // @Router /projects/{projectId}/daily-updates/{id} [delete]
 func (dc *DailyUpdateController) DeleteDailyUpdate(c *gin.Context) {
-	projectID, err := strconv.ParseUint(c.Param("projectId"), 10, 32)
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
 	
-	updateID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
 		return

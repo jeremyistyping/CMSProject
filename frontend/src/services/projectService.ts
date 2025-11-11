@@ -77,7 +77,34 @@ export const projectService = {
     return response.data;
   },
 
-  async createDailyUpdate(projectId: string, data: Partial<DailyUpdate>): Promise<DailyUpdate> {
+  async createDailyUpdate(projectId: string, data: Partial<DailyUpdate>, photos?: File[]): Promise<DailyUpdate> {
+    // If photos are provided, use FormData for multipart upload
+    if (photos && photos.length > 0) {
+      const formData = new FormData();
+      
+      // Append all form fields as JSON string or individual fields
+      formData.append('date', data.date || new Date().toISOString());
+      formData.append('weather', data.weather || 'Sunny');
+      formData.append('workers_present', String(data.workers_present || 0));
+      formData.append('work_description', data.work_description || '');
+      formData.append('materials_used', data.materials_used || '');
+      formData.append('issues', data.issues || '');
+      formData.append('created_by', data.created_by || 'Current User');
+      
+      // Append photo files
+      photos.forEach((photo) => {
+        formData.append('photos', photo);
+      });
+      
+      const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
+    
+    // No photos, use regular JSON
     const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, data);
     return response.data;
   },
