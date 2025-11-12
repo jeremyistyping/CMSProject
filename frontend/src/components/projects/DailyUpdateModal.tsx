@@ -46,6 +46,7 @@ interface DailyUpdateFormData {
   work_description: string;
   materials_used: string;
   issues: string;
+  tomorrows_plan: string;
 }
 
 interface PhotoPreview {
@@ -79,6 +80,7 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
     work_description: '',
     materials_used: '',
     issues: '',
+    tomorrows_plan: '',
   });
 
   useEffect(() => {
@@ -91,6 +93,7 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
         work_description: dailyUpdate.work_description,
         materials_used: dailyUpdate.materials_used,
         issues: dailyUpdate.issues,
+        tomorrows_plan: dailyUpdate.tomorrows_plan,
       });
       // Clear photos on edit mode (for now, we don't support editing photos)
       setPhotoFiles([]);
@@ -103,6 +106,7 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
         work_description: '',
         materials_used: '',
         issues: '',
+        tomorrows_plan: '',
       });
       setPhotoFiles([]);
     }
@@ -431,6 +435,34 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
                 />
                 <Text fontSize="xs" color="gray.500" mt={1}>
                   Report any problems encountered today (optional)
+                </Text>
+              </FormControl>
+
+              {/* Tomorrow's Plan */}
+              <FormControl>
+                <FormLabel color={textColor} fontSize="sm" fontWeight="semibold" mb={2}>
+                  Tomorrow's Plan
+                </FormLabel>
+                <Textarea
+                  name="tomorrows_plan"
+                  value={formData.tomorrows_plan}
+                  onChange={handleInputChange}
+                  placeholder="Planned activities for tomorrow..."
+                  rows={3}
+                  bg={inputBgColor}
+                  color={inputTextColor}
+                  borderColor={borderColor}
+                  borderWidth="1px"
+                  isDisabled={loading}
+                  resize="vertical"
+                  _focus={{
+                    borderColor: 'green.500',
+                    boxShadow: '0 0 0 1px var(--accent-color)',
+                  }}
+                  _placeholder={{ color: placeholderColor }}
+                />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  Describe planned work for tomorrow (optional)
                 </Text>
               </FormControl>
 

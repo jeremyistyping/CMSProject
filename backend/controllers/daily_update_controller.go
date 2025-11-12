@@ -177,6 +177,7 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 		dailyUpdate.WorkDescription = c.PostForm("work_description")
 		dailyUpdate.MaterialsUsed = c.PostForm("materials_used")
 		dailyUpdate.Issues = c.PostForm("issues")
+		dailyUpdate.TomorrowsPlan = c.PostForm("tomorrows_plan")
 		dailyUpdate.CreatedBy = c.PostForm("created_by")
 		
 		log.Printf("📋 Parsed Data - Date: %v, Weather: %s, Workers: %d, Description: %s", dailyUpdate.Date, dailyUpdate.Weather, dailyUpdate.WorkersPresent, dailyUpdate.WorkDescription)

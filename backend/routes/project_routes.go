@@ -20,6 +20,10 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	dailyUpdateService := services.NewDailyUpdateService(db)
 	dailyUpdateController := controllers.NewDailyUpdateController(dailyUpdateService)
 	
+	// Initialize Milestone service and controller
+	milestoneService := services.NewMilestoneService(db)
+	milestoneController := controllers.NewMilestoneController(milestoneService)
+	
 	// Project routes
 	projects := router.Group("/projects")
 	{
@@ -46,6 +50,14 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		projects.POST("/:id/daily-updates", dailyUpdateController.CreateDailyUpdate)   // POST /api/v1/projects/:id/daily-updates
 		projects.PUT("/:id/daily-updates/:updateId", dailyUpdateController.UpdateDailyUpdate) // PUT /api/v1/projects/:id/daily-updates/:updateId
 		projects.DELETE("/:id/daily-updates/:updateId", dailyUpdateController.DeleteDailyUpdate) // DELETE /api/v1/projects/:id/daily-updates/:updateId
+		
+		// Milestones routes (nested under projects)
+		projects.GET("/:id/milestones", milestoneController.GetMilestones)                    // GET /api/v1/projects/:id/milestones
+		projects.GET("/:id/milestones/:milestoneId", milestoneController.GetMilestone)        // GET /api/v1/projects/:id/milestones/:milestoneId
+		projects.POST("/:id/milestones", milestoneController.CreateMilestone)                 // POST /api/v1/projects/:id/milestones
+		projects.PUT("/:id/milestones/:milestoneId", milestoneController.UpdateMilestone)     // PUT /api/v1/projects/:id/milestones/:milestoneId
+		projects.DELETE("/:id/milestones/:milestoneId", milestoneController.DeleteMilestone)  // DELETE /api/v1/projects/:id/milestones/:milestoneId
+		projects.POST("/:id/milestones/:milestoneId/complete", milestoneController.CompleteMilestone) // POST /api/v1/projects/:id/milestones/:milestoneId/complete
 	}
 }
 

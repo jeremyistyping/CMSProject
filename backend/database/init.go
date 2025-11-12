@@ -165,6 +165,11 @@ func RunMigrations(db *gorm.DB) {
 			// Notification models
 			&models.Notification{},
 			&models.StockAlert{},
+			
+			// Project models
+			&models.Project{},
+			&models.DailyUpdate{},
+			&models.Milestone{},
 		)
 
 	if err != nil {

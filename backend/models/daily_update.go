@@ -16,6 +16,7 @@ type DailyUpdate struct {
 	WorkDescription  string          `json:"work_description" gorm:"type:text;not null"`
 	MaterialsUsed    string          `json:"materials_used" gorm:"type:text"`
 	Issues           string          `json:"issues" gorm:"type:text"`
+	TomorrowsPlan    string          `json:"tomorrows_plan" gorm:"type:text"`
 	Photos           pq.StringArray  `json:"photos" gorm:"type:text[]"` // PostgreSQL array of photo URLs/paths
 	CreatedBy        string          `json:"created_by" gorm:"not null;size:100"`
 	CreatedAt        time.Time       `json:"created_at"`

@@ -43,6 +43,7 @@ import projectService from '@/services/projectService';
 import { Project } from '@/types/project';
 import UpdateProgressModal from '@/components/projects/UpdateProgressModal';
 import DailyUpdatesTab from '@/components/projects/DailyUpdatesTab';
+import MilestonesTab from '@/components/projects/MilestonesTab';
 
 // Mock data untuk demo
 const MOCK_PROJECT: Project = {
@@ -480,22 +481,12 @@ export default function ProjectDetailPage() {
 
               {/* Daily Updates Tab */}
               <TabPanel p={6}>
-                <DailyUpdatesTab projectId={projectId} />
+                <DailyUpdatesTab projectId={projectId} project={project || undefined} />
               </TabPanel>
 
               {/* Milestones Tab */}
               <TabPanel p={6}>
-                <Center h="400px">
-                  <VStack spacing={4}>
-                    <Icon as={FiTarget} boxSize={16} color="gray.400" />
-                    <Text color={subtextColor} fontSize="lg">
-                      Milestones
-                    </Text>
-                    <Text color={subtextColor} fontSize="sm">
-                      Feature coming soon
-                    </Text>
-                  </VStack>
-                </Center>
+                <MilestonesTab projectId={Number(projectId)} />
               </TabPanel>
 
               {/* Weekly Reports Tab */}

@@ -72,8 +72,12 @@ export const projectService = {
   },
 
   // Daily Updates
-  async getDailyUpdates(projectId: string): Promise<DailyUpdate[]> {
-    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`);
+  async getDailyUpdates(projectId: string, startDate?: string, endDate?: string): Promise<DailyUpdate[]> {
+    const params: any = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, { params });
     return response.data;
   },
 
@@ -89,6 +93,7 @@ export const projectService = {
       formData.append('work_description', data.work_description || '');
       formData.append('materials_used', data.materials_used || '');
       formData.append('issues', data.issues || '');
+      formData.append('tomorrows_plan', data.tomorrows_plan || '');
       formData.append('created_by', data.created_by || 'Current User');
       
       // Append photo files

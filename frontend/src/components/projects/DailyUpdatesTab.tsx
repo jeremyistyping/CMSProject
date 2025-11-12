@@ -48,19 +48,24 @@ import {
   FiImage,
   FiChevronLeft,
   FiChevronRight,
+  FiDownload,
 } from 'react-icons/fi';
 import projectService from '@/services/projectService';
-import { DailyUpdate } from '@/types/project';
+import { DailyUpdate, Project } from '@/types/project';
 import DailyUpdateModal from './DailyUpdateModal';
+import DailyUpdateViewModal from './DailyUpdateViewModal';
 import PhotoGallery from './PhotoGallery';
+import { generateDailyUpdatesPDF } from '@/utils/dailyUpdatesPdfExport';
 
 interface DailyUpdatesTabProps {
   projectId: string;
+  project?: Project;
 }
 
-const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
+const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project }) => {
   const toast = useToast();
   const { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
+  const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isPhotoGalleryOpen, onOpen: onPhotoGalleryOpen, onClose: onPhotoGalleryClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -68,8 +73,10 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
   const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUpdate, setSelectedUpdate] = useState<DailyUpdate | null>(null);
+  const [viewUpdate, setViewUpdate] = useState<DailyUpdate | null>(null);
   const [updateToDelete, setUpdateToDelete] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -81,12 +88,12 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
 
   useEffect(() => {
     fetchDailyUpdates();
-  }, [projectId]);
+  }, [projectId, startDate, endDate]);
 
   const fetchDailyUpdates = async () => {
     try {
       setLoading(true);
-      const data = await projectService.getDailyUpdates(projectId);
+      const data = await projectService.getDailyUpdates(projectId, startDate, endDate);
       setDailyUpdates(data || []);
     } catch (error: any) {
       console.error('Error fetching daily updates:', error);
@@ -114,9 +121,22 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
     onModalOpen();
   };
 
+  const handleView = (update: DailyUpdate) => {
+    setViewUpdate(update);
+    onViewOpen();
+  };
+
   const handleEdit = (update: DailyUpdate) => {
     setSelectedUpdate(update);
     onModalOpen();
+  };
+
+  const handleEditFromView = () => {
+    if (viewUpdate) {
+      setSelectedUpdate(viewUpdate);
+      setViewUpdate(null);
+      onModalOpen();
+    }
   };
 
   const handleViewPhotos = (photos: string[]) => {
@@ -196,9 +216,64 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
     });
   };
 
-  const filteredUpdates = dateFilter
-    ? dailyUpdates.filter((update) => update.date.startsWith(dateFilter))
-    : dailyUpdates;
+  const handleClearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const handleExportPDF = async () => {
+    if (!project) {
+      toast({
+        title: 'Error',
+        description: 'Project information not available',
+        status: 'error',
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (dailyUpdates.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'No daily updates to export',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      await generateDailyUpdatesPDF({
+        projectInfo: {
+          name: project.project_name,
+          location: project.address || project.city,
+          client: project.customer,
+          status: project.status,
+          progress: project.overall_progress || 0,
+        },
+        dailyUpdates: dailyUpdates,
+        dateRange: {
+          startDate: startDate,
+          endDate: endDate,
+        },
+      });
+
+      toast({
+        title: 'Success',
+        description: 'PDF report generated successfully',
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate PDF report',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -211,26 +286,58 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
   return (
     <Box>
       <VStack align="stretch" spacing={4}>
-        {/* Header with Add Button and Date Filter */}
+        {/* Header with Add Button and Date Range Filter */}
         <HStack justify="space-between" flexWrap="wrap" gap={4}>
           <HStack spacing={3}>
             <Icon as={FiCalendar} boxSize={5} color="green.500" />
             <Text fontSize="lg" fontWeight="semibold" color={textColor}>
-              Daily Updates ({filteredUpdates.length})
+              Daily Updates ({dailyUpdates.length})
             </Text>
           </HStack>
 
           <HStack spacing={3} flexWrap="wrap">
-            <Input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              placeholder="Filter by date"
-              w="200px"
+            <HStack spacing={2}>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="Start date"
+                w="150px"
+                size="sm"
+                bg={bgColor}
+                borderColor={borderColor}
+              />
+              <Text fontSize="sm" color={subtextColor}>to</Text>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="End date"
+                w="150px"
+                size="sm"
+                bg={bgColor}
+                borderColor={borderColor}
+              />
+              {(startDate || endDate) && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  colorScheme="gray"
+                  onClick={handleClearFilters}
+                >
+                  Clear
+                </Button>
+              )}
+            </HStack>
+            <Button
+              leftIcon={<FiDownload />}
+              colorScheme="blue"
               size="sm"
-              bg={bgColor}
-              borderColor={borderColor}
-            />
+              onClick={handleExportPDF}
+              isDisabled={dailyUpdates.length === 0}
+            >
+              Export PDF
+            </Button>
             <Button
               leftIcon={<FiPlus />}
               colorScheme="green"
@@ -243,7 +350,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
         </HStack>
 
         {/* Daily Updates Cards with Horizontal Scroll */}
-        {filteredUpdates.length === 0 ? (
+        {dailyUpdates.length === 0 ? (
           <Card borderWidth="1px" borderColor={borderColor}>
             <CardBody>
               <Center h="300px">
@@ -262,7 +369,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
         ) : (
           <Box position="relative">
             {/* Navigation Buttons */}
-            {filteredUpdates.length > 1 && (
+            {dailyUpdates.length > 1 && (
               <>
                 <IconButton
                   icon={<FiChevronLeft />}
@@ -318,7 +425,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
               pb={4}
             >
               <HStack spacing={4} align="stretch" minH="320px">
-                {filteredUpdates.map((update) => (
+                {dailyUpdates.map((update) => (
                   <Card
                     key={update.id}
                     minW="380px"
@@ -357,6 +464,12 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
                               aria-label="Actions"
                             />
                             <MenuList>
+                              <MenuItem
+                                icon={<FiEye />}
+                                onClick={() => handleView(update)}
+                              >
+                                View Details
+                              </MenuItem>
                               <MenuItem
                                 icon={<FiEdit />}
                                 onClick={() => handleEdit(update)}
@@ -454,13 +567,21 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId }) => {
         )}
       </VStack>
 
-      {/* Daily Update Modal */}
+      {/* Daily Update Modal (Edit/Create) */}
       <DailyUpdateModal
         isOpen={isModalOpen}
         onClose={onModalClose}
         projectId={projectId}
         dailyUpdate={selectedUpdate}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* Daily Update View Modal (Read-only) */}
+      <DailyUpdateViewModal
+        isOpen={isViewOpen}
+        onClose={onViewClose}
+        dailyUpdate={viewUpdate}
+        onEdit={handleEditFromView}
       />
 
       {/* Photo Gallery Modal */}

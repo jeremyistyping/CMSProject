@@ -62,6 +62,7 @@ export interface DailyUpdate {
   work_description: string;
   materials_used: string;
   issues: string;
+  tomorrows_plan: string;
   photos: string[];
   created_by: string;
   created_at: string;
