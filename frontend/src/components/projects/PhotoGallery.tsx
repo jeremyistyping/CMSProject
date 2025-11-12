@@ -55,6 +55,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   };
 
   const handleDownload = (photoUrl: string) => {
+    console.log('Downloading photo:', photoUrl);
     const link = document.createElement('a');
     link.href = photoUrl;
     link.download = photoUrl.split('/').pop() || 'photo.jpg';
@@ -71,10 +72,29 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   // Convert relative URLs to full URLs
   // Photos are served from backend (port 8080), not frontend (port 3000)
   const getFullUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
+    if (!url) {
+      console.warn('Empty photo URL provided');
+      return '';
+    }
+    
+    if (url.startsWith('http')) {
+      console.log('Photo URL already absolute:', url);
+      return url;
+    }
+    
+    // Normalize path - convert Windows backslashes to forward slashes
+    let normalizedUrl = url.replace(/\\/g, '/');
+    
+    // Ensure leading slash
+    if (!normalizedUrl.startsWith('/')) {
+      normalizedUrl = '/' + normalizedUrl;
+    }
+    
     // Use backend URL for uploaded files
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    return `${backendUrl}${url}`;
+    const fullUrl = `${backendUrl}${normalizedUrl}`;
+    console.log('Converting relative URL to absolute:', url, '->', fullUrl);
+    return fullUrl;
   };
 
   if (photos.length === 0) {
