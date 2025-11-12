@@ -133,8 +133,20 @@ func isAllowedExtension(ext string, allowedExtensions []string) bool {
 
 // GetPublicURL converts a file path to a public URL
 func GetPublicURL(filePath string) string {
+	// Normalize path separators - convert Windows backslashes to forward slashes
+	publicPath := strings.ReplaceAll(filePath, "\\", "/")
+	
 	// Remove the ./uploads prefix and replace with /uploads for web access
-	publicPath := strings.Replace(filePath, "./uploads", "/uploads", 1)
+	publicPath = strings.Replace(publicPath, "./uploads", "/uploads", 1)
+	
+	// If path doesn't start with /, add it (for paths without ./ prefix)
+	if !strings.HasPrefix(publicPath, "/") {
+		// Check if it starts with "uploads" (without leading ./)
+		if strings.HasPrefix(publicPath, "uploads") {
+			publicPath = "/" + publicPath
+		}
+	}
+	
 	return publicPath
 }
 

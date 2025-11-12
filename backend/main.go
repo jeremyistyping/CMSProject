@@ -156,19 +156,57 @@ func main() {
 		log.Println("✅ Enhanced Swagger routes configured successfully!")
 	}
 
-	// Serve static files for uploads
+	// Setup routes first
+	routes.SetupRoutes(r, db, startupService)
+	
+	// Serve static files for uploads with proper CORS headers - AFTER SetupRoutes
 	// Use absolute path to ensure it works regardless of working directory
 	uploadDir := filepath.Join(".", "uploads")
+	var uploadPath string
 	if absPath, err := filepath.Abs(uploadDir); err == nil {
 		log.Printf("📁 Serving static files from: %s", absPath)
-		r.Static("/uploads", absPath)
+		uploadPath = absPath
 	} else {
 		log.Printf("⚠️ Warning: Could not get absolute path for uploads, using relative path")
-		r.Static("/uploads", "./uploads")
+		uploadPath = "./uploads"
 	}
 	
-	// Setup routes
-	routes.SetupRoutes(r, db, startupService)
+	// Static file handler with CORS headers for images
+	log.Println("🖼️  Registering /uploads route handler...")
+	r.GET("/uploads/*filepath", func(c *gin.Context) {
+		// Set CORS headers for images
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "*")
+		c.Header("Cache-Control", "public, max-age=31536000") // Cache images for 1 year
+		
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		
+		// Serve the file
+		filePath := c.Param("filepath")
+		// Remove leading slash from filepath param
+		if len(filePath) > 0 && filePath[0] == '/' {
+			filePath = filePath[1:]
+		}
+		fullPath := filepath.Join(uploadPath, filePath)
+		
+		log.Printf("📝 Serving file: %s -> %s", c.Request.URL.Path, fullPath)
+		
+		// Check if file exists
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			log.Printf("❌ File not found: %s", fullPath)
+			c.JSON(404, gin.H{"error": "File not found", "path": filePath, "full_path": fullPath})
+			return
+		}
+		
+		// Serve the file
+		c.File(fullPath)
+		log.Printf("✅ File served successfully: %s", fullPath)
+	})
+	log.Println("✅ /uploads route handler registered!")
 
 	// Start server
 	port := cfg.ServerPort

@@ -192,22 +192,31 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 		
 		// Handle photo uploads
 		files := form.File["photos"]
+		log.Printf("📷 Received %d photo files for upload", len(files))
 		if len(files) > 0 {
 			config := utils.DefaultUploadConfig()
 			filePaths, err := utils.SaveMultipleFiles(files, config)
 			if err != nil {
+				log.Printf("❌ Failed to save photos: %v", err)
 				c.JSON(http.StatusBadRequest, gin.H{
 					"error":   "Failed to upload photos",
 					"details": err.Error(),
 				})
 				return
 			}
+			log.Printf("✅ Saved %d photos to disk", len(filePaths))
+			
 			// Convert file paths to public URLs
 			var photoURLs []string
-			for _, path := range filePaths {
-				photoURLs = append(photoURLs, utils.GetPublicURL(path))
+			for i, path := range filePaths {
+				publicURL := utils.GetPublicURL(path)
+				photoURLs = append(photoURLs, publicURL)
+				log.Printf("🔗 Photo %d: %s -> %s", i+1, path, publicURL)
 			}
 			dailyUpdate.Photos = pq.StringArray(photoURLs)
+			log.Printf("💾 Storing %d photo URLs in database: %v", len(photoURLs), photoURLs)
+		} else {
+			log.Printf("ℹ️ No photos uploaded")
 		}
 	}
 	
