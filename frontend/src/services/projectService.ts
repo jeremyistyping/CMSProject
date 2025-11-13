@@ -144,23 +144,33 @@ export const projectService = {
   },
 
   // Timeline Schedule
-  async getTimelineSchedule(projectId: string): Promise<TimelineSchedule[]> {
-    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/timeline`);
+  async getTimelineSchedules(projectId: string): Promise<TimelineSchedule[]> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules`);
     return response.data;
   },
 
-  async createTimelineItem(projectId: string, data: Partial<TimelineSchedule>): Promise<TimelineSchedule> {
-    const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/timeline`, data);
+  async getTimelineSchedule(projectId: string, scheduleId: string): Promise<TimelineSchedule> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules/${scheduleId}`);
     return response.data;
   },
 
-  async updateTimelineItem(projectId: string, itemId: string, data: Partial<TimelineSchedule>): Promise<TimelineSchedule> {
-    const response = await api.put(`${PROJECT_ENDPOINT}/${projectId}/timeline/${itemId}`, data);
+  async createTimelineSchedule(projectId: string, data: Partial<TimelineSchedule>): Promise<TimelineSchedule> {
+    const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules`, data);
     return response.data;
   },
 
-  async deleteTimelineItem(projectId: string, itemId: string): Promise<void> {
-    await api.delete(`${PROJECT_ENDPOINT}/${projectId}/timeline/${itemId}`);
+  async updateTimelineSchedule(projectId: string, scheduleId: string, data: Partial<TimelineSchedule>): Promise<TimelineSchedule> {
+    const response = await api.put(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules/${scheduleId}`, data);
+    return response.data;
+  },
+
+  async deleteTimelineSchedule(projectId: string, scheduleId: string): Promise<void> {
+    await api.delete(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules/${scheduleId}`);
+  },
+
+  async updateTimelineScheduleStatus(projectId: string, scheduleId: string, status: string): Promise<TimelineSchedule> {
+    const response = await api.patch(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules/${scheduleId}/status`, { status });
+    return response.data;
   },
 
   // Technical Data

@@ -28,6 +28,10 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	weeklyReportService := services.NewWeeklyReportService(db)
 	weeklyReportController := controllers.NewWeeklyReportController(weeklyReportService)
 	
+	// Initialize Timeline Schedule service and controller
+	timelineScheduleService := services.NewTimelineScheduleService(db)
+	timelineScheduleController := controllers.NewTimelineScheduleController(timelineScheduleService)
+	
 	// Project routes
 	projects := router.Group("/projects")
 	{
@@ -71,6 +75,14 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		projects.POST("/:id/weekly-reports", weeklyReportController.CreateWeeklyReport)                  // POST /api/v1/projects/:id/weekly-reports
 		projects.PUT("/:id/weekly-reports/:reportId", weeklyReportController.UpdateWeeklyReport)         // PUT /api/v1/projects/:id/weekly-reports/:reportId
 		projects.DELETE("/:id/weekly-reports/:reportId", weeklyReportController.DeleteWeeklyReport)      // DELETE /api/v1/projects/:id/weekly-reports/:reportId
+		
+		// Timeline Schedule routes (nested under projects)
+		projects.GET("/:id/timeline-schedules", timelineScheduleController.GetSchedules)                       // GET /api/v1/projects/:id/timeline-schedules
+		projects.GET("/:id/timeline-schedules/:scheduleId", timelineScheduleController.GetSchedule)            // GET /api/v1/projects/:id/timeline-schedules/:scheduleId
+		projects.POST("/:id/timeline-schedules", timelineScheduleController.CreateSchedule)                    // POST /api/v1/projects/:id/timeline-schedules
+		projects.PUT("/:id/timeline-schedules/:scheduleId", timelineScheduleController.UpdateSchedule)         // PUT /api/v1/projects/:id/timeline-schedules/:scheduleId
+		projects.DELETE("/:id/timeline-schedules/:scheduleId", timelineScheduleController.DeleteSchedule)      // DELETE /api/v1/projects/:id/timeline-schedules/:scheduleId
+		projects.PATCH("/:id/timeline-schedules/:scheduleId/status", timelineScheduleController.UpdateScheduleStatus) // PATCH /api/v1/projects/:id/timeline-schedules/:scheduleId/status
 	}
 }
 

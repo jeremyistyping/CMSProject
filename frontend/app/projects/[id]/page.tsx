@@ -45,6 +45,7 @@ import UpdateProgressModal from '@/components/projects/UpdateProgressModal';
 import DailyUpdatesTab from '@/components/projects/DailyUpdatesTab';
 import MilestonesTab from '@/components/projects/MilestonesTab';
 import WeeklyReportsTab from '@/components/projects/WeeklyReportsTab';
+import TimelineScheduleTab from '@/components/projects/TimelineScheduleTab';
 
 // Mock data untuk demo
 const MOCK_PROJECT: Project = {
@@ -497,17 +498,7 @@ export default function ProjectDetailPage() {
 
               {/* Timeline Schedule Tab */}
               <TabPanel p={6}>
-                <Center h="400px">
-                  <VStack spacing={4}>
-                    <Icon as={FiClock} boxSize={16} color="gray.400" />
-                    <Text color={subtextColor} fontSize="lg">
-                      Timeline Schedule
-                    </Text>
-                    <Text color={subtextColor} fontSize="sm">
-                      Feature coming soon
-                    </Text>
-                  </VStack>
-                </Center>
+                <TimelineScheduleTab projectId={projectId} />
               </TabPanel>
 
               {/* Technical Data Tab */}

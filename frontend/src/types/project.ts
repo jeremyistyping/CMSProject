@@ -83,14 +83,23 @@ export interface WeeklyReport {
 }
 
 export interface TimelineSchedule {
-  id: string;
-  project_id: string;
+  id: string | number;
+  project_id: string | number;
   work_area: string;
+  assigned_team: string;
   start_date: string;
   end_date: string;
-  duration_days: number;
-  status: 'not-started' | 'in-progress' | 'completed' | 'delayed';
-  dependencies: string[];
+  start_time: string;
+  end_time: string;
+  notes: string;
+  status: 'not-started' | 'in-progress' | 'completed';
+  duration?: number;
+  days_remaining?: number;
+  is_active?: boolean;
+  is_overdue?: boolean;
+  status_color?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TechnicalData {
