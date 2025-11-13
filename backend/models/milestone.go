@@ -11,6 +11,9 @@ type Milestone struct {
 	ProjectID       uint           `json:"project_id" gorm:"not null;index"`
 	Title           string         `json:"title" gorm:"not null;size:200"`
 	Description     string         `json:"description" gorm:"type:text"`
+	WorkArea        string         `json:"work_area" gorm:"size:100;index"` // Site Preparation, Foundation Work, etc.
+	Priority        string         `json:"priority" gorm:"size:20;default:'medium';index"` // low, medium, high
+	AssignedTeam    string         `json:"assigned_team" gorm:"size:200"`
 	TargetDate      time.Time      `json:"target_date" gorm:"not null;index"`
 	CompletionDate  *time.Time     `json:"completion_date" gorm:"index"`
 	Status          string         `json:"status" gorm:"not null;size:20;default:'pending';index"` // pending, in-progress, completed, delayed
@@ -36,10 +39,20 @@ const (
 	MilestoneStatusDelayed    = "delayed"
 )
 
+// Milestone Priority Constants
+const (
+	MilestonePriorityLow    = "low"
+	MilestonePriorityMedium = "medium"
+	MilestonePriorityHigh   = "high"
+)
+
 // BeforeCreate hook to set default values
 func (m *Milestone) BeforeCreate(tx *gorm.DB) error {
 	if m.Status == "" {
 		m.Status = MilestoneStatusPending
+	}
+	if m.Priority == "" {
+		m.Priority = MilestonePriorityMedium
 	}
 	if m.Progress == 0 {
 		m.Progress = 0

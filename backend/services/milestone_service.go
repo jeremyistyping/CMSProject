@@ -185,6 +185,25 @@ func (s *milestoneService) validateMilestone(milestone *models.Milestone) error 
 		return errors.New("progress must be between 0 and 100")
 	}
 	
+	// Validate priority
+	if milestone.Priority != "" {
+		validPriorities := []string{
+			models.MilestonePriorityLow,
+			models.MilestonePriorityMedium,
+			models.MilestonePriorityHigh,
+		}
+		validPriority := false
+		for _, p := range validPriorities {
+			if milestone.Priority == p {
+				validPriority = true
+				break
+			}
+		}
+		if !validPriority {
+			return errors.New("invalid priority value")
+		}
+	}
+	
 	return nil
 }
 

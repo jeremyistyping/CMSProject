@@ -24,6 +24,10 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	milestoneService := services.NewMilestoneService(db)
 	milestoneController := controllers.NewMilestoneController(milestoneService)
 	
+	// Initialize Weekly Report service and controller
+	weeklyReportService := services.NewWeeklyReportService(db)
+	weeklyReportController := controllers.NewWeeklyReportController(weeklyReportService)
+	
 	// Project routes
 	projects := router.Group("/projects")
 	{
@@ -58,6 +62,14 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		projects.PUT("/:id/milestones/:milestoneId", milestoneController.UpdateMilestone)     // PUT /api/v1/projects/:id/milestones/:milestoneId
 		projects.DELETE("/:id/milestones/:milestoneId", milestoneController.DeleteMilestone)  // DELETE /api/v1/projects/:id/milestones/:milestoneId
 		projects.POST("/:id/milestones/:milestoneId/complete", milestoneController.CompleteMilestone) // POST /api/v1/projects/:id/milestones/:milestoneId/complete
+		
+		// Weekly Reports routes (nested under projects)
+		projects.GET("/:id/weekly-reports", weeklyReportController.GetWeeklyReports)                    // GET /api/v1/projects/:id/weekly-reports
+		projects.GET("/:id/weekly-reports/:reportId", weeklyReportController.GetWeeklyReport)            // GET /api/v1/projects/:id/weekly-reports/:reportId
+		projects.POST("/:id/weekly-reports", weeklyReportController.CreateWeeklyReport)                  // POST /api/v1/projects/:id/weekly-reports
+		projects.PUT("/:id/weekly-reports/:reportId", weeklyReportController.UpdateWeeklyReport)         // PUT /api/v1/projects/:id/weekly-reports/:reportId
+		projects.DELETE("/:id/weekly-reports/:reportId", weeklyReportController.DeleteWeeklyReport)      // DELETE /api/v1/projects/:id/weekly-reports/:reportId
+		projects.GET("/:id/weekly-reports/:reportId/pdf", weeklyReportController.GeneratePDF)            // GET /api/v1/projects/:id/weekly-reports/:reportId/pdf
 	}
 }
 

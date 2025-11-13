@@ -3,6 +3,7 @@ package controllers
 import (
 	"app-sistem-akuntansi/models"
 	"app-sistem-akuntansi/services"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -135,10 +136,14 @@ func (mc *MilestoneController) CreateMilestone(c *gin.Context) {
 	}
 	
 	if err := mc.service.CreateMilestone(&milestone); err != nil {
+		// Log the error for debugging
+		log.Printf("[ERROR] Failed to create milestone: %v, Milestone: %+v", err, milestone)
+		
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":      "Failed to create milestone",
 			"details":    err.Error(),
 			"project_id": projectID,
+			"milestone":  milestone,
 		})
 		return
 	}

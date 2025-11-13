@@ -26,13 +26,12 @@ import { useForm } from 'react-hook-form';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface MilestoneFormData {
-  name: string;
+  title: string;
   description: string;
+  work_area: string;
+  priority: string;
+  assigned_team: string;
   target_date: string;
-  status: string;
-  order_number: number;
-  weight_percentage: number;
-  actual_completion_date?: string;
 }
 
 interface MilestoneModalProps {
@@ -62,13 +61,12 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
     formState: { errors, isSubmitting },
   } = useForm<MilestoneFormData>({
     defaultValues: {
-      name: '',
+      title: '',
       description: '',
+      work_area: '',
+      priority: 'medium',
+      assigned_team: '',
       target_date: '',
-      status: 'pending',
-      order_number: 1,
-      weight_percentage: 0,
-      actual_completion_date: '',
     },
   });
 
@@ -77,23 +75,21 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
     if (isOpen) {
       if (milestone) {
         // Edit mode - populate form with existing data
-        setValue('name', milestone.name || '');
+        setValue('title', milestone.title || '');
         setValue('description', milestone.description || '');
+        setValue('work_area', milestone.work_area || '');
+        setValue('priority', milestone.priority || 'medium');
+        setValue('assigned_team', milestone.assigned_team || '');
         setValue('target_date', milestone.target_date ? milestone.target_date.split('T')[0] : '');
-        setValue('status', milestone.status || 'pending');
-        setValue('order_number', milestone.order_number || 1);
-        setValue('weight_percentage', milestone.weight_percentage || 0);
-        setValue('actual_completion_date', milestone.actual_completion_date ? milestone.actual_completion_date.split('T')[0] : '');
       } else {
         // Add mode - reset to defaults
         reset({
-          name: '',
+          title: '',
           description: '',
+          work_area: '',
+          priority: 'medium',
+          assigned_team: '',
           target_date: '',
-          status: 'pending',
-          order_number: 1,
-          weight_percentage: 0,
-          actual_completion_date: '',
         });
       }
     }
@@ -107,13 +103,35 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
 
       const method = isEditMode ? 'PUT' : 'POST';
 
-      // Prepare payload
+      // Prepare payload - convert date string to ISO format
+      // Date input gives us YYYY-MM-DD format, we need to ensure proper parsing
+      let targetDateISO;
+      if (data.target_date) {
+        // Parse date string as YYYY-MM-DD and convert to ISO
+        const dateParts = data.target_date.split('-');
+        if (dateParts.length === 3) {
+          // Create date with explicit year, month (0-indexed), day
+          const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+          targetDateISO = dateObj.toISOString();
+        } else {
+          // Fallback to direct parsing
+          targetDateISO = new Date(data.target_date).toISOString();
+        }
+      } else {
+        targetDateISO = new Date().toISOString();
+      }
+
       const payload = {
-        ...data,
+        title: data.title,
+        description: data.description || '',
+        work_area: data.work_area || '',
+        priority: data.priority || 'medium',
+        assigned_team: data.assigned_team || '',
+        target_date: targetDateISO,
         project_id: projectId,
-        // Convert empty string to null for optional fields
-        actual_completion_date: data.actual_completion_date || null,
       };
+
+      console.log('Submitting milestone:', JSON.stringify(payload, null, 2));
 
       const token = localStorage.getItem('token');
       const response = await fetch(url, {
@@ -127,7 +145,8 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save milestone');
+        console.error('Backend error response:', errorData);
+        throw new Error(errorData.error || errorData.details || 'Failed to save milestone');
       }
 
       toast({
@@ -160,140 +179,136 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          {isEditMode ? t('milestones.editMilestone') : t('milestones.addMilestone')}
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleClose} 
+      size="xl" 
+      scrollBehavior="inside"
+      isCentered
+    >
+      <ModalOverlay 
+        bg="blackAlpha.600" 
+        backdropFilter="blur(4px)" 
+      />
+      <ModalContent 
+        bg="white" 
+        maxH="90vh"
+        borderRadius="lg"
+        boxShadow="xl"
+      >
+        <ModalHeader bg="white" borderTopRadius="lg" borderBottomWidth="1px" borderColor="gray.200">
+          {isEditMode ? 'Edit Milestone' : 'Add New Milestone'}
         </ModalHeader>
         <ModalCloseButton />
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ModalBody>
+          <ModalBody 
+            bg="white" 
+            overflowY="auto" 
+            maxH="calc(90vh - 140px)"
+            py={6}
+          >
             <VStack spacing={4} align="stretch">
-              {/* Name */}
-              <FormControl isInvalid={!!errors.name} isRequired>
-                <FormLabel>{t('milestones.name')}</FormLabel>
+              {/* Milestone Title */}
+              <FormControl isInvalid={!!errors.title} isRequired>
+                <FormLabel>Milestone Title</FormLabel>
                 <Input
-                  {...register('name', {
-                    required: t('milestones.nameRequired'),
+                  {...register('title', {
+                    required: 'Milestone title is required',
                     minLength: {
                       value: 3,
-                      message: t('milestones.nameMinLength'),
-                    },
-                    maxLength: {
-                      value: 100,
-                      message: t('milestones.nameMaxLength'),
+                      message: 'Title must be at least 3 characters',
                     },
                   })}
-                  placeholder={t('milestones.namePlaceholder')}
+                  placeholder="e.g., Electrical Installation"
+                  bg="white"
                 />
-                <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
+                <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
+              </FormControl>
+
+              {/* Work Area/Phase */}
+              <FormControl isInvalid={!!errors.work_area}>
+                <FormLabel>Work Area/Phase</FormLabel>
+                <Select {...register('work_area')} placeholder="Select work area" bg="white">
+                  <option value="Site Preparation">Site Preparation</option>
+                  <option value="Foundation Work">Foundation Work</option>
+                  <option value="Structural Work">Structural Work</option>
+                  <option value="Roofing">Roofing</option>
+                  <option value="Wall Installation">Wall Installation</option>
+                  <option value="Ceiling Installation">Ceiling Installation</option>
+                  <option value="Electrical Installation">Electrical Installation</option>
+                  <option value="Clean Water Installation">Clean Water Installation</option>
+                  <option value="Gray Water Installation">Gray Water Installation</option>
+                  <option value="Flooring Installation">Flooring Installation</option>
+                  <option value="HVAC Installation">HVAC Installation</option>
+                  <option value="Kitchen Equipment Installation">Kitchen Equipment Installation</option>
+                  <option value="Furniture Installation">Furniture Installation</option>
+                  <option value="Utensils Installation">Utensils Installation</option>
+                </Select>
+                <FormErrorMessage>{errors.work_area?.message}</FormErrorMessage>
+              </FormControl>
+
+              {/* Priority */}
+              <FormControl isInvalid={!!errors.priority}>
+                <FormLabel>Priority</FormLabel>
+                <Select {...register('priority')} bg="white">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </Select>
+                <FormErrorMessage>{errors.priority?.message}</FormErrorMessage>
+              </FormControl>
+
+              {/* Target Date */}
+              <FormControl isInvalid={!!errors.target_date} isRequired>
+                <FormLabel>Target Date</FormLabel>
+                <Input
+                  type="date"
+                  {...register('target_date', {
+                    required: 'Target date is required',
+                  })}
+                  placeholder="dd/mm/yyyy"
+                  bg="white"
+                />
+                <FormErrorMessage>{errors.target_date?.message}</FormErrorMessage>
+              </FormControl>
+
+              {/* Assigned Team */}
+              <FormControl isInvalid={!!errors.assigned_team}>
+                <FormLabel>Assigned Team</FormLabel>
+                <Input
+                  {...register('assigned_team')}
+                  placeholder="e.g., Electrical Team A"
+                  bg="white"
+                />
+                <FormErrorMessage>{errors.assigned_team?.message}</FormErrorMessage>
               </FormControl>
 
               {/* Description */}
               <FormControl isInvalid={!!errors.description}>
-                <FormLabel>{t('milestones.description')}</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <Textarea
-                  {...register('description', {
-                    maxLength: {
-                      value: 500,
-                      message: t('milestones.descriptionMaxLength'),
-                    },
-                  })}
-                  placeholder={t('milestones.descriptionPlaceholder')}
-                  rows={3}
+                  {...register('description')}
+                  placeholder="Detailed milestone description..."
+                  rows={4}
+                  bg="white"
                 />
                 <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
-              </FormControl>
-
-              <HStack spacing={4}>
-                {/* Order Number */}
-                <FormControl isInvalid={!!errors.order_number} isRequired flex={1}>
-                  <FormLabel>{t('milestones.orderNumber')}</FormLabel>
-                  <NumberInput min={1} max={100} defaultValue={1}>
-                    <NumberInputField
-                      {...register('order_number', {
-                        required: t('milestones.orderRequired'),
-                        valueAsNumber: true,
-                        min: {
-                          value: 1,
-                          message: t('milestones.orderMin'),
-                        },
-                        max: {
-                          value: 100,
-                          message: t('milestones.orderMax'),
-                        },
-                      })}
-                    />
-                  </NumberInput>
-                  <FormErrorMessage>{errors.order_number?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* Weight Percentage */}
-                <FormControl isInvalid={!!errors.weight_percentage} isRequired flex={1}>
-                  <FormLabel>{t('milestones.weight')} (%)</FormLabel>
-                  <NumberInput min={0} max={100} defaultValue={0}>
-                    <NumberInputField
-                      {...register('weight_percentage', {
-                        required: t('milestones.weightRequired'),
-                        valueAsNumber: true,
-                        min: {
-                          value: 0,
-                          message: t('milestones.weightMin'),
-                        },
-                        max: {
-                          value: 100,
-                          message: t('milestones.weightMax'),
-                        },
-                      })}
-                    />
-                  </NumberInput>
-                  <FormErrorMessage>{errors.weight_percentage?.message}</FormErrorMessage>
-                </FormControl>
-              </HStack>
-
-              <HStack spacing={4}>
-                {/* Status */}
-                <FormControl isInvalid={!!errors.status} isRequired flex={1}>
-                  <FormLabel>{t('milestones.status')}</FormLabel>
-                  <Select {...register('status', { required: t('milestones.statusRequired') })}>
-                    <option value="pending">{t('milestones.statusPending')}</option>
-                    <option value="in-progress">{t('milestones.statusInProgress')}</option>
-                    <option value="completed">{t('milestones.statusCompleted')}</option>
-                    <option value="delayed">{t('milestones.statusDelayed')}</option>
-                  </Select>
-                  <FormErrorMessage>{errors.status?.message}</FormErrorMessage>
-                </FormControl>
-
-                {/* Target Date */}
-                <FormControl isInvalid={!!errors.target_date} isRequired flex={1}>
-                  <FormLabel>{t('milestones.targetDate')}</FormLabel>
-                  <Input
-                    type="date"
-                    {...register('target_date', {
-                      required: t('milestones.targetDateRequired'),
-                    })}
-                  />
-                  <FormErrorMessage>{errors.target_date?.message}</FormErrorMessage>
-                </FormControl>
-              </HStack>
-
-              {/* Actual Completion Date - Optional */}
-              <FormControl isInvalid={!!errors.actual_completion_date}>
-                <FormLabel>{t('milestones.actualCompletionDate')}</FormLabel>
-                <Input type="date" {...register('actual_completion_date')} />
-                <FormErrorMessage>{errors.actual_completion_date?.message}</FormErrorMessage>
               </FormControl>
             </VStack>
           </ModalBody>
 
-          <ModalFooter>
+          <ModalFooter 
+            bg="white" 
+            borderBottomRadius="lg" 
+            borderTopWidth="1px" 
+            borderColor="gray.200"
+          >
             <Button variant="ghost" mr={3} onClick={handleClose} isDisabled={isSubmitting}>
-              {t('common.cancel')}
+              Cancel
             </Button>
             <Button colorScheme="blue" type="submit" isLoading={isSubmitting}>
-              {isEditMode ? t('common.update') : t('common.create')}
+              {isEditMode ? 'Update' : 'Add Milestone'}
             </Button>
           </ModalFooter>
         </form>
