@@ -65,11 +65,12 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		
 		// Weekly Reports routes (nested under projects)
 		projects.GET("/:id/weekly-reports", weeklyReportController.GetWeeklyReports)                    // GET /api/v1/projects/:id/weekly-reports
+		projects.GET("/:id/weekly-reports/export-all", weeklyReportController.ExportAllPDF)             // GET /api/v1/projects/:id/weekly-reports/export-all
 		projects.GET("/:id/weekly-reports/:reportId", weeklyReportController.GetWeeklyReport)            // GET /api/v1/projects/:id/weekly-reports/:reportId
+		projects.GET("/:id/weekly-reports/:reportId/pdf", weeklyReportController.GeneratePDF)            // GET /api/v1/projects/:id/weekly-reports/:reportId/pdf
 		projects.POST("/:id/weekly-reports", weeklyReportController.CreateWeeklyReport)                  // POST /api/v1/projects/:id/weekly-reports
 		projects.PUT("/:id/weekly-reports/:reportId", weeklyReportController.UpdateWeeklyReport)         // PUT /api/v1/projects/:id/weekly-reports/:reportId
 		projects.DELETE("/:id/weekly-reports/:reportId", weeklyReportController.DeleteWeeklyReport)      // DELETE /api/v1/projects/:id/weekly-reports/:reportId
-		projects.GET("/:id/weekly-reports/:reportId/pdf", weeklyReportController.GeneratePDF)            // GET /api/v1/projects/:id/weekly-reports/:reportId/pdf
 	}
 }
 

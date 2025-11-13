@@ -3,6 +3,8 @@ package controllers
 import (
 	"app-sistem-akuntansi/models"
 	"app-sistem-akuntansi/services"
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -390,6 +392,135 @@ func (wc *WeeklyReportController) generateWeeklyReportPDF(report *models.WeeklyR
 	}
 	
 	return pdf
+}
+
+// ExportAllPDF godoc
+// @Summary Export all weekly reports as PDF in a ZIP file
+// @Description Generate and download all weekly reports for a project as PDFs in a single ZIP file
+// @Tags weekly-reports
+// @Produce application/zip
+// @Param projectId path int true "Project ID"
+// @Param year query int false "Filter by year"
+// @Success 200 {file} zip
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /projects/{projectId}/weekly-reports/export-all [get]
+func (wc *WeeklyReportController) ExportAllPDF(c *gin.Context) {
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
+
+	// Check for year filter
+	yearStr := c.Query("year")
+	var reports []models.WeeklyReportDTO
+	
+	if yearStr != "" {
+		year, err := strconv.Atoi(yearStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid year parameter",
+				"details": err.Error(),
+			})
+			return
+		}
+		reports, err = wc.service.GetWeeklyReportsByYear(uint(projectID), year)
+	} else {
+		reports, err = wc.service.GetWeeklyReportsByProject(uint(projectID))
+	}
+	
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to fetch weekly reports",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	if len(reports) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "No weekly reports found",
+			"message": "There are no weekly reports available for this project",
+		})
+		return
+	}
+	
+	// Create a buffer to write the ZIP file to
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+	
+	// Generate PDF for each report and add to ZIP
+	for _, report := range reports {
+		// Generate PDF
+		pdf := wc.generateWeeklyReportPDF(&report)
+		
+		// Create filename for this PDF
+		filename := fmt.Sprintf("weekly_report_%s_week%d_%d.pdf",
+			sanitizeFilename(report.ProjectName), report.Week, report.Year)
+		
+		// Create a file in the ZIP archive
+		zipFile, err := zipWriter.Create(filename)
+		if err != nil {
+			zipWriter.Close()
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to create ZIP file",
+				"details": err.Error(),
+			})
+			return
+		}
+		
+		// Write PDF content to ZIP file
+		pdfBuffer := new(bytes.Buffer)
+		if err := pdf.Output(pdfBuffer); err != nil {
+			zipWriter.Close()
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to generate PDF",
+				"details": err.Error(),
+			})
+			return
+		}
+		
+		if _, err := zipFile.Write(pdfBuffer.Bytes()); err != nil {
+			zipWriter.Close()
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to write PDF to ZIP",
+				"details": err.Error(),
+			})
+			return
+		}
+	}
+	
+	// Close the ZIP writer
+	if err := zipWriter.Close(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to finalize ZIP file",
+			"details": err.Error(),
+		})
+		return
+	}
+	
+	// Set response headers
+	var zipFilename string
+	if len(reports) > 0 && reports[0].ProjectName != "" {
+		if yearStr != "" {
+			zipFilename = fmt.Sprintf("weekly_reports_%s_%s.zip",
+				sanitizeFilename(reports[0].ProjectName), yearStr)
+		} else {
+			zipFilename = fmt.Sprintf("weekly_reports_%s_all.zip",
+				sanitizeFilename(reports[0].ProjectName))
+		}
+	} else {
+		zipFilename = fmt.Sprintf("weekly_reports_project_%d.zip", projectID)
+	}
+	
+	c.Header("Content-Type", "application/zip")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", zipFilename))
+	c.Header("Content-Length", fmt.Sprintf("%d", buf.Len()))
+	
+	// Write ZIP content to response
+	c.Data(http.StatusOK, "application/zip", buf.Bytes())
 }
 
 // sanitizeFilename removes invalid characters from filename

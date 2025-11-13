@@ -23,6 +23,11 @@ import {
   useColorModeValue,
   Spinner,
   Center,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from '@chakra-ui/react';
 import { FiFileText, FiDownload, FiTrash2, FiBarChart } from 'react-icons/fi';
 import weeklyReportService, {
@@ -39,6 +44,8 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
   const [reports, setReports] = useState<WeeklyReportDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [exportingAll, setExportingAll] = useState(false);
   const toast = useToast();
 
   // Form state
@@ -77,15 +84,23 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
     setLoading(true);
     try {
       const data = await weeklyReportService.getWeeklyReports(projectId);
-      setReports(data);
+      setReports(data || []);
+      
+      // Show info if no reports found (not an error)
+      if (!data || data.length === 0) {
+        console.log(`No weekly reports found for project ID ${projectId}`);
+      }
     } catch (error: any) {
       console.error('Failed to load reports:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load weekly reports',
-        status: 'error',
-        duration: 3000,
-      });
+      // Only show error toast if it's a real error, not just empty data
+      if (error && error.message && !error.message.includes('404')) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to load weekly reports',
+          status: 'error',
+          duration: 3000,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -121,6 +136,14 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
         name === 'team_size'
           ? parseInt(value) || 0
           : value,
+    }));
+  };
+
+  // Handle number input changes (for NumberInput component)
+  const handleNumberChange = (name: string) => (valueAsString: string, valueAsNumber: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: isNaN(valueAsNumber) ? 0 : valueAsNumber,
     }));
   };
 
@@ -166,9 +189,60 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
     }
   };
 
-  const handleDownloadPDF = (reportId: number) => {
-    const url = weeklyReportService.getPDFUrl(projectId, reportId);
-    window.open(url, '_blank');
+  const handleDownloadPDF = async (reportId: number) => {
+    setDownloading(true);
+    try {
+      await weeklyReportService.downloadWeeklyReportPDF(projectId, reportId);
+      toast({
+        title: 'Success',
+        description: 'PDF downloaded successfully',
+        status: 'success',
+        duration: 2000,
+      });
+    } catch (error: any) {
+      console.error('Failed to download PDF:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to download PDF',
+        status: 'error',
+        duration: 4000,
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleExportAll = async () => {
+    if (reports.length === 0) {
+      toast({
+        title: 'No Reports',
+        description: 'There are no weekly reports to export',
+        status: 'warning',
+        duration: 3000,
+      });
+      return;
+    }
+
+    setExportingAll(true);
+    try {
+      await weeklyReportService.exportAllWeeklyReportsPDF(projectId);
+      toast({
+        title: 'Success',
+        description: `Exported ${reports.length} weekly report${reports.length > 1 ? 's' : ''} as ZIP`,
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (error: any) {
+      console.error('Failed to export all PDFs:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to export PDFs',
+        status: 'error',
+        duration: 4000,
+      });
+    } finally {
+      setExportingAll(false);
+    }
   };
 
   const handleDelete = async (reportId: number) => {
@@ -230,35 +304,47 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
               <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
                 <FormControl isRequired>
                   <FormLabel>Total Work Days</FormLabel>
-                  <Input
-                    type="number"
-                    name="total_work_days"
-                    value={formData.total_work_days}
-                    onChange={handleInputChange}
+                  <NumberInput
                     min={0}
-                  />
+                    value={formData.total_work_days}
+                    onChange={handleNumberChange('total_work_days')}
+                  >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
                 </FormControl>
 
                 <FormControl>
                   <FormLabel>Weather Delays (days)</FormLabel>
-                  <Input
-                    type="number"
-                    name="weather_delays"
-                    value={formData.weather_delays}
-                    onChange={handleInputChange}
+                  <NumberInput
                     min={0}
-                  />
+                    value={formData.weather_delays}
+                    onChange={handleNumberChange('weather_delays')}
+                  >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
                 </FormControl>
 
                 <FormControl isRequired>
                   <FormLabel>Team Size</FormLabel>
-                  <Input
-                    type="number"
-                    name="team_size"
-                    value={formData.team_size}
-                    onChange={handleInputChange}
+                  <NumberInput
                     min={1}
-                  />
+                    value={formData.team_size}
+                    onChange={handleNumberChange('team_size')}
+                  >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                      <NumberIncrementStepper />
+                      <NumberDecrementStepper />
+                    </NumberInputStepper>
+                  </NumberInput>
                 </FormControl>
               </Grid>
 
@@ -314,7 +400,10 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
               size="sm"
               colorScheme="blue"
               leftIcon={<FiDownload />}
-              onClick={() => toast({ title: 'Export all feature - coming soon', status: 'info' })}
+              onClick={handleExportAll}
+              isLoading={exportingAll}
+              loadingText="Exporting..."
+              isDisabled={reports.length === 0 || loading}
             >
               Export All PDF
             </Button>
@@ -364,6 +453,8 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
                           colorScheme="blue"
                           size="sm"
                           onClick={() => handleDownloadPDF(report.id)}
+                          isLoading={downloading}
+                          isDisabled={downloading}
                         />
                         <IconButton
                           aria-label="Delete"
