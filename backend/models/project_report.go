@@ -27,17 +27,59 @@ type BudgetVsActualCOAGroup struct {
 	Status        string  `json:"status"`        // OVER_BUDGET, UNDER_BUDGET, ON_TARGET
 }
 
+// PortfolioBudgetVsActualReport - Portfolio view of Budget vs Actual per project
+type PortfolioBudgetVsActualReport struct {
+	ReportDate time.Time                      `json:"report_date"`
+	StartDate  time.Time                      `json:"start_date"`
+	EndDate    time.Time                      `json:"end_date"`
+	Projects   []ProjectBudgetVsActualSummary `json:"projects"`
+}
+
+// ProgressVsCostPoint represents a single time point for progress vs cost correlation
+type ProgressVsCostPoint struct {
+	Date               time.Time `json:"date"`
+	PhysicalProgress   float64   `json:"physical_progress"`    // % fisik as-of date
+	CumulativeActual   float64   `json:"cumulative_actual"`    // total actual cost sampai tanggal ini
+	Budget             float64   `json:"budget"`               // total budget project (untuk referensi)
+	CostProgress       float64   `json:"cost_progress"`        // CumulativeActual / Budget * 100
+	ProgressGap        float64   `json:"progress_gap"`         // CostProgress - PhysicalProgress
+}
+
+// ProgressVsCostReport - time-series korelasi progress fisik vs biaya per project
+type ProgressVsCostReport struct {
+	ProjectID   uint                 `json:"project_id"`
+	ProjectName string               `json:"project_name"`
+	StartDate   time.Time            `json:"start_date"`
+	EndDate     time.Time            `json:"end_date"`
+	Budget      float64              `json:"budget"`
+	Points      []ProgressVsCostPoint `json:"points"`
+}
+
+// ProjectBudgetVsActualSummary - single project row for portfolio dashboard
+type ProjectBudgetVsActualSummary struct {
+	ProjectID        uint    `json:"project_id"`
+	ProjectName      string  `json:"project_name"`
+	Budget           float64 `json:"budget"`
+	Actual           float64 `json:"actual"`
+	Variance         float64 `json:"variance"`          // Budget - Actual
+	VariancePercent  float64 `json:"variance_percent"`  // (Variance / Budget) * 100
+	CostProgress     float64 `json:"cost_progress"`     // Actual / Budget * 100
+	PhysicalProgress float64 `json:"physical_progress"` // Project.OverallProgress
+	ProgressGap      float64 `json:"progress_gap"`      // CostProgress - PhysicalProgress
+	Status           string  `json:"status"`            // OVER_BUDGET, UNDER_UTILIZED, ON_TRACK, NO_BUDGET
+}
+
 // ProfitabilityReport - Report Profitability per Project
 type ProfitabilityReport struct {
-	ReportDate        time.Time             `json:"report_date"`
-	StartDate         time.Time             `json:"start_date"`
-	EndDate           time.Time             `json:"end_date"`
+	ReportDate        time.Time              `json:"report_date"`
+	StartDate         time.Time              `json:"start_date"`
+	EndDate           time.Time              `json:"end_date"`
 	Projects          []ProjectProfitability `json:"projects"`
-	TotalRevenue      float64               `json:"total_revenue"`
-	TotalDirectCost   float64               `json:"total_direct_cost"`
-	TotalOperational  float64               `json:"total_operational"`
-	TotalProfit       float64               `json:"total_profit"`
-	OverallMargin     float64               `json:"overall_margin"` // percentage
+	TotalRevenue      float64                `json:"total_revenue"`
+	TotalDirectCost   float64                `json:"total_direct_cost"`
+	TotalOperational  float64                `json:"total_operational"`
+	TotalProfit       float64                `json:"total_profit"`
+	OverallMargin     float64                `json:"overall_margin"` // percentage
 }
 
 type ProjectProfitability struct {

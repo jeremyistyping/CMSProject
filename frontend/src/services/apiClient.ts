@@ -272,6 +272,15 @@ export class ProductionApiClient implements IApiService {
         const timeout = config.timeout ?? this.config.timeout;
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+        // Get auth token from localStorage
+        let authHeaders = {};
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('token');
+          if (token) {
+            authHeaders = { 'Authorization': `Bearer ${token}` };
+          }
+        }
+
         // Prepare request configuration
         const requestConfig: RequestInit = {
           method,
@@ -280,6 +289,7 @@ export class ProductionApiClient implements IApiService {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'X-Request-ID': requestId,
+            ...authHeaders,
             ...config.headers
           },
           ...config

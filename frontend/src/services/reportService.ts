@@ -1,5 +1,6 @@
 import { API_V1_BASE } from '../config/api';
 import { getAuthHeaders } from '../utils/authTokenUtils';
+import { BudgetVsActualReport, PortfolioBudgetVsActualReport, ProgressVsCostReport } from '@/types/project';
 
 export interface Report {
   id: string;
@@ -29,6 +30,7 @@ export interface ReportParameters {
   customer_id?: string;
   vendor_id?: string;
   account_id?: string; // Updated to match backend parameter
+  project_id?: string | number; // For project-based reports
   include_valuation?: boolean;
   period?: 'current' | 'ytd' | 'comparative';
   format?: 'json' | 'pdf' | 'csv';
@@ -417,6 +419,58 @@ class ReportService {
 
     const result = await response.json();
     return result.data;
+  }
+
+  // Project-based reports: Budget vs Actual per project & portfolio
+  async getProjectBudgetVsActual(params: ReportParameters): Promise<BudgetVsActualReport | Blob> {
+    if (!params.start_date || !params.end_date) {
+      throw new Error('Start date and end date are required for Budget vs Actual report');
+    }
+    if (!params.project_id) {
+      throw new Error('project_id is required for Budget vs Actual report');
+    }
+
+    const queryString = this.buildQueryString(params);
+    const url = `${API_V1_BASE}/project-reports/budget-vs-actual${queryString ? '?' + queryString : ''}`;
+
+    const response = await fetch(url, {
+      headers: this.getAuthHeaders(),
+    });
+
+    return this.handleUnifiedResponse(response);
+  }
+
+  async getPortfolioBudgetVsActual(params: ReportParameters): Promise<PortfolioBudgetVsActualReport | Blob> {
+    if (!params.start_date || !params.end_date) {
+      throw new Error('Start date and end date are required for Portfolio Budget vs Actual report');
+    }
+
+    const queryString = this.buildQueryString(params);
+    const url = `${API_V1_BASE}/project-reports/portfolio-budget-vs-actual${queryString ? '?' + queryString : ''}`;
+
+    const response = await fetch(url, {
+      headers: this.getAuthHeaders(),
+    });
+
+    return this.handleUnifiedResponse(response);
+  }
+
+  async getProjectProgressVsCost(params: ReportParameters): Promise<ProgressVsCostReport | Blob> {
+    if (!params.start_date || !params.end_date) {
+      throw new Error('Start date and end date are required for Progress vs Cost report');
+    }
+    if (!params.project_id) {
+      throw new Error('project_id is required for Progress vs Cost report');
+    }
+
+    const queryString = this.buildQueryString(params);
+    const url = `${API_V1_BASE}/project-reports/progress-vs-cost${queryString ? '?' + queryString : ''}`;
+
+    const response = await fetch(url, {
+      headers: this.getAuthHeaders(),
+    });
+
+    return this.handleUnifiedResponse(response);
   }
 
   // Generate Financial Ratios Analysis

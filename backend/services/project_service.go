@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type ProjectService interface {
@@ -18,20 +20,126 @@ type ProjectService interface {
 	UpdateProgress(id uint, progressData map[string]float64) error
 	GetProjectsByStatus(status string) ([]models.Project, error)
 	GetActiveProjects() ([]models.Project, error)
+	GetProjectCostSummary(id uint) (*models.ProjectCostSummary, error)
 }
 
 type projectService struct {
 	repo repositories.ProjectRepository
+	db   *gorm.DB
 }
 
 // NewProjectService creates a new project service
-func NewProjectService(repo repositories.ProjectRepository) ProjectService {
-	return &projectService{repo: repo}
+func NewProjectService(repo repositories.ProjectRepository, db *gorm.DB) ProjectService {
+	return &projectService{repo: repo, db: db}
 }
 
 // GetAllProjects retrieves all projects
 func (s *projectService) GetAllProjects() ([]models.Project, error) {
 	return s.repo.GetAll()
+}
+
+// GetProjectCostSummary returns a high-level budget vs actual overview for a project,
+// including breakdown by major cost categories and current physical progress.
+func (s *projectService) GetProjectCostSummary(id uint) (*models.ProjectCostSummary, error) {
+	project, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := &models.ProjectCostSummary{
+		ProjectID:       project.ID,
+		ProjectName:     project.ProjectName,
+		Budget:          project.Budget,
+		ActualCost:      0,
+		MaterialCost:    0,
+		LaborCost:       0,
+		EquipmentCost:   0,
+		OverheadCost:    0,
+		Variance:        0,
+		VariancePercent: 0,
+		BudgetUtilization: 0,
+		RemainingBudget:   0,
+		IsOverBudget:      false,
+		TotalPurchases:    0,
+		OverallProgress:   project.OverallProgress,
+		Status:            project.Status,
+	}
+
+	// Aggregate actual costs from unified_journal_ledger by account category
+	// This mirrors the logic used in ProjectReportService but without date filtering.
+	var materialCost, laborCost, equipmentCost, overheadCost float64
+
+	// Material
+	s.db.Raw(`
+		SELECT COALESCE(SUM(ABS(ujl.amount)), 0)
+		FROM unified_journal_ledger ujl
+		JOIN accounts a ON a.id = ujl.account_id
+		WHERE ujl.project_id = ?
+		  AND ujl.status = 'POSTED'
+		  AND a.type = 'EXPENSE'
+		  AND a.category = 'MATERIAL'
+		  AND a.deleted_at IS NULL
+	`, id).Scan(&materialCost)
+
+	// Labour
+	s.db.Raw(`
+		SELECT COALESCE(SUM(ABS(ujl.amount)), 0)
+		FROM unified_journal_ledger ujl
+		JOIN accounts a ON a.id = ujl.account_id
+		WHERE ujl.project_id = ?
+		  AND ujl.status = 'POSTED'
+		  AND a.type = 'EXPENSE'
+		  AND a.category = 'LABOUR'
+		  AND a.deleted_at IS NULL
+	`, id).Scan(&laborCost)
+
+	// Equipment
+	s.db.Raw(`
+		SELECT COALESCE(SUM(ABS(ujl.amount)), 0)
+		FROM unified_journal_ledger ujl
+		JOIN accounts a ON a.id = ujl.account_id
+		WHERE ujl.project_id = ?
+		  AND ujl.status = 'POSTED'
+		  AND a.type = 'EXPENSE'
+		  AND a.category = 'EQUIPMENT'
+		  AND a.deleted_at IS NULL
+	`, id).Scan(&equipmentCost)
+
+	// Overhead & operational (admin, overhead, operational, etc.)
+	s.db.Raw(`
+		SELECT COALESCE(SUM(ABS(ujl.amount)), 0)
+		FROM unified_journal_ledger ujl
+		JOIN accounts a ON a.id = ujl.account_id
+		WHERE ujl.project_id = ?
+		  AND ujl.status = 'POSTED'
+		  AND a.type = 'EXPENSE'
+		  AND a.category IN ('OVERHEAD', 'OPERATIONAL', 'ADMINISTRATIVE', 'GENERAL')
+		  AND a.deleted_at IS NULL
+	`, id).Scan(&overheadCost)
+
+	summary.MaterialCost = materialCost
+	summary.LaborCost = laborCost
+	summary.EquipmentCost = equipmentCost
+	summary.OverheadCost = overheadCost
+
+	summary.ActualCost = materialCost + laborCost + equipmentCost + overheadCost
+	summary.Variance = summary.Budget - summary.ActualCost
+	if summary.Budget > 0 {
+		summary.VariancePercent = (summary.Variance / summary.Budget) * 100
+		summary.BudgetUtilization = (summary.ActualCost / summary.Budget) * 100
+	}
+	summary.RemainingBudget = summary.Budget - summary.ActualCost
+	summary.IsOverBudget = summary.ActualCost > summary.Budget
+
+	// Count total purchases linked to this project (for quick reference)
+	var totalPurchases int64
+	s.db.Table("purchases").
+		Where("project_id = ?", id).
+		Where("deleted_at IS NULL").
+		Count(&totalPurchases)
+	summary.TotalPurchases = totalPurchases
+
+	return summary, nil
 }
 
 // GetProjectByID retrieves a project by ID

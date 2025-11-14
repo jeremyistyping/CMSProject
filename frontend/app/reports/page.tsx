@@ -45,6 +45,7 @@ import {
   FiActivity,
   FiPieChart,
   FiEye,
+  FiBarChart2,
 } from 'react-icons/fi';
 import api from '@/services/api';
 
@@ -81,6 +82,14 @@ const getAvailableReports = () => [
     type: 'PROJECT',
     icon: FiPieChart,
     color: 'orange'
+  },
+  {
+    id: 'portfolio-budget-vs-actual',
+    name: 'Portfolio Budget vs Actual per Project',
+    description: 'Ringkasan budget, actual, dan progress fisik per proyek',
+    type: 'PORTFOLIO',
+    icon: FiBarChart2,
+    color: 'teal'
   }
 ];
 
@@ -242,6 +251,90 @@ const ReportsPage: React.FC = () => {
             </TableContainer>
           </VStack>
         );
+
+      case 'portfolio-budget-vs-actual': {
+        const projects = reportData.projects || [];
+        const totalBudget = projects.reduce((sum: number, p: any) => sum + (p.budget || 0), 0);
+        const totalActual = projects.reduce((sum: number, p: any) => sum + (p.actual || 0), 0);
+
+        return (
+          <VStack spacing={4} align="stretch">
+            <HStack spacing={4}>
+              <Stat>
+                <StatLabel>Total Projects</StatLabel>
+                <StatNumber>{projects.length}</StatNumber>
+              </Stat>
+              <Stat>
+                <StatLabel>Total Budget</StatLabel>
+                <StatNumber>{formatCurrency(totalBudget)}</StatNumber>
+              </Stat>
+              <Stat>
+                <StatLabel>Total Actual</StatLabel>
+                <StatNumber>{formatCurrency(totalActual)}</StatNumber>
+              </Stat>
+              <Stat>
+                <StatLabel>Portfolio Variance</StatLabel>
+                <StatNumber color={totalBudget - totalActual < 0 ? 'red.500' : 'green.500'}>
+                  {formatCurrency(totalBudget - totalActual)}
+                </StatNumber>
+              </Stat>
+            </HStack>
+
+            <TableContainer>
+              <Table size="sm">
+                <Thead>
+                  <Tr>
+                    <Th>Project</Th>
+                    <Th isNumeric>Budget</Th>
+                    <Th isNumeric>Actual</Th>
+                    <Th isNumeric>Variance</Th>
+                    <Th isNumeric>Cost Progress</Th>
+                    <Th isNumeric>Physical Progress</Th>
+                    <Th isNumeric>Progress Gap</Th>
+                    <Th>Status</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {projects.map((project: any, idx: number) => {
+                    const costProgress = typeof project.cost_progress === 'number' ? project.cost_progress : 0;
+                    const physicalProgress = typeof project.physical_progress === 'number' ? project.physical_progress : 0;
+                    const progressGap = typeof project.progress_gap === 'number' ? project.progress_gap : 0;
+                    const isProblem = project.status === 'OVER_BUDGET' || project.status === 'UNDER_UTILIZED';
+
+                    let statusColorScheme: string = 'green';
+                    if (project.status === 'OVER_BUDGET') {
+                      statusColorScheme = 'red';
+                    } else if (project.status === 'UNDER_UTILIZED') {
+                      statusColorScheme = 'orange';
+                    } else if (project.status === 'NO_BUDGET') {
+                      statusColorScheme = 'gray';
+                    }
+
+                    return (
+                      <Tr key={project.project_id || idx}>
+                        <Td>{project.project_name || `Project ${project.project_id}`}</Td>
+                        <Td isNumeric>{formatCurrency(project.budget)}</Td>
+                        <Td isNumeric>{formatCurrency(project.actual)}</Td>
+                        <Td isNumeric color={project.variance < 0 ? 'red.500' : 'green.500'}>
+                          {formatCurrency(project.variance)}
+                        </Td>
+                        <Td isNumeric>{costProgress.toFixed(1)}%</Td>
+                        <Td isNumeric>{physicalProgress.toFixed(1)}%</Td>
+                        <Td isNumeric color={isProblem ? 'red.500' : 'gray.800'}>
+                          {progressGap.toFixed(1)}%
+                        </Td>
+                        <Td>
+                          <Badge colorScheme={statusColorScheme}>{project.status}</Badge>
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          </VStack>
+        );
+      }
 
       case 'profitability':
         return (
@@ -473,7 +566,7 @@ const ReportsPage: React.FC = () => {
                   >
                     {projects.map((project) => (
                       <option key={project.id} value={project.id}>
-                        {project.name}
+                        {project.project_name || project.name || `Project ${project.id}`}
                       </option>
                     ))}
                   </Select>

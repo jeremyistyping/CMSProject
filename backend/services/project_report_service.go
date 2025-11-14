@@ -3,6 +3,7 @@ package services
 import (
 	"app-sistem-akuntansi/models"
 	"fmt"
+	"sort"
 	"time"
 
 	"gorm.io/gorm"
@@ -14,6 +15,103 @@ type ProjectReportService struct {
 
 func NewProjectReportService(db *gorm.DB) *ProjectReportService {
 	return &ProjectReportService{db: db}
+}
+
+// GeneratePortfolioBudgetVsActualReport - summary Budget vs Actual per project for dashboard
+func (s *ProjectReportService) GeneratePortfolioBudgetVsActualReport(params models.ProjectReportParams) (*models.PortfolioBudgetVsActualReport, error) {
+	report := &models.PortfolioBudgetVsActualReport{
+		ReportDate: time.Now(),
+		StartDate:  params.StartDate,
+		EndDate:    params.EndDate,
+		Projects:   []models.ProjectBudgetVsActualSummary{},
+	}
+
+	// Aggregate per project: budget (from project_budgets) and actual (from SSOT unified_journal_ledger + unified_journal_lines)
+	query := `
+		SELECT
+			p.id AS project_id,
+			p.project_name,
+			COALESCE(b.total_budget, 0) AS total_budget,
+			COALESCE(actual.total_actual, 0) AS total_actual,
+			p.overall_progress,
+			p.status
+		FROM projects p
+		LEFT JOIN (
+			SELECT project_id, SUM(estimated_amount) AS total_budget
+			FROM project_budgets
+			WHERE deleted_at IS NULL
+			GROUP BY project_id
+		) b ON b.project_id = p.id
+		LEFT JOIN (
+			SELECT
+				uje.project_id,
+				SUM(ujl.debit_amount + ujl.credit_amount) AS total_actual
+			FROM unified_journal_ledger uje
+			JOIN unified_journal_lines ujl ON ujl.journal_id = uje.id
+			JOIN accounts ac ON ac.id = ujl.account_id
+			WHERE uje.status = 'POSTED'
+			  AND uje.entry_date BETWEEN ? AND ?
+			  AND uje.deleted_at IS NULL
+			  AND ac.type = 'EXPENSE'
+			  AND ac.deleted_at IS NULL
+			GROUP BY uje.project_id
+		) actual ON actual.project_id = p.id
+		WHERE p.deleted_at IS NULL
+	`
+
+	args := []interface{}{params.StartDate, params.EndDate}
+	if params.ProjectID != nil {
+		query += " AND p.id = ?"
+		args = append(args, *params.ProjectID)
+	}
+	query += " ORDER BY p.created_at DESC"
+
+	var rows []struct {
+		ProjectID        uint
+		ProjectName      string
+		TotalBudget      float64
+		TotalActual      float64
+		OverallProgress  float64
+		Status           string
+	}
+
+	if err := s.db.Raw(query, args...).Scan(&rows).Error; err != nil {
+		return nil, fmt.Errorf("failed to query portfolio budget vs actual: %w", err)
+	}
+
+	for _, r := range rows {
+		summary := models.ProjectBudgetVsActualSummary{
+			ProjectID:        r.ProjectID,
+			ProjectName:      r.ProjectName,
+			Budget:           r.TotalBudget,
+			Actual:           r.TotalActual,
+			PhysicalProgress: r.OverallProgress,
+			Status:           r.Status,
+		}
+
+		// Variance and utilization
+		summary.Variance = summary.Budget - summary.Actual
+		if summary.Budget > 0 {
+			summary.VariancePercent = (summary.Variance / summary.Budget) * 100
+			summary.CostProgress = (summary.Actual / summary.Budget) * 100
+		}
+		summary.ProgressGap = summary.CostProgress - summary.PhysicalProgress
+
+		// Determine status flag for dashboard
+		if summary.Budget == 0 && summary.Actual == 0 {
+			summary.Status = "NO_BUDGET"
+		} else if summary.Budget > 0 && summary.Actual > summary.Budget*1.05 {
+			summary.Status = "OVER_BUDGET"
+		} else if summary.CostProgress+10 < summary.PhysicalProgress {
+			summary.Status = "UNDER_UTILIZED"
+		} else {
+			summary.Status = "ON_TRACK"
+		}
+
+		report.Projects = append(report.Projects, summary)
+	}
+
+	return report, nil
 }
 
 // GenerateBudgetVsActualReport - Generate Budget vs Actual Report
@@ -336,6 +434,140 @@ func (s *ProjectReportService) GenerateCashFlowReport(params models.ProjectRepor
 
 	report.NetCashFlow = report.TotalCashIn - report.TotalCashOut
 	report.EndingBalance = report.BeginningBalance + report.NetCashFlow
+
+	return report, nil
+}
+
+// GenerateProgressVsCostReport - korelasi progress fisik vs biaya per project (time-series)
+func (s *ProjectReportService) GenerateProgressVsCostReport(params models.ProjectReportParams) (*models.ProgressVsCostReport, error) {
+	if params.ProjectID == nil {
+		return nil, fmt.Errorf("project_id is required for progress vs cost report")
+	}
+
+	// Ambil info project (budget + nama)
+	var project models.Project
+	if err := s.db.First(&project, *params.ProjectID).Error; err != nil {
+		return nil, fmt.Errorf("project not found: %w", err)
+	}
+
+	report := &models.ProgressVsCostReport{
+		ProjectID:   project.ID,
+		ProjectName: project.ProjectName,
+		StartDate:   params.StartDate,
+		EndDate:     params.EndDate,
+		Budget:      project.Budget,
+		Points:      []models.ProgressVsCostPoint{},
+	}
+
+	// 1) Ambil progress history (project_progress) dalam range tanggal
+	var progressRows []struct {
+		Date                  time.Time
+		PhysicalProgressPercent float64
+	}
+
+	progressQuery := `
+		SELECT date, physical_progress_percent
+		FROM project_progress
+		WHERE project_id = ?
+		  AND date BETWEEN ? AND ?
+		  AND deleted_at IS NULL
+		ORDER BY date ASC
+	`
+
+	if err := s.db.Raw(progressQuery, *params.ProjectID, params.StartDate, params.EndDate).Scan(&progressRows).Error; err != nil {
+		return nil, fmt.Errorf("failed to query project progress: %w", err)
+	}
+
+	// 2) Ambil cumulative actual cost per tanggal dari project_actual_costs
+	var costRows []struct {
+		Date            time.Time
+		CumulativeActual float64
+	}
+
+	costQuery := `
+		SELECT date,
+		       SUM(amount) OVER (ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cumulative_actual
+		FROM project_actual_costs
+		WHERE project_id = ?
+		  AND status = 'APPROVED'
+		  AND date BETWEEN ? AND ?
+		ORDER BY date ASC
+	`
+
+	if err := s.db.Raw(costQuery, *params.ProjectID, params.StartDate, params.EndDate).Scan(&costRows).Error; err != nil {
+		return nil, fmt.Errorf("failed to query project actual costs: %w", err)
+	}
+
+	// 3) Merge dua deret waktu berdasarkan tanggal (simple join by date)
+	//   - Jika suatu tanggal punya progress tapi belum ada actual, cumulative_actual ikut nilai sebelumnya (0 kalau belum ada)
+	//   - Jika ada actual di tanggal yang tidak punya progress snapshot, progress fisiknya pakai last known (atau 0 kalau belum ada)
+
+	// Build map date -> progress & cost
+	progressMap := make(map[string]float64)
+	for _, r := range progressRows {
+		key := r.Date.Format("2006-01-02")
+		progressMap[key] = r.PhysicalProgressPercent
+	}
+
+	costMap := make(map[string]float64)
+	for _, r := range costRows {
+		key := r.Date.Format("2006-01-02")
+		costMap[key] = r.CumulativeActual
+	}
+
+	// Iterate by union of dates from both maps, sorted ASC
+	dateSet := make(map[string]struct{})
+	for k := range progressMap {
+		dateSet[k] = struct{}{}
+	}
+	for k := range costMap {
+		dateSet[k] = struct{}{}
+	}
+
+	if len(dateSet) == 0 {
+		// Tidak ada data, return report kosong
+		return report, nil
+	}
+
+	// Convert keys to time.Time and sort
+	var dates []time.Time
+	for ds := range dateSet {
+		if d, err := time.Parse("2006-01-02", ds); err == nil {
+			dates = append(dates, d)
+		}
+	}
+
+	sort.Slice(dates, func(i, j int) bool {
+		return dates[i].Before(dates[j])
+	})
+
+	var lastProgress float64
+	var lastCumulative float64
+
+	for _, d := range dates {
+		key := d.Format("2006-01-02")
+		if val, ok := progressMap[key]; ok {
+			lastProgress = val
+		}
+		if val, ok := costMap[key]; ok {
+			lastCumulative = val
+		}
+
+		var costProgress float64
+		if project.Budget > 0 {
+			costProgress = (lastCumulative / project.Budget) * 100
+		}
+		gap := costProgress - lastProgress
+
+		report.Points = append(report.Points, models.ProgressVsCostPoint{
+			Date:             d,
+			PhysicalProgress: lastProgress,
+			CumulativeActual: lastCumulative,
+			Budget:           project.Budget,
+			CostProgress:     costProgress,
+			ProgressGap:      gap,
+		})
+	}
 
 	return report, nil
 }

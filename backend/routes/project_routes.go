@@ -13,8 +13,20 @@ import (
 func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	// Initialize layers
 	projectRepo := repositories.NewProjectRepository(db)
-	projectService := services.NewProjectService(projectRepo)
+	projectService := services.NewProjectService(projectRepo, db)
 	projectController := controllers.NewProjectController(projectService)
+
+	// Initialize Project Budget service and controller
+	projectBudgetService := services.NewProjectBudgetService(db)
+	projectBudgetController := controllers.NewProjectBudgetController(projectBudgetService)
+	
+	// Initialize Project Progress service and controller
+	projectProgressService := services.NewProjectProgressService(db)
+	projectProgressController := controllers.NewProjectProgressController(projectProgressService)
+	
+	// Initialize Project Actual Cost service and controller
+	projectActualCostService := services.NewProjectActualCostService(db)
+	projectActualCostController := controllers.NewProjectActualCostController(projectActualCostService)
 	
 	// Initialize Daily Update service and controller
 	dailyUpdateService := services.NewDailyUpdateService(db)
@@ -40,10 +52,19 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		projects.GET("/active", projectController.GetActiveProjects) // GET /api/v1/projects/active
 		projects.GET("/status", projectController.GetProjectsByStatus) // GET /api/v1/projects/status?status=active
 		projects.GET("/:id", projectController.GetProjectByID)       // GET /api/v1/projects/:id
+		projects.GET("/:id/cost-summary", projectController.GetProjectCostSummary) // GET /api/v1/projects/:id/cost-summary
+		projects.GET("/:id/progress-history", projectProgressController.GetProjectProgressHistory) // GET /api/v1/projects/:id/progress-history
+		projects.GET("/:id/actual-costs", projectActualCostController.GetProjectActualCosts)       // GET /api/v1/projects/:id/actual-costs
+		
+		// Project budgets (nested under projects)
+		projects.GET("/:id/budgets", projectBudgetController.GetProjectBudgets)            // GET /api/v1/projects/:id/budgets
+		projects.POST("/:id/budgets", projectBudgetController.UpsertProjectBudgets)        // POST /api/v1/projects/:id/budgets
+		projects.DELETE("/:id/budgets/:budgetId", projectBudgetController.DeleteProjectBudget) // DELETE /api/v1/projects/:id/budgets/:budgetId
 		
 		// Post routes
 		projects.POST("", projectController.CreateProject)           // POST /api/v1/projects
 		projects.POST("/:id/archive", projectController.ArchiveProject) // POST /api/v1/projects/:id/archive
+		projects.POST("/:id/progress-history", projectProgressController.UpsertProjectProgress) // POST /api/v1/projects/:id/progress-history
 		
 		// Put/Patch routes
 		projects.PUT("/:id", projectController.UpdateProject)        // PUT /api/v1/projects/:id

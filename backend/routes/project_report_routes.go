@@ -34,4 +34,10 @@ func SetupProjectReportRoutes(router gin.IRouter, db *gorm.DB, jwtManager *middl
 	
 	// Cost Summary Report
 	reportsGroup.GET("/cost-summary", projectReportController.GetCostSummary)
+
+	// Portfolio Budget vs Actual per Project
+	reportsGroup.GET("/portfolio-budget-vs-actual", projectReportController.GetPortfolioBudgetVsActual)
+
+	// Progress vs Cost per Project (time-series)
+	reportsGroup.GET("/progress-vs-cost", projectReportController.GetProgressVsCost)
 }

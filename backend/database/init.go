@@ -141,6 +141,7 @@ func RunMigrations(db *gorm.DB) {
 			&models.Budget{},
 			&models.BudgetItem{},
 			&models.BudgetComparison{},
+			&models.ProjectBudget{},
 			
 			// Report models
 			&models.Report{},

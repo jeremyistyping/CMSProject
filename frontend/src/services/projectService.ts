@@ -1,5 +1,18 @@
 import api from './api';
-import { Project, ProjectFormData, Milestone, DailyUpdate, WeeklyReport, TimelineSchedule, TechnicalData } from '@/types/project';
+import {
+  Project,
+  ProjectFormData,
+  Milestone,
+  DailyUpdate,
+  WeeklyReport,
+  TimelineSchedule,
+  TechnicalData,
+  ProjectBudget,
+  ProjectBudgetInput,
+  ProjectCostSummary,
+  ProjectProgressEntry,
+  ProjectActualCost,
+} from '@/types/project';
 
 const PROJECT_ENDPOINT = '/api/v1/projects';
 
@@ -170,6 +183,56 @@ export const projectService = {
 
   async updateTimelineScheduleStatus(projectId: string, scheduleId: string, status: string): Promise<TimelineSchedule> {
     const response = await api.patch(`${PROJECT_ENDPOINT}/${projectId}/timeline-schedules/${scheduleId}/status`, { status });
+    return response.data;
+  },
+
+  // Project Budgets (project_budgets)
+  async getProjectBudgets(projectId: string | number): Promise<ProjectBudget[]> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/budgets`);
+    return response.data;
+  },
+
+  async upsertProjectBudgets(projectId: string | number, items: ProjectBudgetInput[]): Promise<void> {
+    await api.post(`${PROJECT_ENDPOINT}/${projectId}/budgets`, items);
+  },
+
+  async deleteProjectBudget(projectId: string | number, budgetId: number): Promise<void> {
+    await api.delete(`${PROJECT_ENDPOINT}/${projectId}/budgets/${budgetId}`);
+  },
+
+  async getProjectCostSummary(projectId: string | number): Promise<ProjectCostSummary> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/cost-summary`);
+    return response.data;
+  },
+
+  // Project progress history (project_progress)
+  async getProjectProgressHistory(
+    projectId: string | number,
+    params?: { start_date?: string; end_date?: string },
+  ): Promise<ProjectProgressEntry[]> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/progress-history`, { params });
+    return response.data;
+  },
+
+  async createProjectProgressSnapshot(
+    projectId: string | number,
+    payload: {
+      date: string;
+      physical_progress_percent: number;
+      volume_achieved?: number;
+      remarks?: string;
+    },
+  ): Promise<ProjectProgressEntry> {
+    const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/progress-history`, payload);
+    return response.data;
+  },
+
+  // Project actual costs (project_actual_costs)
+  async getProjectActualCosts(
+    projectId: string | number,
+    params?: { start_date?: string; end_date?: string },
+  ): Promise<ProjectActualCost[]> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/actual-costs`, { params });
     return response.data;
   },
 

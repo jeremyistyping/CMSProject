@@ -241,6 +241,32 @@ func (pc *ProjectController) GetProjectsByStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, projects)
 }
 
+// GetProjectCostSummary godoc
+// @Summary Get project cost summary (Budget vs Actual + Progress)
+// @Description High-level Budget vs Actual per project including progress percentage
+// @Tags projects
+// @Produce json
+// @Param id path int true "Project ID"
+// @Success 200 {object} models.ProjectCostSummary
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /projects/{id}/cost-summary [get]
+func (pc *ProjectController) GetProjectCostSummary(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
+
+	summary, err := pc.service.GetProjectCostSummary(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
+}
+
 // GetActiveProjects godoc
 // @Summary Get active projects
 // @Description Get list of all active projects (not archived)

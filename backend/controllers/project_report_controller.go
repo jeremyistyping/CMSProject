@@ -170,6 +170,66 @@ func (c *ProjectReportController) GetCostSummary(ctx *gin.Context) {
 	})
 }
 
+// GetPortfolioBudgetVsActual - GET /api/v1/project-reports/portfolio-budget-vs-actual
+func (c *ProjectReportController) GetPortfolioBudgetVsActual(ctx *gin.Context) {
+	params, err := c.parseReportParams(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid parameters: " + err.Error(),
+		})
+		return
+	}
+
+	report, err := c.service.GeneratePortfolioBudgetVsActualReport(params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to generate report: " + err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   report,
+	})
+}
+
+// GetProgressVsCost - GET /api/v1/project-reports/progress-vs-cost
+func (c *ProjectReportController) GetProgressVsCost(ctx *gin.Context) {
+	params, err := c.parseReportParams(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid parameters: " + err.Error(),
+		})
+		return
+	}
+
+	if params.ProjectID == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "project_id is required",
+		})
+		return
+	}
+
+	report, err := c.service.GenerateProgressVsCostReport(params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to generate progress vs cost report: " + err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   report,
+	})
+}
+
 // GetAvailableReports - GET /api/v1/project-reports/available
 func (c *ProjectReportController) GetAvailableReports(ctx *gin.Context) {
 	reports := []gin.H{
@@ -218,6 +278,29 @@ func (c *ProjectReportController) GetAvailableReports(ctx *gin.Context) {
 				"start_date (required)",
 				"end_date (required)",
 				"project_id (optional)",
+			},
+			"type": "PROJECT",
+		},
+		{
+			"id":          "portfolio-budget-vs-actual",
+			"name":        "Portfolio Budget vs Actual per Project",
+			"description": "Ringkasan budget, actual, dan progress per proyek",
+			"endpoint":    "/api/v1/project-reports/portfolio-budget-vs-actual",
+			"parameters": []string{
+				"start_date (required)",
+				"end_date (required)",
+			},
+			"type": "PROJECT",
+		},
+		{
+			"id":          "progress-vs-cost",
+			"name":        "Progress vs Cost per Project",
+			"description": "Korelasi progress fisik vs realisasi biaya per tanggal",
+			"endpoint":    "/api/v1/project-reports/progress-vs-cost",
+			"parameters": []string{
+				"start_date (required)",
+				"end_date (required)",
+				"project_id (required)",
 			},
 			"type": "PROJECT",
 		},

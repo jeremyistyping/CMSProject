@@ -60,6 +60,18 @@ const getMenuGroups = (t) => [
     ]
   },
   {
+    title: 'Cost Control',
+    items: [
+      // Untuk saat ini, menu Cost Control ditampilkan berdasarkan role saja,
+      // tidak bergantung pada permission module. Halaman di dalamnya tetap
+      // melakukan pengecekan permission cost_control.
+      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
+    ]
+  },
+  {
     title: 'Master Data',
     items: [
       { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
@@ -70,7 +82,6 @@ const getMenuGroups = (t) => [
     title: 'Financial',
     items: [
       { name: t('navigation.purchases'), icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
-      { name: 'Cost Control', icon: FiCheckSquare, href: '/cost-control', module: 'cost_control', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
       { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
     ]
   },
