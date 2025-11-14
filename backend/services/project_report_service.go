@@ -26,7 +26,7 @@ func (s *ProjectReportService) GeneratePortfolioBudgetVsActualReport(params mode
 		Projects:   []models.ProjectBudgetVsActualSummary{},
 	}
 
-	// Aggregate per project: budget (from project_budgets) and actual (from SSOT unified_journal_ledger + unified_journal_lines)
+	// Aggregate per project: budget (from project_budgets) and actual (from project_actual_costs view based on purchases)
 	query := `
 		SELECT
 			p.id AS project_id,
@@ -44,17 +44,12 @@ func (s *ProjectReportService) GeneratePortfolioBudgetVsActualReport(params mode
 		) b ON b.project_id = p.id
 		LEFT JOIN (
 			SELECT
-				uje.project_id,
-				SUM(ujl.debit_amount + ujl.credit_amount) AS total_actual
-			FROM unified_journal_ledger uje
-			JOIN unified_journal_lines ujl ON ujl.journal_id = uje.id
-			JOIN accounts ac ON ac.id = ujl.account_id
-			WHERE uje.status = 'POSTED'
-			  AND uje.entry_date BETWEEN ? AND ?
-			  AND uje.deleted_at IS NULL
-			  AND ac.type = 'EXPENSE'
-			  AND ac.deleted_at IS NULL
-			GROUP BY uje.project_id
+				project_id,
+				SUM(amount) AS total_actual
+			FROM project_actual_costs
+			WHERE status = 'APPROVED'
+			  AND date BETWEEN ? AND ?
+			GROUP BY project_id
 		) actual ON actual.project_id = p.id
 		WHERE p.deleted_at IS NULL
 	`
