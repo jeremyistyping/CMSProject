@@ -33,6 +33,16 @@ export const formatRoleForApproval = (role?: string | null): string => {
       return 'Finance Manager';
     case 'employee':
       return 'Employee';
+    case 'purchasing':
+      return 'Purchasing';
+    case 'cost_control':
+      return 'Cost Control';
+    case 'gm':
+      return 'GM';
+    case 'project_director':
+      return 'Project Director';
+    case 'managing_director':
+      return 'Managing Director';
     case 'inventory_manager':
       return 'Inventory Manager';
     default:
@@ -45,7 +55,17 @@ export const getRoleDisplayName = (role?: string | null): { role: string; exampl
   const r = normalizeRole(role);
   switch (r) {
     case 'employee':
-      return { role: 'Employee', example: 'John' };
+      return { role: 'Employee', example: 'Andi (staff umum)' };
+    case 'purchasing':
+      return { role: 'Purchasing', example: 'Andi (Purchasing)' };
+    case 'cost_control':
+      return { role: 'Cost Control', example: 'Patrick' };
+    case 'gm':
+      return { role: 'GM', example: 'Marlin' };
+    case 'project_director':
+      return { role: 'Direktur Proyek', example: 'Christopher' };
+    case 'managing_director':
+      return { role: 'Direktur Utama', example: 'Jason' };
     case 'finance':
       return { role: 'Finance Manager', example: 'Jack' };
     case 'director':

@@ -100,7 +100,7 @@ type EnhancedRegisterRequest struct {
 	ConfirmPassword string `json:"confirm_password" binding:"required" validate:"required,eqfield=Password"`
 	FirstName       string `json:"first_name" binding:"required" validate:"required,min=2,max=50"`
 	LastName        string `json:"last_name" binding:"required" validate:"required,min=2,max=50"`
-	Role            string `json:"role" validate:"omitempty,oneof=admin finance director inventory_manager employee auditor"`
+	Role            string `json:"role" validate:"omitempty,oneof=admin finance director inventory_manager employee auditor purchasing cost_control gm project_director managing_director"`
 	Phone           string `json:"phone" validate:"omitempty,e164"`
 	Department      string `json:"department" validate:"omitempty,max=50"`
 	Position        string `json:"position" validate:"omitempty,max=50"`
@@ -181,4 +181,11 @@ const (
 	RoleEmployee         = "employee"
 	RoleAuditor          = "auditor"
 	RoleOperationalUser  = "operational_user"
+
+	// Extended roles for purchase approval RBAC
+	RolePurchasing       = "purchasing"        // Purchasing staff (previously mapped to employee)
+	RoleCostControl      = "cost_control"      // Cost Control verifier (Pak Patrick)
+	RoleGM               = "gm"                // General Manager (Pak Marlin)
+	RoleProjectDirector  = "project_director"  // Project Director (Pak Christopher)
+	RoleManagingDirector = "managing_director" // Managing Director (Pak Jason)
 )

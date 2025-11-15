@@ -2388,26 +2388,22 @@ const handleCreate = async () => {
       }
       
       // Fallback logic if no approval steps data available
-      if (purchaseStatus === 'DRAFT' && roleNorm === 'employee') {
-        return { step_name: 'Submit', approver_role: 'employee', step_order: 0, is_escalated: false };
+      if (purchaseStatus === 'DRAFT' && (roleNorm === 'employee' || roleNorm === 'purchasing')) {
+        return { step_name: 'Submit', approver_role: 'purchasing', step_order: 0, is_escalated: false };
       }
       
       // Enhanced fallback logic based on status and amount
       if (status === 'PENDING' || status === 'NOT_STARTED' || purchaseStatus === 'PENDING_APPROVAL') {
-        // Check if this purchase requires director approval based on amount or other criteria
-        const requiresDirectorApproval = purchase.total_amount > 25000000;
+        // Fallback path (rare): infer current approver role based on amount
+        const requiresUpperManagement = purchase.total_amount > 25000000;
         
-        // Check if purchase has been escalated to director (look for director-related indicators)
-        const isEscalatedToDirector = purchase.approval_request?.approval_steps?.some(
-          step => normalizeRole(step.step.approver_role) === 'director' && step.status === 'PENDING'
-        ) || purchase.approval_request?.current_step_name?.toLowerCase().includes('director');
-        
-        if (requiresDirectorApproval || isEscalatedToDirector) {
-          return { step_name: 'Director Approval', approver_role: 'director', step_order: 2, is_escalated: true };
+        if (requiresUpperManagement) {
+          // For large purchases, assume we are somewhere in GM/Director chain
+          return { step_name: 'Management Approval', approver_role: 'gm', step_order: 2, is_escalated: true };
         }
         
-        // Default to finance approval
-        return { step_name: 'Finance Approval', approver_role: 'finance', step_order: 1, is_escalated: false };
+        // Default to Cost Control approval as first approver after Purchasing
+        return { step_name: 'Cost Control Approval', approver_role: 'cost_control', step_order: 1, is_escalated: false };
       }
       
       return null;
@@ -2435,9 +2431,16 @@ const handleCreate = async () => {
     // Waiting for others - show who needs to act
     if (status === 'PENDING' || purchaseStatus === 'PENDING_APPROVAL') {
       if (activeStep) {
-        const waitingForRole = activeStep.approver_role === 'finance' ? 'Finance' : 
-                              activeStep.approver_role === 'director' ? 'Director' :
-                              activeStep.approver_role === 'admin' ? 'Admin' : 'Approval';
+        const roleKey = activeStep.approver_role;
+        const waitingForRole =
+          roleKey === 'purchasing' ? 'Purchasing' :
+          roleKey === 'cost_control' ? 'Cost Control' :
+          roleKey === 'gm' ? 'GM' :
+          roleKey === 'project_director' ? 'Project Director' :
+          roleKey === 'managing_director' ? 'Managing Director' :
+          roleKey === 'finance' ? 'Finance' :
+          roleKey === 'director' ? 'Director' :
+          roleKey === 'admin' ? 'Admin' : 'Approval';
         
         const waitingText = activeStep.is_escalated ? `Waiting for ${waitingForRole} (Escalated)` : `Waiting for ${waitingForRole}`;
         return { text: waitingText, icon: <FiClock />, colorScheme: 'blue', variant: 'outline' };
@@ -2464,7 +2467,7 @@ const handleCreate = async () => {
           leftIcon={actionProps.icon}
           onClick={() => {
             // Handle special case for employee submitting draft purchase
-            if (roleNorm === 'employee' && purchaseStatus === 'DRAFT' && actionProps.text === 'Submit for Approval') {
+            if ((roleNorm === 'employee' || roleNorm === 'purchasing') && purchaseStatus === 'DRAFT' && actionProps.text === 'Submit for Approval') {
               handleSubmitForApproval(purchase.id);
             } else {
               setSelectedPurchase(purchase);
@@ -2483,7 +2486,7 @@ const handleCreate = async () => {
         {/* Record Payment button for APPROVED or PAID CREDIT purchases with outstanding amount */}
         {(purchaseStatus === 'APPROVED' || purchaseStatus === 'PAID' || purchaseStatus === 'COMPLETED') && 
          purchaseService.canReceivePayment(purchase) &&
-         (roleNorm === 'admin' || roleNorm === 'finance' || roleNorm === 'director') && (
+         (roleNorm === 'admin' || roleNorm === 'finance' || roleNorm === 'director' || roleNorm === 'gm' || roleNorm === 'project_director' || roleNorm === 'managing_director') && (
           <Button
             size="sm"
             colorScheme="blue"
@@ -2502,7 +2505,7 @@ const handleCreate = async () => {
         
         {/* Create Receipt button for APPROVED or PAID purchases for Inventory Manager, Admin, Director */}
         {(purchaseStatus === 'APPROVED' || purchaseStatus === 'PAID') && 
-         (roleNorm === 'inventory_manager' || roleNorm === 'admin' || roleNorm === 'director') &&
+         (roleNorm === 'inventory_manager' || roleNorm === 'admin' || roleNorm === 'director' || roleNorm === 'gm' || roleNorm === 'project_director' || roleNorm === 'managing_director') &&
          !fullyReceivedPurchases.has(purchase.id) && (
           <Button
             size="sm"
@@ -2522,7 +2525,7 @@ const handleCreate = async () => {
         
         {/* View Receipts button always available (modal will show empty state if none) */}
         {(
-          roleNorm === 'admin' || roleNorm === 'finance' || roleNorm === 'director' || roleNorm === 'inventory_manager' || roleNorm === 'employee'
+          roleNorm === 'admin' || roleNorm === 'finance' || roleNorm === 'director' || roleNorm === 'inventory_manager' || roleNorm === 'employee' || roleNorm === 'purchasing' || roleNorm === 'gm' || roleNorm === 'project_director' || roleNorm === 'managing_director'
         ) && (
           <Button
             size="sm"
@@ -2542,7 +2545,7 @@ const handleCreate = async () => {
         
         {/* View Journal Entries button for APPROVED or PAID purchases - for users with report view permissions */}
         {(purchaseStatus === 'APPROVED' || purchaseStatus === 'PAID' || purchaseStatus === 'COMPLETED') && 
-         (roleNorm === 'admin' || roleNorm === 'finance' || roleNorm === 'director') && (
+         (roleNorm === 'admin' || roleNorm === 'finance' || roleNorm === 'director' || roleNorm === 'gm' || roleNorm === 'project_director' || roleNorm === 'managing_director') && (
           <Button
             size="sm"
             colorScheme="purple"
@@ -2582,7 +2585,7 @@ const handleCreate = async () => {
 
   if (loading) {
     return (
-<SimpleLayout allowedRoles={['admin', 'finance', 'inventory_manager', 'employee', 'director']}>
+      <SimpleLayout allowedRoles={['admin', 'finance', 'inventory_manager', 'employee', 'director', 'purchasing', 'cost_control', 'gm', 'project_director', 'managing_director']}>
         <Box>
           <Text>Loading purchases...</Text>
         </Box>
@@ -2591,7 +2594,7 @@ const handleCreate = async () => {
   }
 
   return (
-    <SimpleLayout allowedRoles={['admin', 'finance', 'inventory_manager', 'employee', 'director']}>
+    <SimpleLayout allowedRoles={['admin', 'finance', 'inventory_manager', 'employee', 'director', 'purchasing', 'cost_control', 'gm', 'project_director', 'managing_director']}>
       <Box 
         bg={bgColor}
         minH="100vh"

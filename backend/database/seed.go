@@ -73,6 +73,7 @@ func seedUsers(db *gorm.DB) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 
 	allUsers := []models.User{
+		// Admin
 		{
 			Username:  "admin",
 			Email:     "admin@company.com",
@@ -82,6 +83,7 @@ func seedUsers(db *gorm.DB) {
 			LastName:  "User",
 			IsActive:  true,
 		},
+		// Finance
 		{
 			Username:  "finance",
 			Email:     "finance@company.com",
@@ -91,6 +93,7 @@ func seedUsers(db *gorm.DB) {
 			LastName:  "User",
 			IsActive:  true,
 		},
+		// Inventory Manager
 		{
 			Username:  "inventory",
 			Email:     "inventory@company.com",
@@ -100,6 +103,7 @@ func seedUsers(db *gorm.DB) {
 			LastName:  "User",
 			IsActive:  true,
 		},
+		// Legacy Director (kept for backward compatibility/tests)
 		{
 			Username:  "director",
 			Email:     "director@company.com",
@@ -109,6 +113,7 @@ func seedUsers(db *gorm.DB) {
 			LastName:  "User",
 			IsActive:  true,
 		},
+		// Generic employee
 		{
 			Username:  "employee",
 			Email:     "employee@company.com",
@@ -116,6 +121,56 @@ func seedUsers(db *gorm.DB) {
 			Role:      "employee",
 			FirstName: "Employee",
 			LastName:  "User",
+			IsActive:  true,
+		},
+		// Purchasing role (Andi)
+		{
+			Username:  "purchasing",
+			Email:     "purchasing@company.com",
+			Password:  string(hashedPassword),
+			Role:      "purchasing",
+			FirstName: "Andi",
+			LastName:  "Purchasing",
+			IsActive:  true,
+		},
+		// Cost Control (Patrick) – kept here so environments without script still have the user
+		{
+			Username:  "cost_control",
+			Email:     "patrick@company.com",
+			Password:  string(hashedPassword),
+			Role:      "cost_control",
+			FirstName: "Patrick",
+			LastName:  "Cost Control",
+			IsActive:  true,
+		},
+		// GM (Marlin)
+		{
+			Username:  "gm",
+			Email:     "gm@company.com",
+			Password:  string(hashedPassword),
+			Role:      "gm",
+			FirstName: "Marlin",
+			LastName:  "GM",
+			IsActive:  true,
+		},
+		// Project Director (Christopher)
+		{
+			Username:  "project_director",
+			Email:     "christopher@company.com",
+			Password:  string(hashedPassword),
+			Role:      "project_director",
+			FirstName: "Christopher",
+			LastName:  "Project Director",
+			IsActive:  true,
+		},
+		// Managing Director (Jason)
+		{
+			Username:  "managing_director",
+			Email:     "jason@company.com",
+			Password:  string(hashedPassword),
+			Role:      "managing_director",
+			FirstName: "Jason",
+			LastName:  "Managing Director",
 			IsActive:  true,
 		},
 	}

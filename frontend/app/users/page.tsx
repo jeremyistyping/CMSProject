@@ -550,6 +550,13 @@ const UsersPage: React.FC = () => {
                       value={formData.role}
                       onChange={handleInputChange}
                     >
+                      {/* Core roles for purchase approval flow */}
+                      <option value="purchasing">Purchasing</option>
+                      <option value="cost_control">Cost Control</option>
+                      <option value="gm">GM</option>
+                      <option value="project_director">Direktur Proyek</option>
+                      <option value="managing_director">Direktur Utama</option>
+                      {/* Generic/system roles (kept for compatibility) */}
                       <option value="employee">Employee</option>
                       <option value="admin">Administrator</option>
                       <option value="finance">Finance</option>

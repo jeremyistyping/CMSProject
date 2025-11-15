@@ -96,8 +96,20 @@ func (s *ApprovalService) GetWorkflows(module string) ([]models.ApprovalWorkflow
 }
 
 // GetWorkflowByAmount finds appropriate workflow for given amount and module
+// NOTE: we prefer the "Standard Purchase Approval" workflow (Purchasing → Cost Control → GM → Project Director → Managing Director)
+// and fall back to legacy amount-based workflows only if the standard one is not found.
 func (s *ApprovalService) GetWorkflowByAmount(module string, amount float64) (*models.ApprovalWorkflow, error) {
 	var workflow models.ApprovalWorkflow
+
+	// 1) Prefer the unified Standard Purchase Approval workflow if it exists
+	if err := s.db.Preload("Steps").Where(
+		"module = ? AND is_active = ? AND name = ?",
+		module, true, "Standard Purchase Approval",
+	).First(&workflow).Error; err == nil {
+		return &workflow, nil
+	}
+
+	// 2) Fallback to legacy amount-based selection
 	err := s.db.Preload("Steps").Where(
 		"module = ? AND is_active = ? AND min_amount <= ? AND (max_amount >= ? OR max_amount = 0)",
 		module, true, amount, amount,
@@ -573,23 +585,32 @@ func (s *ApprovalService) canUserApprove(userID uint, requiredRole string) bool 
 		return true
 	}
 
-	// Employee can approve employee steps (when they submit the purchase)
-	if userRole == "employee" && reqRole == "employee" {
+	// Direct role match (generic RBAC rule)
+	if userRole == reqRole {
 		return true
 	}
 
-	// Manager can approve manager steps
-	if userRole == "manager" && reqRole == "manager" {
+	// Treat "employee" and "purchasing" as aliases for the first submission step
+	if (userRole == "employee" && reqRole == "purchasing") || (userRole == "purchasing" && reqRole == "employee") {
 		return true
 	}
+
+	// Legacy compatibility rules & hierarchical overrides
 
 	// Director can approve director and finance steps
 	if userRole == "director" && (reqRole == "director" || reqRole == "finance") {
 		return true
 	}
 
-	// Finance can approve finance steps
-	if userRole == "finance" && reqRole == "finance" {
+	// Managing Director can approve any director-level steps (GM, Project Director, Director, Finance)
+	if userRole == "managing_director" {
+		if reqRole == "project_director" || reqRole == "gm" || reqRole == "director" || reqRole == "finance" {
+			return true
+		}
+	}
+
+	// Project Director can approve GM steps when needed
+	if userRole == "project_director" && reqRole == "gm" {
 		return true
 	}
 

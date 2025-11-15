@@ -101,6 +101,61 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				}
 			}
 		}
+	case "purchasing":
+		// Purchasing role: same module defaults as employee (create & edit purchase requests)
+		for _, module := range modules {
+			if module == "contacts" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			} else if module == "products" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else if module == "accounts" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			} else if module == "purchases" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			}
+		}
 	case "inventory_manager":
 		// Inventory manager has comprehensive access to inventory and related operations
 		coreInventoryModules := []string{"products", "purchases", "sales"}
@@ -213,31 +268,30 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				}
 			}
 		}
-	case "director":
-		// Director has view, approve, and limited create/edit access
+	case "director", "gm", "project_director", "managing_director":
+		// Director-level roles (GM, Project Director, Managing Director) have broad approve/view access
 		for _, module := range modules {
 			if module == "purchases" || module == "sales" || module == "payments" || module == "cash_bank" {
-				// Directors need create/edit access for purchases to create receipts,
-				// and for sales/payments for operational oversight
+				// Directors need create/edit access for operational modules
 				permissions[module] = &ModulePermission{
 					CanView:    true,
-					CanCreate:  true,  // ✅ Allow creating for operational modules
-					CanEdit:    true,  // ✅ Allow editing for operational modules (needed for receipts)
-					CanDelete:  false, // Still no delete access for safety
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
 					CanApprove: true,
 					CanExport:  true,
 					CanMenu:    true,
 				}
 			} else if module == "settings" {
-				// Directors need settings access for system configuration and invoice types
+				// Directors need limited settings access
 				permissions[module] = &ModulePermission{
 					CanView:    true,
-					CanCreate:  true,  // Can create invoice types and settings
-					CanEdit:    true,  // Can edit system settings
-					CanDelete:  false, // Cannot delete settings for safety
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
 					CanApprove: true,
 					CanExport:  true,
-					CanMenu:    false, // Directors don't need settings menu access
+					CanMenu:    false,
 				}
 			} else {
 				// For other modules, keep view/approve only access
@@ -248,7 +302,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanDelete:  false,
 					CanApprove: true,
 					CanExport:  true,
-					CanMenu:    false, // No menu access to other modules
+					CanMenu:    false,
 				}
 			}
 		}

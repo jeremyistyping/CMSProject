@@ -872,25 +872,30 @@ type ApprovalStep struct {
 	TimeLimit    int    `gorm:"default:24"`
 }
 
-// ensureStandardPurchaseApprovalWorkflow checks and creates Standard Purchase Approval workflow if it doesn't exist
+// ensureStandardPurchaseApprovalWorkflow checks and creates/updates Standard Purchase Approval workflow
 func ensureStandardPurchaseApprovalWorkflow(db *gorm.DB) error {
 	// Check if Standard Purchase Approval workflow exists
 	var existingWorkflow ApprovalWorkflow
 	result := db.Where("name = ? AND module = ?", "Standard Purchase Approval", "PURCHASE").First(&existingWorkflow)
 	
 	if result.Error == nil {
-		// Check if workflow has steps
-		var stepCount int64
-		db.Model(&ApprovalStep{}).Where("workflow_id = ?", existingWorkflow.ID).Count(&stepCount)
-		
-		if stepCount == 0 {
-			log.Println("🔧 Creating workflow steps...")
-			// Create steps for existing workflow
-			return createWorkflowSteps(db, existingWorkflow.ID)
-		} else {
-			// Silently skip if everything exists
-			return nil
+		// Workflow exists – ensure steps match the latest RBAC design
+		var steps []ApprovalStep
+		if err := db.Where("workflow_id = ?", existingWorkflow.ID).
+			Order("step_order ASC").
+			Find(&steps).Error; err != nil {
+			return fmt.Errorf("failed to load existing workflow steps: %v", err)
 		}
+		
+		if needsStandardWorkflowUpgrade(steps) {
+			log.Println("🔁 Updating Standard Purchase Approval workflow steps to new RBAC sequence (Purchasing → Cost Control → GM → Project Director → Managing Director)...")
+			if err := recreateStandardWorkflowSteps(db, existingWorkflow.ID); err != nil {
+				return err
+			}
+		}
+		
+		// Nothing else to do
+		return nil
 	}
 	
 	// If not found, create it
@@ -920,31 +925,73 @@ func ensureStandardPurchaseApprovalWorkflow(db *gorm.DB) error {
 	return fmt.Errorf("failed to check existing workflow: %v", result.Error)
 }
 
-// createWorkflowSteps creates the standard approval workflow steps
+// needsStandardWorkflowUpgrade checks whether existing steps should be replaced with the new RBAC sequence
+func needsStandardWorkflowUpgrade(steps []ApprovalStep) bool {
+	// Target sequence of approver roles
+	targetRoles := []string{"purchasing", "cost_control", "gm", "project_director", "managing_director"}
+	
+	if len(steps) != len(targetRoles) {
+		// Different number of steps – upgrade required
+		return true
+	}
+	
+	for i, r := range targetRoles {
+		if strings.ToLower(strings.TrimSpace(steps[i].ApproverRole)) != r {
+			return true
+		}
+	}
+	return false
+}
+
+// recreateStandardWorkflowSteps deletes old steps and recreates the standard workflow steps
+func recreateStandardWorkflowSteps(db *gorm.DB, workflowID uint) error {
+	if err := db.Where("workflow_id = ?", workflowID).Delete(&ApprovalStep{}).Error; err != nil {
+		return fmt.Errorf("failed to delete existing workflow steps: %v", err)
+	}
+	return createWorkflowSteps(db, workflowID)
+}
+
+// createWorkflowSteps creates the standard approval workflow steps using the new RBAC order
 func createWorkflowSteps(db *gorm.DB, workflowID uint) error {
 	steps := []ApprovalStep{
 		{
 			WorkflowID:   workflowID,
 			StepOrder:    1,
-			StepName:     "Employee Submission",
-			ApproverRole: "employee",
+			StepName:     "Purchasing Submission",
+			ApproverRole: "purchasing",
 			IsOptional:   false,
 			TimeLimit:    24,
 		},
 		{
 			WorkflowID:   workflowID,
 			StepOrder:    2,
-			StepName:     "Finance Approval",
-			ApproverRole: "finance",
+			StepName:     "Cost Control Verification",
+			ApproverRole: "cost_control",
 			IsOptional:   false,
 			TimeLimit:    48,
 		},
 		{
 			WorkflowID:   workflowID,
 			StepOrder:    3,
-			StepName:     "Director Approval",
-			ApproverRole: "director",
-			IsOptional:   true,
+			StepName:     "GM Approval",
+			ApproverRole: "gm",
+			IsOptional:   false,
+			TimeLimit:    48,
+		},
+		{
+			WorkflowID:   workflowID,
+			StepOrder:    4,
+			StepName:     "Project Director Approval",
+			ApproverRole: "project_director",
+			IsOptional:   false,
+			TimeLimit:    72,
+		},
+		{
+			WorkflowID:   workflowID,
+			StepOrder:    5,
+			StepName:     "Managing Director Approval",
+			ApproverRole: "managing_director",
+			IsOptional:   false,
 			TimeLimit:    72,
 		},
 	}
@@ -955,7 +1002,7 @@ func createWorkflowSteps(db *gorm.DB, workflowID uint) error {
 		}
 	}
 	
-	log.Println("✅ Standard Purchase Approval workflow created")
+	log.Println("✅ Standard Purchase Approval workflow steps are aligned with new RBAC sequence")
 	
 	return nil
 }
