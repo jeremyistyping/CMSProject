@@ -179,19 +179,19 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={handleClose} 
-      size="xl" 
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      size="xl"
       scrollBehavior="inside"
       isCentered
     >
-      <ModalOverlay 
-        bg="blackAlpha.600" 
-        backdropFilter="blur(4px)" 
+      <ModalOverlay
+        bg="blackAlpha.600"
+        backdropFilter="blur(4px)"
       />
-      <ModalContent 
-        bg="white" 
+      <ModalContent
+        bg="white"
         maxH="90vh"
         borderRadius="lg"
         boxShadow="xl"
@@ -202,9 +202,9 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
         <ModalCloseButton />
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ModalBody 
-            bg="white" 
-            overflowY="auto" 
+          <ModalBody
+            bg="white"
+            overflowY="auto"
             maxH="calc(90vh - 140px)"
             py={6}
           >
@@ -241,7 +241,7 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
                   <option value="Gray Water Installation">Gray Water Installation</option>
                   <option value="Flooring Installation">Flooring Installation</option>
                   <option value="HVAC Installation">HVAC Installation</option>
-                  <option value="Kitchen Equipment Installation">Kitchen Equipment Installation</option>
+                  <option value="Equipment Installation">Equipment Installation</option>
                   <option value="Furniture Installation">Furniture Installation</option>
                   <option value="Utensils Installation">Utensils Installation</option>
                 </Select>
@@ -298,10 +298,10 @@ const MilestoneModal: React.FC<MilestoneModalProps> = ({
             </VStack>
           </ModalBody>
 
-          <ModalFooter 
-            bg="white" 
-            borderBottomRadius="lg" 
-            borderTopWidth="1px" 
+          <ModalFooter
+            bg="white"
+            borderBottomRadius="lg"
+            borderTopWidth="1px"
             borderColor="gray.200"
           >
             <Button variant="ghost" mr={3} onClick={handleClose} isDisabled={isSubmitting}>

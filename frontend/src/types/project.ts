@@ -91,6 +91,11 @@ export interface DailyUpdate {
   date: string;
   weather: string;
   workers_present: number;
+  progress: number;
+  foundation_progress?: number;
+  utilities_progress?: number;
+  interior_progress?: number;
+  equipment_progress?: number;
   work_description: string;
   materials_used: string;
   issues: string;

@@ -34,6 +34,10 @@ import {
   FiImage,
   FiUser,
   FiTrendingUp,
+  FiDatabase,
+  FiTarget,
+  FiFileText,
+  FiTool,
 } from 'react-icons/fi';
 import { DailyUpdate } from '@/types/project';
 
@@ -86,15 +90,15 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
   const getFullUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    
+
     // Normalize path - convert Windows backslashes to forward slashes
     let normalizedUrl = url.replace(/\\/g, '/');
-    
+
     // Ensure leading slash
     if (!normalizedUrl.startsWith('/')) {
       normalizedUrl = '/' + normalizedUrl;
     }
-    
+
     // Use backend URL for uploaded files
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     return `${backendUrl}${normalizedUrl}`;
@@ -103,15 +107,15 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered scrollBehavior="inside">
       <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-      <ModalContent 
-        bg={bgColor} 
+      <ModalContent
+        bg={bgColor}
         maxH="90vh"
         borderRadius="lg"
         boxShadow="2xl"
       >
-        <ModalHeader 
-          color={textColor} 
-          borderBottomWidth="1px" 
+        <ModalHeader
+          color={textColor}
+          borderBottomWidth="1px"
           borderColor={borderColor}
           bg={bgColor}
           borderTopRadius="lg"
@@ -175,6 +179,95 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
               <Badge colorScheme="green" fontSize="lg" px={4} py={2} borderRadius="md">
                 {dailyUpdate.workers_present} Workers
               </Badge>
+            </Box>
+
+            <Divider />
+
+            {/* Project Progress Section */}
+            <Box>
+              <HStack spacing={2} mb={3}>
+                <Icon as={FiTrendingUp} color="green.500" boxSize={5} />
+                <Text fontSize="sm" fontWeight="bold" color={textColor}>
+                  Project Progress
+                </Text>
+              </HStack>
+              <SimpleGrid columns={{ base: 2, md: 2 }} spacing={4}>
+                {/* Foundation Progress */}
+                <Box
+                  bg={sectionBg}
+                  p={4}
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                >
+                  <HStack spacing={2} mb={2}>
+                    <Icon as={FiDatabase} color="orange.500" boxSize={4} />
+                    <Text fontSize="xs" color={subtextColor} fontWeight="semibold">
+                      Foundation & Structure
+                    </Text>
+                  </HStack>
+                  <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+                    {dailyUpdate.foundation_progress || 0}%
+                  </Text>
+                </Box>
+
+                {/* Utilities Progress */}
+                <Box
+                  bg={sectionBg}
+                  p={4}
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                >
+                  <HStack spacing={2} mb={2}>
+                    <Icon as={FiTarget} color="purple.500" boxSize={4} />
+                    <Text fontSize="xs" color={subtextColor} fontWeight="semibold">
+                      Utilities Installation
+                    </Text>
+                  </HStack>
+                  <Text fontSize="2xl" fontWeight="bold" color="purple.500">
+                    {dailyUpdate.utilities_progress || 0}%
+                  </Text>
+                </Box>
+
+                {/* Interior Progress */}
+                <Box
+                  bg={sectionBg}
+                  p={4}
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                >
+                  <HStack spacing={2} mb={2}>
+                    <Icon as={FiFileText} color="pink.500" boxSize={4} />
+                    <Text fontSize="xs" color={subtextColor} fontWeight="semibold">
+                      Interior & Finishes
+                    </Text>
+                  </HStack>
+                  <Text fontSize="2xl" fontWeight="bold" color="pink.500">
+                    {dailyUpdate.interior_progress || 0}%
+                  </Text>
+                </Box>
+
+                {/* Equipment Progress */}
+                <Box
+                  bg={sectionBg}
+                  p={4}
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                >
+                  <HStack spacing={2} mb={2}>
+                    <Icon as={FiTool} color="green.500" boxSize={4} />
+                    <Text fontSize="xs" color={subtextColor} fontWeight="semibold">
+                      Equipment
+                    </Text>
+                  </HStack>
+                  <Text fontSize="2xl" fontWeight="bold" color="green.500">
+                    {dailyUpdate.equipment_progress || 0}%
+                  </Text>
+                </Box>
+              </SimpleGrid>
             </Box>
 
             <Divider />
@@ -303,7 +396,7 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
                   </Badge>
                 )}
               </HStack>
-              
+
               {dailyUpdate.photos && dailyUpdate.photos.length > 0 ? (
                 <SimpleGrid columns={{ base: 2, md: 3 }} spacing={4}>
                   {dailyUpdate.photos.map((photo, index) => (
@@ -380,8 +473,8 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
           </VStack>
         </ModalBody>
 
-        <ModalFooter 
-          borderTopWidth="1px" 
+        <ModalFooter
+          borderTopWidth="1px"
           borderColor={borderColor}
           bg={bgColor}
           borderBottomRadius="lg"

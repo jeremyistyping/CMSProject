@@ -18,8 +18,15 @@ import {
   Spinner,
   Center,
   useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  IconButton,
 } from '@chakra-ui/react';
-import { FiPlus, FiFolder, FiCalendar, FiDollarSign, FiArrowRight } from 'react-icons/fi';
+import { FiPlus, FiFolder, FiCalendar, FiDollarSign, FiArrowRight, FiTrash2 } from 'react-icons/fi';
 import Layout from '@/components/layout/UnifiedLayout';
 import projectService from '@/services/projectService';
 import { Project } from '@/types/project';
@@ -31,6 +38,9 @@ export default function ProjectsPage() {
   const toast = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const cancelRef = React.useRef(null);
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
@@ -68,8 +78,42 @@ export default function ProjectsPage() {
     router.push('/projects/create');
   };
 
-  const handleViewProject = (projectId: string) => {
+  const handleViewProject = (projectId: string | number) => {
     router.push(`/projects/${projectId}`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, projectId: string | number) => {
+    e.stopPropagation();
+    setProjectToDelete(String(projectId));
+    setIsDeleteAlertOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      await projectService.deleteProject(projectToDelete);
+      toast({
+        title: 'Project deleted',
+        description: 'The project has been successfully deleted.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchProjects();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete project. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsDeleteAlertOpen(false);
+      setProjectToDelete(null);
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -106,6 +150,9 @@ export default function ProjectsPage() {
   if (loading) {
     return (
       <Layout>
+        <Center h="80vh">
+          <Spinner size="xl" color="green.500" />
+        </Center>
       </Layout>
     );
   }
@@ -165,12 +212,22 @@ export default function ProjectsPage() {
                   <VStack align="stretch" spacing={4}>
                     {/* Header */}
                     <HStack justify="space-between">
-                      <Badge colorScheme={getStatusColor(project.status)} fontSize="xs">
-                        {project.status.toUpperCase()}
-                      </Badge>
-                      <Badge colorScheme="purple" fontSize="xs">
-                        {project.project_type}
-                      </Badge>
+                      <HStack>
+                        <Badge colorScheme={getStatusColor(project.status)} fontSize="xs">
+                          {project.status.toUpperCase()}
+                        </Badge>
+                        <Badge colorScheme="purple" fontSize="xs">
+                          {project.project_type}
+                        </Badge>
+                      </HStack>
+                      <IconButton
+                        aria-label="Delete project"
+                        icon={<FiTrash2 />}
+                        size="sm"
+                        colorScheme="red"
+                        variant="ghost"
+                        onClick={(e) => handleDeleteClick(e, project.id)}
+                      />
                     </HStack>
 
                     {/* Project Name */}
@@ -257,6 +314,33 @@ export default function ProjectsPage() {
           </Grid>
         )}
       </Box>
+
+      <AlertDialog
+        isOpen={isDeleteAlertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsDeleteAlertOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Project
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure? You can't undo this action afterwards.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsDeleteAlertOpen(false)}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleConfirmDelete} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Layout>
   );
 }

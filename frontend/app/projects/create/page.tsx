@@ -59,34 +59,34 @@ export default function CreateProjectPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name.includes('progress') || name === 'budget' ? Number(value) : value,
+      [name]: name.includes('progress') ? Number(value) : name === 'budget' ? parseInt(value, 10) || 0 : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setLoading(true);
       const project = await projectService.createProject(formData);
-      
+
       // Check if backend actually returned valid data
       if (!project || !project.id) {
         throw new Error('Invalid response from server');
       }
-      
+
       toast({
         title: 'Success',
         description: 'Project created successfully',
         status: 'success',
         duration: 3000,
       });
-      
+
       // Redirect to project detail page
       router.push(`/projects/${project.id}`);
     } catch (error) {
       console.error('Error creating project:', error);
-      
+
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to create project. Please try again.',
@@ -108,8 +108,8 @@ export default function CreateProjectPage() {
     return new Intl.NumberFormat('id-ID').format(value);
   };
 
-  const formatToBillion = (value: number) => {
-    return (value / 1000000000).toFixed(1);
+  const formatToMillion = (value: number) => {
+    return (value / 1000000).toFixed(1);
   };
 
   return (
@@ -238,7 +238,7 @@ export default function CreateProjectPage() {
                       />
                       {formData.budget > 0 && (
                         <Text fontSize="xs" color={subtextColor} mt={1}>
-                          Minimal: Rp {formatBudget(formData.budget)} ({formatToBillion(formData.budget)} juta rupiah)
+                          Minimal: Rp {formatBudget(formData.budget)} ({formatToMillion(formData.budget)} juta rupiah)
                         </Text>
                       )}
                     </FormControl>

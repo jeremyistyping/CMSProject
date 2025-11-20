@@ -89,7 +89,7 @@ export const projectService = {
     const params: any = {};
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
-    
+
     const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, { params });
     return response.data;
   },
@@ -98,22 +98,27 @@ export const projectService = {
     // If photos are provided, use FormData for multipart upload
     if (photos && photos.length > 0) {
       const formData = new FormData();
-      
+
       // Append all form fields as JSON string or individual fields
       formData.append('date', data.date || new Date().toISOString());
       formData.append('weather', data.weather || 'Sunny');
       formData.append('workers_present', String(data.workers_present || 0));
+      formData.append('progress', String(data.progress || 0));
+      formData.append('foundation_progress', String(data.foundation_progress || 0));
+      formData.append('utilities_progress', String(data.utilities_progress || 0));
+      formData.append('interior_progress', String(data.interior_progress || 0));
+      formData.append('equipment_progress', String(data.equipment_progress || 0));
       formData.append('work_description', data.work_description || '');
       formData.append('materials_used', data.materials_used || '');
       formData.append('issues', data.issues || '');
       formData.append('tomorrows_plan', data.tomorrows_plan || '');
       formData.append('created_by', data.created_by || 'Current User');
-      
+
       // Append photo files
       photos.forEach((photo) => {
         formData.append('photos', photo);
       });
-      
+
       const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -121,7 +126,7 @@ export const projectService = {
       });
       return response.data;
     }
-    
+
     // No photos, use regular JSON
     const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, data);
     return response.data;

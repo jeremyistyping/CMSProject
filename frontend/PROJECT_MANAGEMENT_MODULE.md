@@ -66,7 +66,7 @@ Module **Project Management** telah berhasil dibuat dengan fitur-fitur berikut:
   - Foundation & Structure (icon: FiDatabase, color: orange)
   - Utilities Installation (icon: FiTarget, color: purple)
   - Interior & Finishes (icon: FiFileText, color: pink)
-  - Kitchen Equipment (icon: FiClock, color: green)
+  - Equipment (icon: FiClock, color: green)
 - ✅ Project Milestone section (empty state)
 - ✅ Timeline Schedule section (empty state)
 

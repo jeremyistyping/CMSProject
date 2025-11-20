@@ -41,7 +41,7 @@ import {
 import Layout from '@/components/layout/UnifiedLayout';
 import projectService from '@/services/projectService';
 import { Project } from '@/types/project';
-import UpdateProgressModal from '@/components/projects/UpdateProgressModal';
+
 import DailyUpdatesTab from '@/components/projects/DailyUpdatesTab';
 import MilestonesTab from '@/components/projects/MilestonesTab';
 import WeeklyReportsTab from '@/components/projects/WeeklyReportsTab';
@@ -77,7 +77,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
-  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
@@ -139,18 +139,7 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleUpdateProgress = () => {
-    setIsProgressModalOpen(true);
-  };
 
-  const handleProgressModalClose = () => {
-    setIsProgressModalOpen(false);
-  };
-
-  const handleProgressUpdateSuccess = () => {
-    // Refresh project data after progress update
-    fetchProject();
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -345,9 +334,7 @@ export default function ProjectDetailPage() {
                       <Heading size="md" color={textColor}>
                         Project Progress
                       </Heading>
-                      <Button size="sm" colorScheme="green" onClick={handleUpdateProgress}>
-                        Update Progress
-                      </Button>
+
                     </HStack>
 
                     <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
@@ -442,7 +429,7 @@ export default function ProjectDetailPage() {
                               </Text>
                             </HStack>
                             <Text fontSize="sm" fontWeight="medium" color={textColor}>
-                              Kitchen Equipment
+                              Equipment
                             </Text>
                             <Text fontSize="xs" color={subtextColor}>
                               Complete
@@ -519,15 +506,7 @@ export default function ProjectDetailPage() {
           </Tabs>
         </Card>
 
-        {/* Update Progress Modal */}
-        {project && (
-          <UpdateProgressModal
-            isOpen={isProgressModalOpen}
-            onClose={handleProgressModalClose}
-            project={project}
-            onSuccess={handleProgressUpdateSuccess}
-          />
-        )}
+
       </Box>
     </Layout>
   );

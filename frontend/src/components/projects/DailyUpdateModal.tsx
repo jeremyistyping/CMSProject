@@ -25,6 +25,9 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Text,
+  SimpleGrid,
+  Divider,
+  Box,
 } from '@chakra-ui/react';
 import { FiSave, FiUpload, FiX, FiImage } from 'react-icons/fi';
 import projectService from '@/services/projectService';
@@ -43,6 +46,11 @@ interface DailyUpdateFormData {
   date: string;
   weather: string;
   workers_present: number;
+  progress: number;
+  foundation_progress: number;
+  utilities_progress: number;
+  interior_progress: number;
+  equipment_progress: number;
   work_description: string;
   materials_used: string;
   issues: string;
@@ -77,6 +85,11 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
     date: new Date().toISOString().split('T')[0],
     weather: 'Sunny',
     workers_present: 0,
+    progress: 0,
+    foundation_progress: 0,
+    utilities_progress: 0,
+    interior_progress: 0,
+    equipment_progress: 0,
     work_description: '',
     materials_used: '',
     issues: '',
@@ -90,6 +103,11 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
         date: dailyUpdate.date.split('T')[0],
         weather: dailyUpdate.weather,
         workers_present: dailyUpdate.workers_present,
+        progress: dailyUpdate.progress || 0,
+        foundation_progress: dailyUpdate.foundation_progress || 0,
+        utilities_progress: dailyUpdate.utilities_progress || 0,
+        interior_progress: dailyUpdate.interior_progress || 0,
+        equipment_progress: dailyUpdate.equipment_progress || 0,
         work_description: dailyUpdate.work_description,
         materials_used: dailyUpdate.materials_used,
         issues: dailyUpdate.issues,
@@ -103,6 +121,11 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
         date: new Date().toISOString().split('T')[0],
         weather: 'Sunny',
         workers_present: 0,
+        progress: 0,
+        foundation_progress: 0,
+        utilities_progress: 0,
+        interior_progress: 0,
+        equipment_progress: 0,
         work_description: '',
         materials_used: '',
         issues: '',
@@ -129,8 +152,24 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
     }));
   };
 
+  // Auto-calculate overall progress from category averages
+  const calculateOverallProgress = () => {
+    const { foundation_progress, utilities_progress, interior_progress, equipment_progress } = formData;
+    return (foundation_progress + utilities_progress + interior_progress + equipment_progress) / 4;
+  };
+
+  const handleCategoryProgressChange = (field: keyof DailyUpdateFormData) => (valueString: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: parseFloat(valueString) || 0,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Auto-calculate overall progress before submission
+    const calculatedProgress = calculateOverallProgress();
 
     // Validation
     if (!projectId) {
@@ -170,6 +209,7 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
 
       const updateData = {
         ...formData,
+        progress: calculatedProgress, // Use auto-calculated progress
         date: new Date(formData.date).toISOString(),
         photos: [], // Will be handled separately for multipart upload
         created_by: 'Current User', // Should be from auth context
@@ -205,7 +245,7 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
       console.error('Error response:', error?.response?.data);
       console.error('Error status:', error?.response?.status);
       console.error('Project ID:', projectId);
-      
+
       // Backend not ready - show friendly message
       if (error?.response?.status === 404) {
         toast({
@@ -247,15 +287,15 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={handleCancel} size="3xl" isCentered>
       <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-      <ModalContent 
-        bg={bgColor} 
-        maxH="90vh" 
+      <ModalContent
+        bg={bgColor}
+        maxH="90vh"
         borderRadius="lg"
         boxShadow="2xl"
       >
-        <ModalHeader 
-          color={textColor} 
-          borderBottomWidth="1px" 
+        <ModalHeader
+          color={textColor}
+          borderBottomWidth="1px"
           borderColor={borderColor}
           bg={bgColor}
           borderTopRadius="lg"
@@ -353,6 +393,149 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
                   Total workers on site today
                 </Text>
               </FormControl>
+
+              <Divider />
+              <Box>
+                <Text fontSize="md" fontWeight="bold" mb={4} color={textColor}>
+                  Project Progress
+                </Text>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  {/* Overall Progress - Auto-calculated from category averages */}
+
+                  {/* Foundation Progress */}
+                  <FormControl>
+                    <FormLabel color={textColor} fontSize="sm" fontWeight="semibold" mb={2}>
+                      Foundation & Structure (%)
+                    </FormLabel>
+                    <NumberInput
+                      value={formData.foundation_progress}
+                      onChange={handleCategoryProgressChange('foundation_progress')}
+                      min={0}
+                      max={100}
+                      precision={2}
+                      step={1}
+                      isDisabled={loading}
+                    >
+                      <NumberInputField
+                        bg={inputBgColor}
+                        color={inputTextColor}
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                        placeholder="e.g. 100"
+                        _focus={{
+                          borderColor: 'green.500',
+                          boxShadow: '0 0 0 1px var(--accent-color)',
+                        }}
+                        _placeholder={{ color: placeholderColor }}
+                      />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper borderColor={borderColor} />
+                        <NumberDecrementStepper borderColor={borderColor} />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+
+                  {/* Utilities Progress */}
+                  <FormControl>
+                    <FormLabel color={textColor} fontSize="sm" fontWeight="semibold" mb={2}>
+                      Utilities Installation (%)
+                    </FormLabel>
+                    <NumberInput
+                      value={formData.utilities_progress}
+                      onChange={handleCategoryProgressChange('utilities_progress')}
+                      min={0}
+                      max={100}
+                      precision={2}
+                      step={1}
+                      isDisabled={loading}
+                    >
+                      <NumberInputField
+                        bg={inputBgColor}
+                        color={inputTextColor}
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                        placeholder="e.g. 80"
+                        _focus={{
+                          borderColor: 'green.500',
+                          boxShadow: '0 0 0 1px var(--accent-color)',
+                        }}
+                        _placeholder={{ color: placeholderColor }}
+                      />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper borderColor={borderColor} />
+                        <NumberDecrementStepper borderColor={borderColor} />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+
+                  {/* Interior Progress */}
+                  <FormControl>
+                    <FormLabel color={textColor} fontSize="sm" fontWeight="semibold" mb={2}>
+                      Interior & Finishes (%)
+                    </FormLabel>
+                    <NumberInput
+                      value={formData.interior_progress}
+                      onChange={handleCategoryProgressChange('interior_progress')}
+                      min={0}
+                      max={100}
+                      precision={2}
+                      step={1}
+                      isDisabled={loading}
+                    >
+                      <NumberInputField
+                        bg={inputBgColor}
+                        color={inputTextColor}
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                        placeholder="e.g. 30"
+                        _focus={{
+                          borderColor: 'green.500',
+                          boxShadow: '0 0 0 1px var(--accent-color)',
+                        }}
+                        _placeholder={{ color: placeholderColor }}
+                      />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper borderColor={borderColor} />
+                        <NumberDecrementStepper borderColor={borderColor} />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+
+                  {/* Equipment Progress */}
+                  <FormControl>
+                    <FormLabel color={textColor} fontSize="sm" fontWeight="semibold" mb={2}>
+                      Equipment (%)
+                    </FormLabel>
+                    <NumberInput
+                      value={formData.equipment_progress}
+                      onChange={handleCategoryProgressChange('equipment_progress')}
+                      min={0}
+                      max={100}
+                      precision={2}
+                      step={1}
+                      isDisabled={loading}
+                    >
+                      <NumberInputField
+                        bg={inputBgColor}
+                        color={inputTextColor}
+                        borderColor={borderColor}
+                        borderWidth="1px"
+                        placeholder="e.g. 10"
+                        _focus={{
+                          borderColor: 'green.500',
+                          boxShadow: '0 0 0 1px var(--accent-color)',
+                        }}
+                        _placeholder={{ color: placeholderColor }}
+                      />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper borderColor={borderColor} />
+                        <NumberDecrementStepper borderColor={borderColor} />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                </SimpleGrid>
+              </Box>
+              <Divider />
 
               {/* Work Description */}
               <FormControl isRequired>
@@ -478,16 +661,16 @@ const DailyUpdateModal: React.FC<DailyUpdateModalProps> = ({
             </VStack>
           </ModalBody>
 
-          <ModalFooter 
-            borderTopWidth="1px" 
+          <ModalFooter
+            borderTopWidth="1px"
             borderColor={borderColor}
             bg={bgColor}
             borderBottomRadius="lg"
           >
             <HStack spacing={3}>
-              <Button 
-                variant="ghost" 
-                onClick={handleCancel} 
+              <Button
+                variant="ghost"
+                onClick={handleCancel}
                 isDisabled={loading}
                 size="md"
               >

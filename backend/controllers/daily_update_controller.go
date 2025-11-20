@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 )
@@ -45,24 +45,24 @@ func (dc *DailyUpdateController) GetDailyUpdates(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Check for date range filters
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
-	
+
 	var updates []models.DailyUpdate
-	
+
 	if startDate != "" || endDate != "" {
 		updates, err = dc.service.GetDailyUpdatesByDateRange(uint(projectID), startDate, endDate)
 	} else {
 		updates, err = dc.service.GetDailyUpdatesByProject(uint(projectID))
 	}
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, updates)
 }
 
@@ -83,19 +83,19 @@ func (dc *DailyUpdateController) GetDailyUpdate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
-	
+
 	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
 		return
 	}
-	
+
 	update, err := dc.service.GetDailyUpdateByID(uint(projectID), uint(updateID))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, update)
 }
 
@@ -122,18 +122,18 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	log.Printf("📝 CreateDailyUpdate - Project ID: %d, Content-Type: %s", projectID, c.GetHeader("Content-Type"))
-	
+
 	var dailyUpdate models.DailyUpdate
-	
+
 	// Check Content-Type to determine how to parse
 	contentType := c.GetHeader("Content-Type")
-	
+
 	// Check if it's multipart/form-data (contains "multipart/form-data" prefix)
-	isMultipart := contentType != "" && (contentType == "multipart/form-data" || 
+	isMultipart := contentType != "" && (contentType == "multipart/form-data" ||
 		len(contentType) > 19 && contentType[:19] == "multipart/form-data")
-	
+
 	if !isMultipart && contentType == "application/json" {
 		// JSON request without files
 		if err := c.ShouldBindJSON(&dailyUpdate); err != nil {
@@ -153,7 +153,7 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 			})
 			return
 		}
-		
+
 		// Parse form fields
 		dateStr := c.PostForm("date")
 		if dateStr != "" {
@@ -172,16 +172,16 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 			}
 			dailyUpdate.Date = parsedDate
 		}
-		
+
 		dailyUpdate.Weather = c.PostForm("weather")
 		dailyUpdate.WorkDescription = c.PostForm("work_description")
 		dailyUpdate.MaterialsUsed = c.PostForm("materials_used")
 		dailyUpdate.Issues = c.PostForm("issues")
 		dailyUpdate.TomorrowsPlan = c.PostForm("tomorrows_plan")
 		dailyUpdate.CreatedBy = c.PostForm("created_by")
-		
+
 		log.Printf("📋 Parsed Data - Date: %v, Weather: %s, Workers: %d, Description: %s", dailyUpdate.Date, dailyUpdate.Weather, dailyUpdate.WorkersPresent, dailyUpdate.WorkDescription)
-		
+
 		// Parse workers_present
 		workersStr := c.PostForm("workers_present")
 		if workersStr != "" {
@@ -190,7 +190,34 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 				dailyUpdate.WorkersPresent = workers
 			}
 		}
-		
+
+		// Parse progress
+		if progressStr := c.PostForm("progress"); progressStr != "" {
+			if p, err := strconv.ParseFloat(progressStr, 64); err == nil {
+				dailyUpdate.Progress = p
+			}
+		}
+		if foundationStr := c.PostForm("foundation_progress"); foundationStr != "" {
+			if p, err := strconv.ParseFloat(foundationStr, 64); err == nil {
+				dailyUpdate.FoundationProgress = p
+			}
+		}
+		if utilitiesStr := c.PostForm("utilities_progress"); utilitiesStr != "" {
+			if p, err := strconv.ParseFloat(utilitiesStr, 64); err == nil {
+				dailyUpdate.UtilitiesProgress = p
+			}
+		}
+		if interiorStr := c.PostForm("interior_progress"); interiorStr != "" {
+			if p, err := strconv.ParseFloat(interiorStr, 64); err == nil {
+				dailyUpdate.InteriorProgress = p
+			}
+		}
+		if equipmentStr := c.PostForm("equipment_progress"); equipmentStr != "" {
+			if p, err := strconv.ParseFloat(equipmentStr, 64); err == nil {
+				dailyUpdate.EquipmentProgress = p
+			}
+		}
+
 		// Handle photo uploads
 		files := form.File["photos"]
 		log.Printf("📷 Received %d photo files for upload", len(files))
@@ -206,7 +233,7 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 				return
 			}
 			log.Printf("✅ Saved %d photos to disk", len(filePaths))
-			
+
 			// Convert file paths to public URLs
 			var photoURLs []string
 			for i, path := range filePaths {
@@ -220,10 +247,10 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 			log.Printf("ℹ️ No photos uploaded")
 		}
 	}
-	
+
 	// Set the project ID from URL param
 	dailyUpdate.ProjectID = uint(projectID)
-	
+
 	// Validate required fields
 	if dailyUpdate.Date.IsZero() {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -231,14 +258,14 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	if dailyUpdate.WorkDescription == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Work description is required",
 		})
 		return
 	}
-	
+
 	log.Printf("💾 Calling service.CreateDailyUpdate...")
 	if err := dc.service.CreateDailyUpdate(&dailyUpdate); err != nil {
 		log.Printf("❌ Service error: %v", err)
@@ -249,9 +276,9 @@ func (dc *DailyUpdateController) CreateDailyUpdate(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	log.Printf("✅ Daily update created successfully - ID: %d", dailyUpdate.ID)
-	
+
 	c.JSON(http.StatusCreated, dailyUpdate)
 }
 
@@ -274,27 +301,27 @@ func (dc *DailyUpdateController) UpdateDailyUpdate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
-	
+
 	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
 		return
 	}
-	
+
 	var dailyUpdate models.DailyUpdate
 	if err := c.ShouldBindJSON(&dailyUpdate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	dailyUpdate.ID = uint(updateID)
 	dailyUpdate.ProjectID = uint(projectID)
-	
+
 	if err := dc.service.UpdateDailyUpdate(&dailyUpdate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, dailyUpdate)
 }
 
@@ -315,18 +342,17 @@ func (dc *DailyUpdateController) DeleteDailyUpdate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
-	
+
 	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
 		return
 	}
-	
+
 	if err := dc.service.DeleteDailyUpdate(uint(projectID), uint(updateID)); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "Daily update deleted successfully"})
 }
-

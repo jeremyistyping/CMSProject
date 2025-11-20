@@ -2,29 +2,38 @@ package models
 
 import (
 	"time"
-	"gorm.io/gorm"
+
 	"github.com/lib/pq"
+	"gorm.io/gorm"
 )
 
 // DailyUpdate represents a daily construction project update
 type DailyUpdate struct {
-	ID               uint            `json:"id" gorm:"primaryKey"`
-	ProjectID        uint            `json:"project_id" gorm:"not null;index"`
-	Date             time.Time       `json:"date" gorm:"not null;index"`
-	Weather          string          `json:"weather" gorm:"not null;size:50"`
-	WorkersPresent   int             `json:"workers_present" gorm:"not null;default:0"`
-	WorkDescription  string          `json:"work_description" gorm:"type:text;not null"`
-	MaterialsUsed    string          `json:"materials_used" gorm:"type:text"`
-	Issues           string          `json:"issues" gorm:"type:text"`
-	TomorrowsPlan    string          `json:"tomorrows_plan" gorm:"type:text"`
-	Photos           pq.StringArray  `json:"photos" gorm:"type:text[]"` // PostgreSQL array of photo URLs/paths
-	CreatedBy        string          `json:"created_by" gorm:"not null;size:100"`
-	CreatedAt        time.Time       `json:"created_at"`
-	UpdatedAt        time.Time       `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt  `json:"-" gorm:"index"`
-	
+	ID              uint           `json:"id" gorm:"primaryKey"`
+	ProjectID       uint           `json:"project_id"`
+	Date            time.Time      `json:"date"`
+	Weather         string         `json:"weather"`
+	WorkersPresent  int            `json:"workers_present"`
+	WorkDescription string         `json:"work_description"`
+	MaterialsUsed   string         `json:"materials_used"`
+	Issues          string         `json:"issues"`
+	TomorrowsPlan   string         `json:"tomorrows_plan"`
+	Photos          pq.StringArray `json:"photos" gorm:"type:text[]"`
+	CreatedBy       string         `json:"created_by"`
+
+	// Progress fields
+	Progress           float64 `json:"progress"`
+	FoundationProgress float64 `json:"foundation_progress"`
+	UtilitiesProgress  float64 `json:"utilities_progress"`
+	InteriorProgress   float64 `json:"interior_progress"`
+	EquipmentProgress  float64 `json:"equipment_progress"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+
 	// Relation
-	Project          *Project       `json:"project,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
+	Project *Project `json:"project,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
 }
 
 // TableName specifies the table name for DailyUpdate model
@@ -62,4 +71,3 @@ func (du *DailyUpdate) Validate() error {
 	}
 	return nil
 }
-
