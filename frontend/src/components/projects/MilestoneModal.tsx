@@ -25,6 +25,8 @@ import {
 import { useForm } from 'react-hook-form';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { Milestone } from '@/types/milestone';
+
 export interface MilestoneFormData {
   title: string;
   description: string;
@@ -38,7 +40,7 @@ interface MilestoneModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: number;
-  milestone?: any; // Existing milestone for edit mode
+  milestone?: Milestone | null; // Existing milestone for edit mode
   onSuccess: () => void;
 }
 

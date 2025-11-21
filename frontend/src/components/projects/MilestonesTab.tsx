@@ -18,6 +18,7 @@ import {
   FiTarget,
 } from 'react-icons/fi';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Milestone } from '@/types/milestone';
 import MilestoneCard from './MilestoneCard';
 import MilestoneModal from './MilestoneModal';
 
@@ -31,10 +32,10 @@ const MilestonesTab: React.FC<MilestonesTabProps> = ({ projectId }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // State
-  const [milestones, setMilestones] = useState<any[]>([]);
-  const [filteredMilestones, setFilteredMilestones] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [filteredMilestones, setFilteredMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedMilestone, setSelectedMilestone] = useState<any>(null);
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 

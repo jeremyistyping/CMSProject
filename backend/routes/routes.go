@@ -156,47 +156,6 @@ func swaggerIndexHTML(docURL string) string {
 }
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupService) {
-	// ===== STATIC FILE SERVING - MUST BE FIRST =====
-	// Serve uploaded files (photos, documents, etc.) with CORS headers
-	uploadDir := "./uploads"
-	absUploadPath, _ := filepath.Abs(uploadDir)
-	log.Printf("📁 Serving static files from: %s", absUploadPath)
-
-	r.GET("/uploads/*filepath", func(c *gin.Context) {
-		// Set CORS headers for images
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "*")
-		c.Header("Cache-Control", "public, max-age=31536000")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		// Get filepath from param
-		filePath := c.Param("filepath")
-		// Remove leading slash
-		if len(filePath) > 0 && filePath[0] == '/' {
-			filePath = filePath[1:]
-		}
-
-		fullPath := filepath.Join(absUploadPath, filePath)
-		log.Printf("📝 Serving file: %s -> %s", c.Request.URL.Path, fullPath)
-
-		// Check if file exists
-		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			log.Printf("❌ File not found: %s", fullPath)
-			c.JSON(404, gin.H{"error": "File not found", "path": filePath})
-			return
-		}
-
-		// Serve the file
-		c.File(fullPath)
-		log.Printf("✅ File served: %s", fullPath)
-	})
-	log.Println("✅ /uploads route registered at top priority!")
-
 	// ===== CONTROLLERS =====
 	// Controllers
 	authController := controllers.NewAuthController(db)

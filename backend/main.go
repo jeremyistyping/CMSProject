@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"path/filepath"
 
 	"app-sistem-akuntansi/config"
 	"app-sistem-akuntansi/database"
@@ -160,56 +161,55 @@ func main() {
 	// to ensure proper route priority and avoid conflicts
 	// See routes/routes.go line ~157 for the implementation
 
-	/*
-	   // Serve static files for uploads with proper CORS headers - BEFORE SetupRoutes
-	   // This ensures /uploads route is registered first and takes priority
-	   uploadDir := filepath.Join(".", "uploads")
-	   var uploadPath string
-	   if absPath, err := filepath.Abs(uploadDir); err == nil {
-	   	log.Printf("📁 Serving static files from: %s", absPath)
-	   	uploadPath = absPath
-	   } else {
-	   	log.Printf("⚠️ Warning: Could not get absolute path for uploads, using relative path")
-	   	uploadPath = "./uploads"
-	   }
+	// Serve static files for uploads with proper CORS headers - BEFORE SetupRoutes
+	// This ensures /uploads route is registered first and takes priority
+	uploadDir := filepath.Join(".", "uploads")
+	var uploadPath string
+	if absPath, err := filepath.Abs(uploadDir); err == nil {
+		log.Printf("📁 Serving static files from: %s", absPath)
+		uploadPath = absPath
+	} else {
+		log.Printf("⚠️ Warning: Could not get absolute path for uploads, using relative path")
+		uploadPath = "./uploads"
+	}
 
-	   // Static file handler with CORS headers for images
-	   log.Println("🖼️  Registering /uploads route handler...")
-	   r.GET("/uploads/*filepath", func(c *gin.Context) {
-	   	// Set CORS headers for images
-	   	c.Header("Access-Control-Allow-Origin", "*")
-	   	c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-	   	c.Header("Access-Control-Allow-Headers", "*")
-	   	c.Header("Cache-Control", "public, max-age=31536000") // Cache images for 1 year
+	// Static file handler with CORS headers for images
+	log.Println("🖼️  Registering /uploads route handler...")
 
-	   	if c.Request.Method == "OPTIONS" {
-	   		c.AbortWithStatus(204)
-	   		return
-	   	}
+	r.GET("/uploads/*filepath", func(c *gin.Context) {
+		// Set CORS headers for images
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "*")
+		c.Header("Cache-Control", "public, max-age=31536000") // Cache images for 1 year
 
-	   	// Serve the file
-	   	filePath := c.Param("filepath")
-	   	// Remove leading slash from filepath param
-	   	if len(filePath) > 0 && filePath[0] == '/' {
-	   		filePath = filePath[1:]
-	   	}
-	   	fullPath := filepath.Join(uploadPath, filePath)
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
 
-	   	log.Printf("📝 Serving file: %s -> %s", c.Request.URL.Path, fullPath)
+		// Serve the file
+		filePath := c.Param("filepath")
+		// Remove leading slash from filepath param
+		if len(filePath) > 0 && filePath[0] == '/' {
+			filePath = filePath[1:]
+		}
+		fullPath := filepath.Join(uploadPath, filePath)
 
-	   	// Check if file exists
-	   	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-	   		log.Printf("❌ File not found: %s", fullPath)
-	   		c.JSON(404, gin.H{"error": "File not found", "path": filePath, "full_path": fullPath})
-	   		return
-	   	}
+		log.Printf("📝 Serving file: %s -> %s", c.Request.URL.Path, fullPath)
 
-	   	// Serve the file
-	   	c.File(fullPath)
-	   	log.Printf("✅ File served successfully: %s", fullPath)
-	   })
-	   log.Println("✅ /uploads route handler registered!")
-	*/
+		// Check if file exists
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			log.Printf("❌ File not found: %s", fullPath)
+			c.JSON(404, gin.H{"error": "File not found", "path": filePath, "full_path": fullPath})
+			return
+		}
+
+		// Serve the file
+		c.File(fullPath)
+		log.Printf("✅ File served successfully: %s", fullPath)
+	})
+	log.Println("✅ /uploads route handler registered!")
 
 	// Setup routes (includes /uploads static file handler)
 	routes.SetupRoutes(r, db, startupService)

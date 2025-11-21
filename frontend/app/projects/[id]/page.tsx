@@ -46,6 +46,8 @@ import DailyUpdatesTab from '@/components/projects/DailyUpdatesTab';
 import MilestonesTab from '@/components/projects/MilestonesTab';
 import WeeklyReportsTab from '@/components/projects/WeeklyReportsTab';
 import TimelineScheduleTab from '@/components/projects/TimelineScheduleTab';
+import MilestoneCard from '@/components/projects/MilestoneCard';
+import { Milestone } from '@/types/milestone';
 
 // Mock data untuk demo
 const MOCK_PROJECT: Project = {
@@ -77,6 +79,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
 
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
@@ -88,6 +91,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (projectId) {
       fetchProject();
+      fetchMilestones();
     }
   }, [projectId]);
 
@@ -108,6 +112,25 @@ export default function ProjectDetailPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMilestones = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/projects/${projectId}/milestones`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const milestonesData = Array.isArray(data) ? data : (data.data || []);
+        setMilestones(milestonesData);
+      }
+    } catch (error) {
+      console.error('Error fetching milestones:', error);
     }
   };
 
@@ -263,7 +286,7 @@ export default function ProjectDetailPage() {
 
         {/* Tabs */}
         <Card bg={bgColor} borderColor={borderColor} borderWidth="1px">
-          <Tabs index={activeTab} onChange={setActiveTab} isLazy>
+          <Tabs index={activeTab} onChange={setActiveTab} isLazy isFitted>
             <TabList
               borderBottomWidth="2px"
               borderColor={borderColor}
@@ -277,7 +300,6 @@ export default function ProjectDetailPage() {
               <Tab
                 _selected={{ color: 'white', bg: tabBgColor }}
                 fontWeight="medium"
-                minW="150px"
               >
                 <Icon as={FiBarChart} mr={2} />
                 Dashboard
@@ -285,7 +307,6 @@ export default function ProjectDetailPage() {
               <Tab
                 _selected={{ color: 'white', bg: tabBgColor }}
                 fontWeight="medium"
-                minW="150px"
               >
                 <Icon as={FiFileText} mr={2} />
                 Daily Updates
@@ -293,7 +314,6 @@ export default function ProjectDetailPage() {
               <Tab
                 _selected={{ color: 'white', bg: tabBgColor }}
                 fontWeight="medium"
-                minW="150px"
               >
                 <Icon as={FiTarget} mr={2} />
                 Milestones
@@ -301,7 +321,6 @@ export default function ProjectDetailPage() {
               <Tab
                 _selected={{ color: 'white', bg: tabBgColor }}
                 fontWeight="medium"
-                minW="150px"
               >
                 <Icon as={FiFileText} mr={2} />
                 Weekly Reports
@@ -309,19 +328,11 @@ export default function ProjectDetailPage() {
               <Tab
                 _selected={{ color: 'white', bg: tabBgColor }}
                 fontWeight="medium"
-                minW="180px"
               >
                 <Icon as={FiClock} mr={2} />
                 Timeline Schedule
               </Tab>
-              <Tab
-                _selected={{ color: 'white', bg: tabBgColor }}
-                fontWeight="medium"
-                minW="150px"
-              >
-                <Icon as={FiDatabase} mr={2} />
-                Technical Data
-              </Tab>
+
             </TabList>
 
             <TabPanels>
@@ -445,9 +456,28 @@ export default function ProjectDetailPage() {
                     <Heading size="md" color={textColor} mb={4}>
                       Project Milestone
                     </Heading>
-                    <Center h="200px" borderWidth="1px" borderColor={borderColor} borderRadius="md">
-                      <Text color={subtextColor}>No milestones yet</Text>
-                    </Center>
+                    {milestones.length === 0 ? (
+                      <Center h="200px" borderWidth="1px" borderColor={borderColor} borderRadius="md">
+                        <Text color={subtextColor}>No milestones yet</Text>
+                      </Center>
+                    ) : (
+                      <VStack align="stretch" spacing={3}>
+                        {milestones.slice(0, 3).map((milestone) => (
+                          <MilestoneCard
+                            key={milestone.id}
+                            milestone={milestone}
+                            onEdit={() => { }}
+                            onDelete={() => { }}
+                            onComplete={() => { }}
+                          />
+                        ))}
+                        {milestones.length > 3 && (
+                          <Button variant="link" colorScheme="blue" onClick={() => setActiveTab(2)}>
+                            View all milestones
+                          </Button>
+                        )}
+                      </VStack>
+                    )}
                   </Box>
 
                   {/* Timeline Schedule */}
@@ -488,20 +518,7 @@ export default function ProjectDetailPage() {
                 <TimelineScheduleTab projectId={projectId} />
               </TabPanel>
 
-              {/* Technical Data Tab */}
-              <TabPanel p={6}>
-                <Center h="400px">
-                  <VStack spacing={4}>
-                    <Icon as={FiDatabase} boxSize={16} color="gray.400" />
-                    <Text color={subtextColor} fontSize="lg">
-                      Technical Data
-                    </Text>
-                    <Text color={subtextColor} fontSize="sm">
-                      Feature coming soon
-                    </Text>
-                  </VStack>
-                </Center>
-              </TabPanel>
+
             </TabPanels>
           </Tabs>
         </Card>
