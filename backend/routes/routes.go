@@ -241,6 +241,11 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 	employeeDashboardService := services.NewEmployeeDashboardService(db)
 	employeeApprovalHandler := handlers.NewEmployeeApprovalHandler(approvalService, employeeDashboardService)
 
+	// Purchase Request
+	prRepo := repositories.NewPurchaseRequestRepository(db)
+	prService := services.NewPurchaseRequestService(prRepo)
+	prController := controllers.NewPurchaseRequestController(prService)
+
 	// Initialize security middleware
 	middleware.InitAuditLogger(db)  // Initialize audit logging
 	middleware.InitTokenMonitor(db) // Initialize token monitoring
@@ -842,6 +847,17 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 
 				// Journal entries integration dengan SSOT Journal System
 				purchases.GET("/:id/journal-entries", permMiddleware.CanView("reports"), purchaseController.GetPurchaseJournalEntries)
+			}
+
+			// Purchase Requests
+			pr := protected.Group("/purchase-requests")
+			{
+				pr.POST("", permMiddleware.CanCreate("purchases"), prController.Create)
+				pr.GET("", permMiddleware.CanView("purchases"), prController.GetAll)
+				pr.GET("/:id", permMiddleware.CanView("purchases"), prController.GetByID)
+				pr.PUT("/:id", permMiddleware.CanEdit("purchases"), prController.Update)
+				pr.DELETE("/:id", permMiddleware.CanDelete("purchases"), prController.Delete)
+				pr.PATCH("/:id/status", permMiddleware.CanApprove("purchases"), prController.UpdateStatus)
 			}
 
 			// Expenses routes - REMOVED: No implementation yet
