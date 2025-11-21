@@ -47,7 +47,9 @@ import MilestonesTab from '@/components/projects/MilestonesTab';
 import WeeklyReportsTab from '@/components/projects/WeeklyReportsTab';
 import TimelineScheduleTab from '@/components/projects/TimelineScheduleTab';
 import MilestoneCard from '@/components/projects/MilestoneCard';
+import TimelineScheduleCard from '@/components/projects/TimelineScheduleCard';
 import { Milestone } from '@/types/milestone';
+import { TimelineSchedule } from '@/types/project';
 
 // Mock data untuk demo
 const MOCK_PROJECT: Project = {
@@ -80,6 +82,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [schedules, setSchedules] = useState<TimelineSchedule[]>([]);
 
 
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
@@ -92,6 +95,7 @@ export default function ProjectDetailPage() {
     if (projectId) {
       fetchProject();
       fetchMilestones();
+      fetchSchedules();
     }
   }, [projectId]);
 
@@ -131,6 +135,15 @@ export default function ProjectDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching milestones:', error);
+    }
+  };
+
+  const fetchSchedules = async () => {
+    try {
+      const data = await projectService.getTimelineSchedules(projectId);
+      setSchedules(data || []);
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
     }
   };
 
@@ -485,15 +498,31 @@ export default function ProjectDetailPage() {
                     <Heading size="md" color={textColor} mb={4}>
                       Timeline Schedule
                     </Heading>
-                    <Center h="300px" borderWidth="1px" borderColor={borderColor} borderRadius="md">
-                      <VStack spacing={4}>
-                        <Icon as={FiClock} boxSize={12} color="gray.400" />
-                        <Text color={subtextColor}>No Timeline Data</Text>
-                        <Text color={subtextColor} fontSize="sm" textAlign="center">
-                          Add work areas with start and end dates to see the project timeline
-                        </Text>
+                    {schedules.length === 0 ? (
+                      <Center h="200px" borderWidth="1px" borderColor={borderColor} borderRadius="md">
+                        <VStack spacing={4}>
+                          <Icon as={FiClock} boxSize={12} color="gray.400" />
+                          <Text color={subtextColor}>No Timeline Data</Text>
+                          <Text color={subtextColor} fontSize="sm" textAlign="center">
+                            Add work areas with start and end dates to see the project timeline
+                          </Text>
+                        </VStack>
+                      </Center>
+                    ) : (
+                      <VStack align="stretch" spacing={3}>
+                        {schedules.slice(0, 3).map((schedule) => (
+                          <TimelineScheduleCard
+                            key={schedule.id}
+                            schedule={schedule}
+                          />
+                        ))}
+                        {schedules.length > 3 && (
+                          <Button variant="link" colorScheme="blue" onClick={() => setActiveTab(4)}>
+                            View all schedules
+                          </Button>
+                        )}
                       </VStack>
-                    </Center>
+                    )}
                   </Box>
                 </VStack>
               </TabPanel>
