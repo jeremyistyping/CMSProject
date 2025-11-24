@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import SimpleLayout from '@/components/layout/SimpleLayout';
 import { useModulePermissions } from '@/hooks/usePermissions';
 import {
@@ -13,24 +13,106 @@ import {
   Alert,
   AlertIcon,
   useColorModeValue,
+  Select,
+  SimpleGrid,
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
   Badge,
+  Card,
+  CardBody,
 } from '@chakra-ui/react';
+import projectService from '@/services/projectService';
+import { materialTrackingService, MaterialSummaryStats, MaterialItemSummary, MaterialMovement } from '@/services/materialTrackingService';
+import MaterialMovementTable from '@/components/cost-control/MaterialMovementTable';
+import { Project } from '@/types/project';
 
 const MaterialTrackingPage: React.FC = () => {
   const { canView, loading } = useModulePermissions('cost_control');
   const headingColor = useColorModeValue('gray.800', 'gray.100');
   const textColor = useColorModeValue('gray.600', 'gray.300');
-  const boxBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const cardBg = useColorModeValue('white', 'gray.700');
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
+  const [summary, setSummary] = useState<MaterialSummaryStats | null>(null);
+  const [items, setItems] = useState<MaterialItemSummary[]>([]);
+  const [movements, setMovements] = useState<MaterialMovement[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // Load projects on mount
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await projectService.getActiveProjects();
+        setProjects(Array.isArray(data) ? data : []);
+        if (Array.isArray(data) && data.length > 0) {
+          setSelectedProjectId(String(data[0].id));
+        }
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  // Load data when project changes
+  useEffect(() => {
+    if (!selectedProjectId) return;
+
+    const fetchData = async () => {
+      setIsLoadingData(true);
+      try {
+        const projectId = parseInt(selectedProjectId);
+        const [summaryData, itemsData, movementsData] = await Promise.all([
+          materialTrackingService.getSummary(projectId),
+          materialTrackingService.getItems(projectId),
+          materialTrackingService.getMovements(projectId),
+        ]);
+
+        setSummary(summaryData);
+        setItems(Array.isArray(itemsData) ? itemsData : []);
+        setMovements(Array.isArray(movementsData) ? movementsData : []);
+      } catch (error) {
+        console.error('Failed to load material data:', error);
+        // Reset to empty arrays on error
+        setSummary(null);
+        setItems([]);
+        setMovements([]);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedProjectId]);
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
 
   if (loading) {
     return (
       <SimpleLayout>
         <Box display="flex" alignItems="center" justifyContent="center" minH="60vh">
-          <HStack spacing={3}>
-            <Spinner />
-            <Text>Checking permissions...</Text>
-          </HStack>
+          <Spinner size="xl" />
         </Box>
       </SimpleLayout>
     );
@@ -39,54 +121,167 @@ const MaterialTrackingPage: React.FC = () => {
   if (!canView) {
     return (
       <SimpleLayout>
-        <Box maxW="xl">
-          <Alert status="error" borderRadius="md">
-            <AlertIcon />
-            <Box>
-              <Heading size="sm" mb={1}>Access Denied</Heading>
-              <Text fontSize="sm">Anda tidak memiliki akses ke modul Cost Control. Silakan hubungi administrator.</Text>
-            </Box>
-          </Alert>
-        </Box>
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          Access Denied
+        </Alert>
       </SimpleLayout>
     );
   }
 
   return (
     <SimpleLayout>
-      <Box>
-        <VStack align="start" spacing={4} mb={6}>
-          <Heading size="lg" color={headingColor}>Material Tracking</Heading>
-          <Text fontSize="sm" color={textColor} maxW="3xl">
-            Halaman ini akan digunakan untuk memonitor pemakaian dan pergerakan material per proyek:
-            penerimaan, pemakaian ke CBS / pekerjaan, dan sisa stok terkait proyek.
-          </Text>
-        </VStack>
-
-        <Box
-          bg={boxBg}
-          borderWidth="1px"
-          borderColor={borderColor}
-          borderRadius="lg"
-          p={6}
-        >
-          <VStack align="start" spacing={3}>
-            <Badge colorScheme="green" variant="subtle">Placeholder</Badge>
-            <Text fontSize="sm" color={textColor}>
-              Struktur halaman dan route sudah siap. Pada tahap berikutnya, di area ini akan ditambahkan:
-            </Text>
-            <Box as="ul" pl={5} fontSize="sm" color={textColor}>
-              <Box as="li">Filter proyek dan lokasi gudang</Box>
-              <Box as="li">Ringkasan total material (masuk, keluar, saldo)</Box>
-              <Box as="li">Tabel movement material per item / per proyek</Box>
-              <Box as="li">Integrasi dengan modul Inventory / Purchase</Box>
-            </Box>
-          </VStack>
+      <VStack align="stretch" spacing={6}>
+        <Box>
+          <Heading size="lg" color={headingColor} mb={2}>Material Tracking</Heading>
+          <Text color={textColor}>Monitor material usage, stock, and movements per project.</Text>
         </Box>
-      </Box>
+
+        {/* Filter Section */}
+        <Card bg={cardBg} variant="outline">
+          <CardBody>
+            <HStack spacing={4}>
+              <Box minW="300px">
+                <Text mb={2} fontWeight="medium">Select Project</Text>
+                <Select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  placeholder="Select a project"
+                >
+                  {(projects || []).map((p) => (
+                    <option key={p.id} value={p.id}>{p.project_name}</option>
+                  ))}
+                </Select>
+              </Box>
+            </HStack>
+          </CardBody>
+        </Card>
+
+        {isLoadingData ? (
+          <Box display="flex" justifyContent="center" py={10}>
+            <Spinner size="xl" />
+          </Box>
+        ) : !selectedProjectId ? (
+          <Alert status="info">
+            <AlertIcon />
+            Please select a project to view material tracking data.
+          </Alert>
+        ) : (
+          <>
+            {/* Summary Cards */}
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+              <Card bg={cardBg} variant="outline">
+                <CardBody>
+                  <Stat>
+                    <StatLabel>Total Purchased</StatLabel>
+                    <StatNumber color="blue.500">{formatCurrency(summary?.total_purchased_value || 0)}</StatNumber>
+                    <StatHelpText>{summary?.total_items || 0} Items</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+              <Card bg={cardBg} variant="outline">
+                <CardBody>
+                  <Stat>
+                    <StatLabel>Total Used</StatLabel>
+                    <StatNumber color="orange.500">{formatCurrency(summary?.total_used_value || 0)}</StatNumber>
+                    <StatHelpText>Consumed in field</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+              <Card bg={cardBg} variant="outline">
+                <CardBody>
+                  <Stat>
+                    <StatLabel>Remaining Value</StatLabel>
+                    <StatNumber color="green.500">{formatCurrency(summary?.total_remaining_value || 0)}</StatNumber>
+                    <StatHelpText>Project Stock</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+              <Card bg={cardBg} variant="outline">
+                <CardBody>
+                  <Stat>
+                    <StatLabel>Low Stock Items</StatLabel>
+                    <StatNumber color={summary?.low_stock_items ? "red.500" : "gray.500"}>
+                      {summary?.low_stock_items || 0}
+                    </StatNumber>
+                    <StatHelpText>Need attention</StatHelpText>
+                  </Stat>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+
+            {/* Tabs for Details */}
+            <Card bg={cardBg} variant="outline">
+              <CardBody>
+                <Tabs variant="enclosed">
+                  <TabList>
+                    <Tab>Material Items</Tab>
+                    <Tab>Movements History</Tab>
+                  </TabList>
+                  <TabPanels>
+                    <TabPanel px={0}>
+                      <Box overflowX="auto">
+                        <Table variant="simple" size="sm">
+                          <Thead>
+                            <Tr>
+                              <Th>Item Name</Th>
+                              <Th>Category</Th>
+                              <Th isNumeric>Purchased</Th>
+                              <Th isNumeric>Used</Th>
+                              <Th isNumeric>Remaining</Th>
+                              <Th isNumeric>Avg Cost</Th>
+                              <Th isNumeric>Total Value</Th>
+                              <Th>Status</Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {(items || []).map((item) => (
+                              <Tr key={item.product_id}>
+                                <Td>
+                                  <Text fontWeight="medium">{item.product_name}</Text>
+                                  <Text fontSize="xs" color="gray.500">{item.product_code}</Text>
+                                </Td>
+                                <Td>{item.category}</Td>
+                                <Td isNumeric>{item.purchased_qty} {item.unit}</Td>
+                                <Td isNumeric>{item.used_qty} {item.unit}</Td>
+                                <Td isNumeric fontWeight="bold">{item.remaining_qty} {item.unit}</Td>
+                                <Td isNumeric>{formatCurrency(item.avg_unit_cost)}</Td>
+                                <Td isNumeric>{formatCurrency(item.total_value)}</Td>
+                                <Td>
+                                  <Badge
+                                    colorScheme={
+                                      item.status === 'CRITICAL' ? 'red' :
+                                        item.status === 'LOW' ? 'orange' : 'green'
+                                    }
+                                  >
+                                    {item.status}
+                                  </Badge>
+                                </Td>
+                              </Tr>
+                            ))}
+                            {items.length === 0 && (
+                              <Tr>
+                                <Td colSpan={8} textAlign="center" py={4} color="gray.500">
+                                  No material items found for this project.
+                                </Td>
+                              </Tr>
+                            )}
+                          </Tbody>
+                        </Table>
+                      </Box>
+                    </TabPanel>
+                    <TabPanel px={0}>
+                      <MaterialMovementTable movements={movements} />
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
+              </CardBody>
+            </Card>
+          </>
+        )}
+      </VStack>
     </SimpleLayout>
   );
 };
 
 export default MaterialTrackingPage;
-

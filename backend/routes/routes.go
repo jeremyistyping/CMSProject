@@ -1182,14 +1182,23 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 			}
 
 			// 🏗️  Project Management routes
-			SetupProjectRoutes(protected, db)
+			SetupProjectRoutes(protected, db, permMiddleware)
+
+			// 📦 Material Tracking routes
+			materialTrackingService := services.NewMaterialTrackingService(db)
+			materialTrackingController := controllers.NewMaterialTrackingController(materialTrackingService)
+			materialGroup := protected.Group("/material-tracking")
+			{
+				materialGroup.GET("/:projectId/summary", materialTrackingController.GetSummary)
+				materialGroup.GET("/:projectId/items", materialTrackingController.GetItems)
+				materialGroup.GET("/:projectId/movements", materialTrackingController.GetMovements)
+			}
 
 			// 📊 Project Reports routes
 			SetupProjectReportRoutes(protected, db, jwtManager)
 		}
 	}
 
-	// Static files (templates only - uploads route is in main.go)
 	r.Static("/templates", "./templates")
 
 	// Global favicon handler to avoid 404s in all contexts (Swagger and non-Swagger)

@@ -26,12 +26,15 @@ func (s *ProjectReportService) GeneratePortfolioBudgetVsActualReport(params mode
 		Projects:   []models.ProjectBudgetVsActualSummary{},
 	}
 
-	// Aggregate per project: budget (from project_budgets) and actual (from project_actual_costs view based on purchases)
+	// Aggregate per project: budget (from project_budgets OR projects.budget) and actual (from project_actual_costs view based on purchases)
 	query := `
 		SELECT
 			p.id AS project_id,
 			p.project_name,
-			COALESCE(b.total_budget, 0) AS total_budget,
+			CASE 
+				WHEN COALESCE(b.total_budget, 0) > 0 THEN b.total_budget 
+				ELSE COALESCE(p.budget, 0) 
+			END AS total_budget,
 			COALESCE(actual.total_actual, 0) AS total_actual,
 			p.overall_progress,
 			p.status
@@ -62,12 +65,12 @@ func (s *ProjectReportService) GeneratePortfolioBudgetVsActualReport(params mode
 	query += " ORDER BY p.created_at DESC"
 
 	var rows []struct {
-		ProjectID        uint
-		ProjectName      string
-		TotalBudget      float64
-		TotalActual      float64
-		OverallProgress  float64
-		Status           string
+		ProjectID       uint
+		ProjectName     string
+		TotalBudget     float64
+		TotalActual     float64
+		OverallProgress float64
+		Status          string
 	}
 
 	if err := s.db.Raw(query, args...).Scan(&rows).Error; err != nil {
@@ -215,6 +218,28 @@ func (s *ProjectReportService) GenerateBudgetVsActualReport(params models.Projec
 
 	// Calculate total variance
 	report.TotalVariance = report.TotalActual - report.TotalBudget
+
+	// Fallback: If no detailed budget found but project has global budget, add it as Unallocated
+	if report.TotalBudget == 0 && params.ProjectID != nil {
+		var project models.Project
+		if s.db.First(&project, *params.ProjectID).Error == nil && project.Budget > 0 {
+			// Add unallocated budget row
+			unallocatedRow := models.BudgetVsActualCOAGroup{
+				COACode:      "BUDGET",
+				COAName:      "Project Budget (Unallocated)",
+				COAType:      "EXPENSE",
+				Budget:       project.Budget,
+				Actual:       0,
+				Variance:     -project.Budget,
+				VarianceRate: -100,
+				Status:       "ON_TARGET",
+			}
+			report.COAGroups = append(report.COAGroups, unallocatedRow)
+			report.TotalBudget = project.Budget
+			report.TotalVariance = report.TotalActual - report.TotalBudget
+		}
+	}
+
 	if report.TotalBudget > 0 {
 		report.VarianceRate = (report.TotalVariance / report.TotalBudget) * 100
 	}
@@ -456,7 +481,7 @@ func (s *ProjectReportService) GenerateProgressVsCostReport(params models.Projec
 
 	// 1) Ambil progress history (project_progress) dalam range tanggal
 	var progressRows []struct {
-		Date                  time.Time
+		Date                    time.Time
 		PhysicalProgressPercent float64
 	}
 
@@ -475,7 +500,7 @@ func (s *ProjectReportService) GenerateProgressVsCostReport(params models.Projec
 
 	// 2) Ambil cumulative actual cost per tanggal dari project_actual_costs
 	var costRows []struct {
-		Date            time.Time
+		Date             time.Time
 		CumulativeActual float64
 	}
 
