@@ -57,6 +57,14 @@ class MaterialTrackingService {
         const response = await api.get(`${API_V1_BASE}/material-tracking/${projectId}/movements`);
         return response.data.data;
     }
+
+    async recordUsage(projectId: number, productId: number, quantity: number, notes: string): Promise<void> {
+        await api.post(`${API_V1_BASE}/material-tracking/${projectId}/record-usage`, {
+            product_id: productId,
+            quantity,
+            notes,
+        });
+    }
 }
 
 export const materialTrackingService = new MaterialTrackingService();

@@ -80,3 +80,42 @@ func (c *MaterialTrackingController) GetMovements(ctx *gin.Context) {
 		"data":   movements,
 	})
 }
+
+// RecordUsage - POST /api/v1/material-tracking/:projectId/record-usage
+func (c *MaterialTrackingController) RecordUsage(ctx *gin.Context) {
+	projectIDStr := ctx.Param("projectId")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
+
+	var request struct {
+		ProductID uint   `json:"product_id" binding:"required"`
+		Quantity  int    `json:"quantity" binding:"required,gt=0"`
+		Notes     string `json:"notes"`
+	}
+
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	err = c.service.RecordMaterialUsage(uint(projectID), request.ProductID, request.Quantity, request.Notes, userID.(uint))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Material usage recorded successfully",
+	})
+}

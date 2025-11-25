@@ -63,3 +63,15 @@ const (
 	PRStatusRevision  = "REVISION"
 	PRStatusPOCreated = "PO_CREATED"
 )
+
+// MaterialImpact represents the estimated impact of a PR on material stock
+type MaterialImpact struct {
+	ProductID      *uint   `json:"product_id"`
+	ProductName    string  `json:"product_name"`
+	ProductCode    string  `json:"product_code"`
+	Unit           string  `json:"unit"`
+	RequestedQty   float64 `json:"requested_qty"`
+	CurrentStock   float64 `json:"current_stock"`
+	ProjectedStock float64 `json:"projected_stock"`
+	Status         string  `json:"status"` // OK, LOW, CRITICAL
+}

@@ -5,6 +5,8 @@ import (
 	"app-sistem-akuntansi/repositories"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type PurchaseRequestService interface {
@@ -14,14 +16,16 @@ type PurchaseRequestService interface {
 	GetPRByID(id uint) (*models.PurchaseRequest, error)
 	GetAllPRs(filter map[string]interface{}) ([]models.PurchaseRequest, error)
 	UpdateStatus(id uint, status string, approverID uint, reason string) error
+	GetEstimatedMaterialImpact(prID uint) ([]models.MaterialImpact, error)
 }
 
 type purchaseRequestService struct {
 	repo repositories.PurchaseRequestRepository
+	db   *gorm.DB
 }
 
-func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository) PurchaseRequestService {
-	return &purchaseRequestService{repo}
+func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository, db *gorm.DB) PurchaseRequestService {
+	return &purchaseRequestService{repo, db}
 }
 
 func (s *purchaseRequestService) CreatePR(pr *models.PurchaseRequest) error {
@@ -104,4 +108,59 @@ func (s *purchaseRequestService) UpdateStatus(id uint, status string, approverID
 	}
 
 	return s.repo.Update(pr)
+}
+
+// GetEstimatedMaterialImpact calculates how the PR items will affect the project's material stock
+func (s *purchaseRequestService) GetEstimatedMaterialImpact(prID uint) ([]models.MaterialImpact, error) {
+	// Get PR with items
+	pr, err := s.repo.FindByID(prID)
+	if err != nil {
+		return nil, err
+	}
+
+	var impacts []models.MaterialImpact
+
+	for _, item := range pr.Items {
+		// Get current stock for this product in this project
+		var currentStock float64
+		err := s.db.Table("inventories").
+			Select("COALESCE(SUM(CASE WHEN type = 'IN' THEN quantity ELSE -quantity END), 0)").
+			Where("project_id = ?", pr.ProjectID).
+			Where("product_id = ?", item.ProductID).
+			Where("deleted_at IS NULL").
+			Scan(&currentStock).Error
+
+		if err != nil {
+			// Log error but continue with 0 stock
+			fmt.Printf("Error getting stock for product %d: %v\n", item.ProductID, err)
+		}
+
+		// Get product details
+		var product models.Product
+		if err := s.db.First(&product, item.ProductID).Error; err != nil {
+			continue
+		}
+
+		impact := models.MaterialImpact{
+			ProductID:      item.ProductID,
+			ProductName:    product.Name,
+			ProductCode:    product.Code,
+			Unit:           product.Unit,
+			RequestedQty:   float64(item.Quantity),
+			CurrentStock:   currentStock,
+			ProjectedStock: currentStock + float64(item.Quantity),
+			Status:         "OK",
+		}
+
+		// Determine status (simple logic for now)
+		if impact.CurrentStock <= 0 {
+			impact.Status = "CRITICAL" // Currently out of stock, so this purchase is critical
+		} else if impact.CurrentStock < 10 { // Arbitrary low stock threshold
+			impact.Status = "LOW"
+		}
+
+		impacts = append(impacts, impact)
+	}
+
+	return impacts, nil
 }

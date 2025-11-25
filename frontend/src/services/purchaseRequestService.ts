@@ -1,5 +1,5 @@
 import api from './api';
-import { PurchaseRequest, CreatePRData, UpdatePRData, PRFilter } from '../types/purchaseRequest';
+import { PurchaseRequest, CreatePRData, UpdatePRData, PRFilter, MaterialImpact } from '../types/purchaseRequest';
 
 const purchaseRequestService = {
     getAll: async (filter?: PRFilter): Promise<PurchaseRequest[]> => {
@@ -31,6 +31,11 @@ const purchaseRequestService = {
 
     updateStatus: async (id: number, status: string, reason?: string): Promise<void> => {
         await api.patch(`/api/v1/purchase-requests/${id}/status`, { status, reason });
+    },
+
+    getMaterialImpact: async (id: number): Promise<MaterialImpact[]> => {
+        const response = await api.get(`/api/v1/purchase-requests/${id}/material-impact`);
+        return response.data;
     },
 };
 

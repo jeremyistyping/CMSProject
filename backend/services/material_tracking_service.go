@@ -3,6 +3,7 @@ package services
 import (
 	"app-sistem-akuntansi/models"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -209,4 +210,74 @@ func (s *MaterialTrackingService) GetMaterialMovements(projectID uint) ([]models
 		Find(&movements).Error
 
 	return movements, err
+}
+
+// RecordMaterialUsage records material usage for a project
+// Creates an Inventory OUT record and validates available quantity
+func (s *MaterialTrackingService) RecordMaterialUsage(projectID uint, productID uint, quantity int, notes string, userID uint) error {
+	fmt.Printf("📝 Recording material usage: Project %d, Product %d, Qty %d\n", projectID, productID, quantity)
+
+	// Validate quantity is positive
+	if quantity <= 0 {
+		return fmt.Errorf("quantity must be positive, got %d", quantity)
+	}
+
+	// Check available quantity for this project and product
+	var availableQty int
+	err := s.db.Table("inventories").
+		Select("COALESCE(SUM(CASE WHEN type = 'IN' THEN quantity ELSE -quantity END), 0)").
+		Where("project_id = ?", projectID).
+		Where("product_id = ?", productID).
+		Where("deleted_at IS NULL").
+		Scan(&availableQty).Error
+	if err != nil {
+		return fmt.Errorf("failed to check available quantity: %w", err)
+	}
+
+	if availableQty < quantity {
+		return fmt.Errorf("insufficient material: available=%d, requested=%d", availableQty, quantity)
+	}
+
+	// Get product to calculate cost
+	var product models.Product
+	err = s.db.First(&product, productID).Error
+	if err != nil {
+		return fmt.Errorf("product not found: %w", err)
+	}
+
+	// Get average unit cost from IN movements for this project/product
+	var avgCost float64
+	err = s.db.Table("inventories").
+		Select("COALESCE(AVG(unit_cost), 0)").
+		Where("project_id = ?", projectID).
+		Where("product_id = ?", productID).
+		Where("type = ?", "IN").
+		Where("deleted_at IS NULL").
+		Scan(&avgCost).Error
+	if err != nil {
+		avgCost = 0 // Fallback to 0 if cannot determine
+	}
+
+	// Create inventory OUT record
+	inventory := &models.Inventory{
+		ProjectID:       &projectID,
+		ProductID:       productID,
+		ReferenceType:   "MANUAL_USAGE",
+		ReferenceID:     userID, // Store user ID who recorded this
+		Type:            "OUT",
+		Quantity:        quantity,
+		UnitCost:        avgCost,
+		TotalCost:       avgCost * float64(quantity),
+		RemainingQty:    0,
+		Notes:           notes,
+		TransactionDate: time.Now(),
+	}
+
+	err = s.db.Create(inventory).Error
+	if err != nil {
+		return fmt.Errorf("failed to create inventory OUT record: %w", err)
+	}
+
+	fmt.Printf("✅ Material usage recorded: Inventory ID %d\n", inventory.ID)
+	return nil
 }

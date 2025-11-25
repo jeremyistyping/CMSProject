@@ -33,11 +33,13 @@ import {
   Badge,
   Card,
   CardBody,
+  Button,
 } from '@chakra-ui/react';
 import projectService from '@/services/projectService';
 import { materialTrackingService, MaterialSummaryStats, MaterialItemSummary, MaterialMovement } from '@/services/materialTrackingService';
 import MaterialMovementTable from '@/components/cost-control/MaterialMovementTable';
 import { Project } from '@/types/project';
+import RecordUsageModal from '@/components/cost-control/RecordUsageModal';
 
 const MaterialTrackingPage: React.FC = () => {
   const { canView, loading } = useModulePermissions('cost_control');
@@ -52,6 +54,10 @@ const MaterialTrackingPage: React.FC = () => {
   const [items, setItems] = useState<MaterialItemSummary[]>([]);
   const [movements, setMovements] = useState<MaterialMovement[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const [isRecordUsageModalOpen, setIsRecordUsageModalOpen] = useState(false);
+  const [preSelectedProductId, setPreSelectedProductId] = useState<number | undefined>(undefined);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load projects on mount
   useEffect(() => {
@@ -98,7 +104,16 @@ const MaterialTrackingPage: React.FC = () => {
     };
 
     fetchData();
-  }, [selectedProjectId]);
+  }, [selectedProjectId, refreshTrigger]);
+
+  const handleRecordUsage = (productId?: number) => {
+    setPreSelectedProductId(productId);
+    setIsRecordUsageModalOpen(true);
+  };
+
+  const handleSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -140,7 +155,7 @@ const MaterialTrackingPage: React.FC = () => {
         {/* Filter Section */}
         <Card bg={cardBg} variant="outline">
           <CardBody>
-            <HStack spacing={4}>
+            <HStack spacing={4} justify="space-between" align="flex-end">
               <Box minW="300px">
                 <Text mb={2} fontWeight="medium">Select Project</Text>
                 <Select
@@ -153,6 +168,13 @@ const MaterialTrackingPage: React.FC = () => {
                   ))}
                 </Select>
               </Box>
+              <Button
+                colorScheme="blue"
+                onClick={() => handleRecordUsage()}
+                isDisabled={!selectedProjectId}
+              >
+                Record Usage
+              </Button>
             </HStack>
           </CardBody>
         </Card>
@@ -232,6 +254,7 @@ const MaterialTrackingPage: React.FC = () => {
                               <Th isNumeric>Avg Cost</Th>
                               <Th isNumeric>Total Value</Th>
                               <Th>Status</Th>
+                              <Th>Actions</Th>
                             </Tr>
                           </Thead>
                           <Tbody>
@@ -257,6 +280,16 @@ const MaterialTrackingPage: React.FC = () => {
                                     {item.status}
                                   </Badge>
                                 </Td>
+                                <Td>
+                                  <Button
+                                    size="xs"
+                                    colorScheme="blue"
+                                    variant="outline"
+                                    onClick={() => handleRecordUsage(item.product_id)}
+                                  >
+                                    Record
+                                  </Button>
+                                </Td>
                               </Tr>
                             ))}
                             {items.length === 0 && (
@@ -279,6 +312,14 @@ const MaterialTrackingPage: React.FC = () => {
             </Card>
           </>
         )}
+
+        <RecordUsageModal
+          isOpen={isRecordUsageModalOpen}
+          onClose={() => setIsRecordUsageModalOpen(false)}
+          projectId={parseInt(selectedProjectId)}
+          onSuccess={handleSuccess}
+          preSelectedProductId={preSelectedProductId}
+        />
       </VStack>
     </SimpleLayout>
   );

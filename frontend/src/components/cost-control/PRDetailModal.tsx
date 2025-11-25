@@ -27,6 +27,7 @@ import {
 } from '@chakra-ui/react';
 import { PurchaseRequest } from '../../types/purchaseRequest';
 import purchaseRequestService from '../../services/purchaseRequestService';
+import MaterialImpactCard from './MaterialImpactCard';
 
 interface PRDetailModalProps {
     isOpen: boolean;
@@ -204,6 +205,9 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
                                 </Tbody>
                             </Table>
                         </Box>
+
+                        {/* Material Impact */}
+                        <MaterialImpactCard purchaseRequestId={pr.id} />
 
                         {/* Approval Info */}
                         {pr.approved_by && (

@@ -243,7 +243,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 
 	// Purchase Request
 	prRepo := repositories.NewPurchaseRequestRepository(db)
-	prService := services.NewPurchaseRequestService(prRepo)
+	prService := services.NewPurchaseRequestService(prRepo, db)
 	prController := controllers.NewPurchaseRequestController(prService)
 
 	// Initialize security middleware
@@ -858,6 +858,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 				pr.PUT("/:id", permMiddleware.CanEdit("purchases"), prController.Update)
 				pr.DELETE("/:id", permMiddleware.CanDelete("purchases"), prController.Delete)
 				pr.PATCH("/:id/status", permMiddleware.CanApprove("purchases"), prController.UpdateStatus)
+				pr.GET("/:id/material-impact", permMiddleware.CanView("purchases"), prController.GetMaterialImpact)
 			}
 
 			// Expenses routes - REMOVED: No implementation yet
@@ -1192,6 +1193,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 				materialGroup.GET("/:projectId/summary", materialTrackingController.GetSummary)
 				materialGroup.GET("/:projectId/items", materialTrackingController.GetItems)
 				materialGroup.GET("/:projectId/movements", materialTrackingController.GetMovements)
+				materialGroup.POST("/:projectId/record-usage", materialTrackingController.RecordUsage)
 			}
 
 			// 📊 Project Reports routes

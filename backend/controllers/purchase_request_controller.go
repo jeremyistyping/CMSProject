@@ -3,6 +3,7 @@ package controllers
 import (
 	"app-sistem-akuntansi/models"
 	"app-sistem-akuntansi/services"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -24,13 +25,17 @@ func (c *PurchaseRequestController) Create(ctx *gin.Context) {
 		return
 	}
 
-	// Set CreatedBy from context (assuming auth middleware sets "userID")
-	userID, exists := ctx.Get("userID")
+	// Set CreatedBy from context (assuming auth middleware sets "user_id")
+	userID, exists := ctx.Get("user_id")
 	if exists {
 		pr.CreatedBy = userID.(uint)
+	} else {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
 	}
 
 	if err := c.service.CreatePR(&pr); err != nil {
+		fmt.Printf("Error creating PR: %v\n", err) // Add logging
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -124,11 +129,32 @@ func (c *PurchaseRequestController) UpdateStatus(ctx *gin.Context) {
 		return
 	}
 
-	userID, _ := ctx.Get("userID")
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
 	if err := c.service.UpdateStatus(uint(id), req.Status, userID.(uint), req.Reason); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Status updated successfully"})
+}
+
+// GetMaterialImpact returns the estimated material impact of a purchase request
+func (c *PurchaseRequestController) GetMaterialImpact(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	impacts, err := c.service.GetEstimatedMaterialImpact(uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, impacts)
 }
