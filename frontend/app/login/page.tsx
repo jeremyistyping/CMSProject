@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import SimpleLayout from '@/components/layout/SimpleLayout';
+import { getDefaultPageForRole } from '@/utils/roleRedirect';
 import {
   Box,
   Flex,
@@ -44,12 +45,12 @@ const LoginContent = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  const { login, isAuthenticated } = useAuth();
+
+  const { login, isAuthenticated, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const { colorMode } = useColorMode();
-  
+
   // Black themed design - Fixed colors (no light mode)
   const bgGradient = 'linear(to-br, gray.900, black, gray.900)';
   const cardBg = 'gray.900';
@@ -69,31 +70,32 @@ const LoginContent = () => {
   // Error alert colors
   const errorAlertBg = 'red.900';
   const errorAlertBorderColor = 'red.700';
-  
+
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
+    if (isAuthenticated && user) {
+      const defaultPage = getDefaultPageForRole(user.role);
+      router.push(defaultPage);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
       await login(email, password);
-      
+
       // Clear logout timestamp on successful login
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('lastLogoutTime');
       }
-      
+
       toast({
         render: () => (
           <Box
@@ -116,13 +118,23 @@ const LoginContent = () => {
         isClosable: true,
         position: 'bottom',
       });
-      
-      router.push('/dashboard');
+
+      // Redirect based on user role - wait a tiny bit for state to settle
+      setTimeout(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          const defaultPage = getDefaultPageForRole(userData.role);
+          router.push(defaultPage);
+        } else {
+          router.push('/dashboard');
+        }
+      }, 100);
     } catch (err) {
       // Use the actual error message from the caught exception
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
       setError(errorMessage);
-      
+
       toast({
         render: () => (
           <Box
@@ -153,7 +165,7 @@ const LoginContent = () => {
   };
 
   return (
-    <Box 
+    <Box
       minH="100vh"
       bgGradient={bgGradient}
       position="relative"
@@ -180,234 +192,234 @@ const LoginContent = () => {
         borderRadius="full"
         opacity={0.2}
       />
-      
+
       <Container maxW="7xl" py={8}>
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={8} alignItems="center" minH="80vh">
           {/* Left side - Branding and Features */}
           <Box order={{ base: 1, lg: 1 }}>
-          <ScaleFade initialScale={0.9} in={true}>
-            <VStack spacing={8} align="stretch">
-              {/* Company Branding */}
-              <Box textAlign={{ base: 'center', lg: 'left' }}>
-                <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} mb={6}>
-                  <Box
-                    w={12}
-                    h={12}
-                    bg={accentColor}
-                    borderRadius="xl"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    color="white"
-                    boxShadow="lg"
-                  >
-                    <FiPieChart size={24} />
-                  </Box>
-                  <VStack spacing={0} align={{ base: 'center', lg: 'flex-start' }}>
-                    <Heading 
-                      size="xl" 
-                      color={headingColor}
-                      fontWeight="bold"
-                      letterSpacing="tight"
+            <ScaleFade initialScale={0.9} in={true}>
+              <VStack spacing={8} align="stretch">
+                {/* Company Branding */}
+                <Box textAlign={{ base: 'center', lg: 'left' }}>
+                  <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} mb={6}>
+                    <Box
+                      w={12}
+                      h={12}
+                      bg={accentColor}
+                      borderRadius="xl"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      color="white"
+                      boxShadow="lg"
                     >
-                      Unipro
-                    </Heading>
-                    <Text color={textColor} fontSize="sm" fontWeight="medium">
-                      Cost Control Management System
-                    </Text>
-                  </VStack>
-                </HStack>
-                
-                <Text 
-                  fontSize="lg" 
-                  color={textColor} 
-                  mb={8}
-                  lineHeight="tall"
-                >
-                  Streamline your project cost management with precision. 
-                  Our comprehensive cost control system provides powerful 
-                  tools for tracking, analyzing, and optimizing project expenses.
-                </Text>
-              </Box>
-              
-              {/* Feature highlights */}
-              <VStack spacing={4} align="stretch">
-                <Heading size="md" color={headingColor} mb={2}>
-                  Key Features
-                </Heading>
-                
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiShield color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Budget Control
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Real-time budget tracking
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                  
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiTrendingUp color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Cost Analytics
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Track project expenses
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                  
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiUsers color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Project Management
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Multi-project tracking
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                  
-                  <Card 
-                    bg={featureCardBg} 
-                    shadow="sm" 
-                    borderWidth="1px" 
-                    borderColor={borderColor}
-                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                    transition="all 0.2s"
-                  >
-                    <CardBody p={4}>
-                      <HStack spacing={3}>
-                        <Center 
-                          w={10} 
-                          h={10} 
-                          bg="gray.700"
-                          borderRadius="lg"
-                        >
-                          <FiLock color={iconColor} size={20} />
-                        </Center>
-                        <VStack align="start" spacing={0}>
-                          <Text fontWeight="semibold" color={headingColor} fontSize="sm">
-                            Cost Approval
-                          </Text>
-                          <Text color={textColor} fontSize="xs">
-                            Automated cost control
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                </SimpleGrid>
-                
-                {/* Trust badges */}
-                <Box pt={6}>
-                  <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} wrap="wrap">
-                    <Badge 
-                      colorScheme="green" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                      bg="green.900"
-                      color="green.200"
-                    >
-                      ✓ Secure
-                    </Badge>
-                    <Badge 
-                      colorScheme="green" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                      bg="green.900"
-                      color="green.200"
-                    >
-                      ✓ Fast
-                    </Badge>
-                    <Badge 
-                      colorScheme="green" 
-                      px={3} 
-                      py={1} 
-                      borderRadius="full"
-                      fontSize="xs"
-                      fontWeight="semibold"
-                      bg="green.900"
-                      color="green.200"
-                    >
-                      ✓ Reliable
-                    </Badge>
+                      <FiPieChart size={24} />
+                    </Box>
+                    <VStack spacing={0} align={{ base: 'center', lg: 'flex-start' }}>
+                      <Heading
+                        size="xl"
+                        color={headingColor}
+                        fontWeight="bold"
+                        letterSpacing="tight"
+                      >
+                        Unipro
+                      </Heading>
+                      <Text color={textColor} fontSize="sm" fontWeight="medium">
+                        Cost Control Management System
+                      </Text>
+                    </VStack>
                   </HStack>
+
+                  <Text
+                    fontSize="lg"
+                    color={textColor}
+                    mb={8}
+                    lineHeight="tall"
+                  >
+                    Streamline your project cost management with precision.
+                    Our comprehensive cost control system provides powerful
+                    tools for tracking, analyzing, and optimizing project expenses.
+                  </Text>
                 </Box>
+
+                {/* Feature highlights */}
+                <VStack spacing={4} align="stretch">
+                  <Heading size="md" color={headingColor} mb={2}>
+                    Key Features
+                  </Heading>
+
+                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                    <Card
+                      bg={featureCardBg}
+                      shadow="sm"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                      transition="all 0.2s"
+                    >
+                      <CardBody p={4}>
+                        <HStack spacing={3}>
+                          <Center
+                            w={10}
+                            h={10}
+                            bg="gray.700"
+                            borderRadius="lg"
+                          >
+                            <FiShield color={iconColor} size={20} />
+                          </Center>
+                          <VStack align="start" spacing={0}>
+                            <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                              Budget Control
+                            </Text>
+                            <Text color={textColor} fontSize="xs">
+                              Real-time budget tracking
+                            </Text>
+                          </VStack>
+                        </HStack>
+                      </CardBody>
+                    </Card>
+
+                    <Card
+                      bg={featureCardBg}
+                      shadow="sm"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                      transition="all 0.2s"
+                    >
+                      <CardBody p={4}>
+                        <HStack spacing={3}>
+                          <Center
+                            w={10}
+                            h={10}
+                            bg="gray.700"
+                            borderRadius="lg"
+                          >
+                            <FiTrendingUp color={iconColor} size={20} />
+                          </Center>
+                          <VStack align="start" spacing={0}>
+                            <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                              Cost Analytics
+                            </Text>
+                            <Text color={textColor} fontSize="xs">
+                              Track project expenses
+                            </Text>
+                          </VStack>
+                        </HStack>
+                      </CardBody>
+                    </Card>
+
+                    <Card
+                      bg={featureCardBg}
+                      shadow="sm"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                      transition="all 0.2s"
+                    >
+                      <CardBody p={4}>
+                        <HStack spacing={3}>
+                          <Center
+                            w={10}
+                            h={10}
+                            bg="gray.700"
+                            borderRadius="lg"
+                          >
+                            <FiUsers color={iconColor} size={20} />
+                          </Center>
+                          <VStack align="start" spacing={0}>
+                            <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                              Project Management
+                            </Text>
+                            <Text color={textColor} fontSize="xs">
+                              Multi-project tracking
+                            </Text>
+                          </VStack>
+                        </HStack>
+                      </CardBody>
+                    </Card>
+
+                    <Card
+                      bg={featureCardBg}
+                      shadow="sm"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
+                      transition="all 0.2s"
+                    >
+                      <CardBody p={4}>
+                        <HStack spacing={3}>
+                          <Center
+                            w={10}
+                            h={10}
+                            bg="gray.700"
+                            borderRadius="lg"
+                          >
+                            <FiLock color={iconColor} size={20} />
+                          </Center>
+                          <VStack align="start" spacing={0}>
+                            <Text fontWeight="semibold" color={headingColor} fontSize="sm">
+                              Cost Approval
+                            </Text>
+                            <Text color={textColor} fontSize="xs">
+                              Automated cost control
+                            </Text>
+                          </VStack>
+                        </HStack>
+                      </CardBody>
+                    </Card>
+                  </SimpleGrid>
+
+                  {/* Trust badges */}
+                  <Box pt={6}>
+                    <HStack spacing={4} justify={{ base: 'center', lg: 'flex-start' }} wrap="wrap">
+                      <Badge
+                        colorScheme="green"
+                        px={3}
+                        py={1}
+                        borderRadius="full"
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        bg="green.900"
+                        color="green.200"
+                      >
+                        ✓ Secure
+                      </Badge>
+                      <Badge
+                        colorScheme="green"
+                        px={3}
+                        py={1}
+                        borderRadius="full"
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        bg="green.900"
+                        color="green.200"
+                      >
+                        ✓ Fast
+                      </Badge>
+                      <Badge
+                        colorScheme="green"
+                        px={3}
+                        py={1}
+                        borderRadius="full"
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        bg="green.900"
+                        color="green.200"
+                      >
+                        ✓ Reliable
+                      </Badge>
+                    </HStack>
+                  </Box>
+                </VStack>
               </VStack>
-            </VStack>
-          </ScaleFade>
+            </ScaleFade>
           </Box>
-          
+
           {/* Right side - Login Form */}
           <Flex align="center" justify="center" py={8} order={{ base: 2, lg: 2 }}>
             <ScaleFade initialScale={0.9} in={true}>
-              <Card 
+              <Card
                 maxW="md"
                 w="full"
                 bg={cardBg}
@@ -448,21 +460,21 @@ const LoginContent = () => {
                     >
                       <FiLogIn size="2.5rem" />
                     </Box>
-                    
+
                     <VStack spacing={2}>
-                      <Heading 
-                        as="h1" 
-                        size="xl" 
-                        textAlign="center" 
+                      <Heading
+                        as="h1"
+                        size="xl"
+                        textAlign="center"
                         color={headingColor}
                         fontWeight="bold"
                         letterSpacing="tight"
                       >
                         Welcome Back
                       </Heading>
-                      <Text 
-                        color={textColor} 
-                        textAlign="center" 
+                      <Text
+                        color={textColor}
+                        textAlign="center"
                         fontSize="md"
                         fontWeight="medium"
                       >
@@ -470,12 +482,12 @@ const LoginContent = () => {
                       </Text>
                     </VStack>
                   </VStack>
-                  
+
                   {/* Error Alert */}
                   {error && (
-                    <Alert 
-                      status="error" 
-                      mb={6} 
+                    <Alert
+                      status="error"
+                      mb={6}
                       borderRadius="xl"
                       bg={errorAlertBg}
                       borderWidth="1px"
@@ -488,12 +500,12 @@ const LoginContent = () => {
                       </Box>
                     </Alert>
                   )}
-                  
+
                   {/* Login Form */}
                   <form onSubmit={handleSubmit}>
                     <VStack spacing={6}>
                       <FormControl id="email" isRequired>
-                        <FormLabel 
+                        <FormLabel
                           color={headingColor}
                           fontSize="sm"
                           fontWeight="semibold"
@@ -529,9 +541,9 @@ const LoginContent = () => {
                             }}
                           />
                           <InputRightElement top={2} right={2}>
-                            <Center 
-                              w={8} 
-                              h={8} 
+                            <Center
+                              w={8}
+                              h={8}
                               bg={passwordToggleHoverBg}
                               borderRadius="lg"
                             >
@@ -540,9 +552,9 @@ const LoginContent = () => {
                           </InputRightElement>
                         </InputGroup>
                       </FormControl>
-                      
+
                       <FormControl id="password" isRequired>
-                        <FormLabel 
+                        <FormLabel
                           color={headingColor}
                           fontSize="sm"
                           fontWeight="semibold"
@@ -592,7 +604,7 @@ const LoginContent = () => {
                           </InputRightElement>
                         </InputGroup>
                       </FormControl>
-                      
+
                       <Button
                         type="submit"
                         bg={accentColor}
@@ -621,14 +633,14 @@ const LoginContent = () => {
                       </Button>
                     </VStack>
                   </form>
-                  
+
                   {/* Divider */}
                   <HStack my={8}>
                     <Divider borderColor={borderColor} />
-                    <Text 
-                      px={3} 
-                      color={textColor} 
-                      fontSize="sm" 
+                    <Text
+                      px={3}
+                      color={textColor}
+                      fontSize="sm"
                       fontWeight="medium"
                       whiteSpace="nowrap"
                     >
@@ -636,18 +648,18 @@ const LoginContent = () => {
                     </Text>
                     <Divider borderColor={borderColor} />
                   </HStack>
-                  
+
                   {/* Support Text */}
                   <VStack spacing={3}>
-                    <Text 
-                      textAlign="center" 
-                      color={textColor} 
+                    <Text
+                      textAlign="center"
+                      color={textColor}
                       fontSize="sm"
                     >
                       Don't have an account?{' '}
-                      <Button 
-                        variant="link" 
-                        color={accentColor} 
+                      <Button
+                        variant="link"
+                        color={accentColor}
                         fontWeight="semibold"
                         fontSize="sm"
                         p={0}
@@ -661,10 +673,10 @@ const LoginContent = () => {
                         Sign up here
                       </Button>
                     </Text>
-                    
-                    <Text 
-                      textAlign="center" 
-                      color={textColor} 
+
+                    <Text
+                      textAlign="center"
+                      color={textColor}
                       fontSize="xs"
                       maxW="sm"
                       lineHeight="relaxed"
