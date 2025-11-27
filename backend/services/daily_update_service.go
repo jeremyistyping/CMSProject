@@ -4,6 +4,7 @@ import (
 	"app-sistem-akuntansi/models"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/lib/pq"
 	"gorm.io/gorm"
@@ -16,6 +17,8 @@ type DailyUpdateService interface {
 	UpdateDailyUpdate(dailyUpdate *models.DailyUpdate) error
 	DeleteDailyUpdate(projectID uint, updateID uint) error
 	GetDailyUpdatesByDateRange(projectID uint, startDate, endDate string) ([]models.DailyUpdate, error)
+	ApproveDailyUpdate(projectID uint, updateID uint, approver string) error
+	RejectDailyUpdate(projectID uint, updateID uint, rejector string, reason string) error
 }
 
 type dailyUpdateService struct {
@@ -262,4 +265,41 @@ func (s *dailyUpdateService) updateProjectProgress(projectID uint, progress, fou
 		"interior_progress":   interior,
 		"equipment_progress":  equipment,
 	}).Error
+}
+
+// ApproveDailyUpdate approves a daily update
+func (s *dailyUpdateService) ApproveDailyUpdate(projectID uint, updateID uint, approver string) error {
+	var update models.DailyUpdate
+	if err := s.db.Where("id = ? AND project_id = ?", updateID, projectID).First(&update).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("daily update not found")
+		}
+		return err
+	}
+
+	now := time.Now()
+	update.Status = "approved"
+	update.ApprovedBy = approver
+	update.ApprovedAt = &now
+	update.RejectionReason = "" // Clear rejection reason if approved
+
+	return s.db.Save(&update).Error
+}
+
+// RejectDailyUpdate rejects a daily update
+func (s *dailyUpdateService) RejectDailyUpdate(projectID uint, updateID uint, rejector string, reason string) error {
+	var update models.DailyUpdate
+	if err := s.db.Where("id = ? AND project_id = ?", updateID, projectID).First(&update).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("daily update not found")
+		}
+		return err
+	}
+
+	update.Status = "rejected"
+	update.ApprovedBy = rejector // Reuse field for rejector
+	update.RejectionReason = reason
+	update.ApprovedAt = nil
+
+	return s.db.Save(&update).Error
 }

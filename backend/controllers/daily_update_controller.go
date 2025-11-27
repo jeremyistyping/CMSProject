@@ -356,3 +356,94 @@ func (dc *DailyUpdateController) DeleteDailyUpdate(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Daily update deleted successfully"})
 }
+
+// ApproveDailyUpdate godoc
+// @Summary Approve a daily update
+// @Description Approve a daily update (Purchasing role only)
+// @Tags daily-updates
+// @Accept json
+// @Produce json
+// @Param projectId path int true "Project ID"
+// @Param updateId path int true "Daily Update ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /projects/{projectId}/daily-updates/{updateId}/approve [post]
+func (dc *DailyUpdateController) ApproveDailyUpdate(c *gin.Context) {
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
+
+	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
+		return
+	}
+
+	// Get user from context (set by auth middleware)
+	username := "Unknown"
+	if user, exists := c.Get("user"); exists {
+		if u, ok := user.(*models.User); ok {
+			username = u.Username
+		}
+	}
+
+	if err := dc.service.ApproveDailyUpdate(uint(projectID), uint(updateID), username); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Daily update approved successfully"})
+}
+
+// RejectDailyUpdate godoc
+// @Summary Reject a daily update
+// @Description Reject a daily update (Purchasing role only)
+// @Tags daily-updates
+// @Accept json
+// @Produce json
+// @Param projectId path int true "Project ID"
+// @Param updateId path int true "Daily Update ID"
+// @Param request body map[string]string true "Rejection reason"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /projects/{projectId}/daily-updates/{updateId}/reject [post]
+func (dc *DailyUpdateController) RejectDailyUpdate(c *gin.Context) {
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
+
+	updateID, err := strconv.ParseUint(c.Param("updateId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid daily update ID"})
+		return
+	}
+
+	var req struct {
+		Reason string `json:"reason" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Rejection reason is required"})
+		return
+	}
+
+	// Get user from context
+	username := "Unknown"
+	if user, exists := c.Get("user"); exists {
+		if u, ok := user.(*models.User); ok {
+			username = u.Username
+		}
+	}
+
+	if err := dc.service.RejectDailyUpdate(uint(projectID), uint(updateID), username, req.Reason); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Daily update rejected successfully"})
+}

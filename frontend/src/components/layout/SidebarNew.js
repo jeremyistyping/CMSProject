@@ -46,17 +46,20 @@ import { useTheme } from '@/contexts/SimpleThemeContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
 // Menu structure - will be translated dynamically
+// Menu structure - will be translated dynamically
 const getMenuGroups = (t) => [
   {
     title: t('navigation.dashboard'),
     items: [
-      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR'] },
+      // Employee Dashboard / Daily Reports
+      { name: 'Daily Reports', icon: FiFileText, href: '/projects', module: null, permission: null, roles: ['EMPLOYEE'] },
     ]
   },
   {
     title: 'Project Management',
     items: [
-      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR'] },
     ]
   },
   {
@@ -65,23 +68,23 @@ const getMenuGroups = (t) => [
       // Untuk saat ini, menu Cost Control ditampilkan berdasarkan role saja,
       // tidak bergantung pada permission module. Halaman di dalamnya tetap
       // melakukan pengecekan permission cost_control.
-      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
-      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
-      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
-      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'EMPLOYEE'] },
+      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER'] },
     ]
   },
   {
     title: 'Master Data',
     items: [
       { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
-      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
+      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR'] },
     ]
   },
   {
     title: 'Financial',
     items: [
-      { name: t('navigation.purchases'), icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'EMPLOYEE', 'DIRECTOR'] },
+      { name: t('navigation.purchases'), icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR'] },
       { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
     ]
   },
@@ -117,13 +120,13 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
     ...group,
     items: group.items.filter(item => {
       if (!user) return false;
-      
+
       // For modules with permission checking, use canMenu for menu visibility
       // but still check canView for data access requirements
       if (item.module && item.permission) {
         return canView(item.module) && canMenu(item.module);
       }
-      
+
       // For system pages (users, settings) and dashboard, use role-based checking
       return item.roles.some(role => normalizeRole(role) === userRoleNormalized);
     })
@@ -134,7 +137,7 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
     const sidebarBg = useColorModeValue('white', 'var(--bg-primary)');
     const sidebarBorder = useColorModeValue('gray.200', 'var(--border-color)');
     const sidebarShadow = useColorModeValue('sm', 'var(--shadow)');
-    
+
     return (
       <Box
         transition="all 0.3s ease"
@@ -174,13 +177,13 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
             >
               <Icon as={FiTarget} color="white" fontSize="20px" fontWeight="bold" />
             </Flex>
-            
+
             {/* Logo Text */}
             <Flex direction="column" gap={0}>
-              <Text 
-                fontSize="lg" 
-                fontFamily="'Poppins', 'Inter', sans-serif" 
-                fontWeight="700" 
+              <Text
+                fontSize="lg"
+                fontFamily="'Poppins', 'Inter', sans-serif"
+                fontWeight="700"
                 color={useColorModeValue('gray.800', 'white')}
                 letterSpacing="tight"
                 lineHeight="1.2"
@@ -189,15 +192,15 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
               </Text>
             </Flex>
           </Flex>
-          
-          <CloseButton 
-            display={{ base: 'flex', md: 'none' }} 
-            onClick={onClose} 
+
+          <CloseButton
+            display={{ base: 'flex', md: 'none' }}
+            onClick={onClose}
             color={useColorModeValue('gray.600', 'var(--text-secondary)')}
             _hover={{ bg: useColorModeValue('gray.100', 'var(--bg-tertiary)') }}
           />
         </Flex>
-        
+
         {filteredGroups.map((group, index) => (
           <Box key={group.title} mb={6}>
             <Text
@@ -229,7 +232,7 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
       console.log('NavItem clicked:', href);
       router.push(href);
     };
-    
+
     // Theme-aware colors for nav items - ALL GREEN
     const activeBg = 'green.500';
     const activeColor = 'white';

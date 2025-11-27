@@ -38,14 +38,22 @@ import {
   FiTarget,
   FiFileText,
   FiTool,
+  FiCheckCircle,
+  FiXCircle,
 } from 'react-icons/fi';
 import { DailyUpdate } from '@/types/project';
+import { usePermissions } from '@/hooks/usePermissions';
+import { projectService } from '@/services/projectService';
+import { useToast, Textarea, Collapse } from '@chakra-ui/react';
+import { useState } from 'react';
 
 interface DailyUpdateViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   dailyUpdate: DailyUpdate | null;
+  dailyUpdate: DailyUpdate | null;
   onEdit?: () => void;
+  onStatusChange?: () => void;
 }
 
 const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
@@ -53,6 +61,7 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
   onClose,
   dailyUpdate,
   onEdit,
+  onStatusChange,
 }) => {
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
@@ -60,7 +69,74 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
   const subtextColor = useColorModeValue('gray.500', 'var(--text-secondary)');
   const sectionBg = useColorModeValue('gray.50', 'var(--bg-primary)');
 
+  const { canApprove } = usePermissions();
+  const toast = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showRejectionInput, setShowRejectionInput] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+
   if (!dailyUpdate) return null;
+
+  const handleApprove = async () => {
+    if (!dailyUpdate) return;
+    try {
+      setIsProcessing(true);
+      await projectService.approveDailyUpdate(dailyUpdate.project_id, dailyUpdate.id);
+      toast({
+        title: 'Daily Update Approved',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      if (onStatusChange) onStatusChange();
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error approving update',
+        description: error.message || 'Something went wrong',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!dailyUpdate) return;
+    if (!rejectionReason.trim()) {
+      toast({
+        title: 'Rejection reason required',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    try {
+      setIsProcessing(true);
+      await projectService.rejectDailyUpdate(dailyUpdate.project_id, dailyUpdate.id, rejectionReason);
+      toast({
+        title: 'Daily Update Rejected',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      if (onStatusChange) onStatusChange();
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error rejecting update',
+        description: error.message || 'Something went wrong',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const getWeatherIcon = (weather: string) => {
     const weatherLower = weather.toLowerCase();
@@ -130,6 +206,30 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
                 {formatDate(dailyUpdate.date)}
               </Text>
             </VStack>
+            {/* Status Badge */}
+            <Box ml="auto">
+              {dailyUpdate.status === 'approved' && (
+                <Badge colorScheme="green" fontSize="md" px={3} py={1} borderRadius="full">
+                  <HStack spacing={1}>
+                    <Icon as={FiCheckCircle} />
+                    <Text>Approved</Text>
+                  </HStack>
+                </Badge>
+              )}
+              {dailyUpdate.status === 'rejected' && (
+                <Badge colorScheme="red" fontSize="md" px={3} py={1} borderRadius="full">
+                  <HStack spacing={1}>
+                    <Icon as={FiXCircle} />
+                    <Text>Rejected</Text>
+                  </HStack>
+                </Badge>
+              )}
+              {(!dailyUpdate.status || dailyUpdate.status === 'pending') && (
+                <Badge colorScheme="yellow" fontSize="md" px={3} py={1} borderRadius="full">
+                  Pending Approval
+                </Badge>
+              )}
+            </Box>
           </HStack>
         </ModalHeader>
         <ModalCloseButton />
@@ -470,6 +570,28 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
                 </Text>
               </HStack>
             </Box>
+
+            {/* Approval Info Section */}
+            {(dailyUpdate.status === 'approved' || dailyUpdate.status === 'rejected') && (
+              <Box bg={dailyUpdate.status === 'approved' ? 'green.50' : 'red.50'} p={4} borderRadius="md" borderWidth="1px" borderColor={dailyUpdate.status === 'approved' ? 'green.200' : 'red.200'}>
+                <VStack align="start" spacing={2}>
+                  <Text fontWeight="bold" color={dailyUpdate.status === 'approved' ? 'green.700' : 'red.700'}>
+                    {dailyUpdate.status === 'approved' ? 'Approved By' : 'Rejected By'}: {dailyUpdate.approved_by || 'Unknown'}
+                  </Text>
+                  {dailyUpdate.approved_at && (
+                    <Text fontSize="sm" color={dailyUpdate.status === 'approved' ? 'green.600' : 'red.600'}>
+                      Date: {new Date(dailyUpdate.approved_at).toLocaleString('id-ID')}
+                    </Text>
+                  )}
+                  {dailyUpdate.status === 'rejected' && dailyUpdate.rejection_reason && (
+                    <Box mt={2} w="full">
+                      <Text fontWeight="semibold" fontSize="sm" color="red.700">Reason:</Text>
+                      <Text fontSize="sm" color="red.600">{dailyUpdate.rejection_reason}</Text>
+                    </Box>
+                  )}
+                </VStack>
+              </Box>
+            )}
           </VStack>
         </ModalBody>
 
@@ -494,10 +616,59 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
                 Edit Update
               </Button>
             )}
+
+            {/* Approval Buttons */}
+            {canApprove('daily_updates') && (!dailyUpdate.status || dailyUpdate.status === 'pending') && (
+              <>
+                <Button
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={() => setShowRejectionInput(!showRejectionInput)}
+                  isDisabled={isProcessing}
+                >
+                  Reject
+                </Button>
+                <Button
+                  colorScheme="green"
+                  onClick={handleApprove}
+                  isLoading={isProcessing}
+                >
+                  Approve
+                </Button>
+              </>
+            )}
           </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+
+          {/* Rejection Input */}
+          <Collapse in={showRejectionInput} animateOpacity style={{ width: '100%' }}>
+            <Box mt={4} p={4} bg="red.50" borderRadius="md" borderWidth="1px" borderColor="red.200">
+              <VStack align="stretch" spacing={3}>
+                <Text fontWeight="bold" color="red.700">Reason for Rejection:</Text>
+                <Textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Please explain why this update is being rejected..."
+                  bg="white"
+                  borderColor="red.300"
+                />
+                <HStack justify="flex-end">
+                  <Button size="sm" onClick={() => setShowRejectionInput(false)}>Cancel</Button>
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    onClick={handleReject}
+                    isLoading={isProcessing}
+                  >
+                    Confirm Rejection
+                  </Button>
+                </HStack>
+              </VStack>
+            </Box>
+          </Collapse>
+
+        </ModalFooter >
+      </ModalContent >
+    </Modal >
   );
 };
 

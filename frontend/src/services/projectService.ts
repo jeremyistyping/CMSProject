@@ -141,6 +141,14 @@ export const projectService = {
     await api.delete(`${PROJECT_ENDPOINT}/${projectId}/daily-updates/${updateId}`);
   },
 
+  async approveDailyUpdate(projectId: string, updateId: string): Promise<void> {
+    await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates/${updateId}/approve`);
+  },
+
+  async rejectDailyUpdate(projectId: string, updateId: string, reason: string): Promise<void> {
+    await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates/${updateId}/reject`, { reason });
+  },
+
   // Weekly Reports
   async getWeeklyReports(projectId: string): Promise<WeeklyReport[]> {
     const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/weekly-reports`);

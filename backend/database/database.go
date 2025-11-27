@@ -739,6 +739,10 @@ func AutoMigrate(db *gorm.DB) {
 		&models.IpWhitelist{},
 		&models.SecurityConfig{},
 		&models.SecurityMetrics{},
+
+		// Purchase Requests
+		&models.PurchaseRequest{},
+		&models.PurchaseRequestItem{},
 	)
 
 	if err != nil {

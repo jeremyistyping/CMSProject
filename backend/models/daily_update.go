@@ -32,6 +32,12 @@ type DailyUpdate struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
+	// Approval fields
+	Status          string     `json:"status" gorm:"default:'pending'"`
+	ApprovedBy      string     `json:"approved_by"`
+	ApprovedAt      *time.Time `json:"approved_at"`
+	RejectionReason string     `json:"rejection_reason"`
+
 	// Relation
 	Project *Project `json:"project,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
 }

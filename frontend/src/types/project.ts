@@ -103,6 +103,12 @@ export interface DailyUpdate {
   photos: string[];
   created_by: string;
   created_at: string;
+
+  // Approval fields
+  status?: 'pending' | 'approved' | 'rejected';
+  approved_by?: string;
+  approved_at?: string;
+  rejection_reason?: string;
 }
 
 export interface WeeklyReport {
