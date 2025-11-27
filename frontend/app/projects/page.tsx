@@ -30,12 +30,16 @@ import { FiPlus, FiFolder, FiCalendar, FiDollarSign, FiArrowRight, FiTrash2 } fr
 import Layout from '@/components/layout/UnifiedLayout';
 import projectService from '@/services/projectService';
 import { Project } from '@/types/project';
+import { useAuth } from '@/contexts/AuthContext';
+import { useModulePermissions } from '@/hooks/usePermissions';
 
 // Mock data removed - now using real backend API
 
 export default function ProjectsPage() {
   const router = useRouter();
   const toast = useToast();
+  const { user } = useAuth();
+  const { canCreate } = useModulePermissions('projects');
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -168,14 +172,16 @@ export default function ProjectsPage() {
             </Heading>
             <Text color={subtextColor}>Manage your construction projects</Text>
           </VStack>
-          <Button
-            leftIcon={<FiPlus />}
-            colorScheme="green"
-            size="lg"
-            onClick={handleCreateProject}
-          >
-            Create New Project
-          </Button>
+          {canCreate && (
+            <Button
+              leftIcon={<FiPlus />}
+              colorScheme="green"
+              size="lg"
+              onClick={handleCreateProject}
+            >
+              Create New Project
+            </Button>
+          )}
         </HStack>
 
         {/* Projects Grid */}
@@ -186,9 +192,11 @@ export default function ProjectsPage() {
               <Text color={subtextColor} fontSize="lg">
                 No projects yet
               </Text>
-              <Button leftIcon={<FiPlus />} colorScheme="green" onClick={handleCreateProject}>
-                Create Your First Project
-              </Button>
+              {canCreate && (
+                <Button leftIcon={<FiPlus />} colorScheme="green" onClick={handleCreateProject}>
+                  Create Your First Project
+                </Button>
+              )}
             </VStack>
           </Center>
         ) : (

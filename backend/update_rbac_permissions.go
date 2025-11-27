@@ -82,6 +82,13 @@ func main() {
 		"CanEdit":   true, // Can edit their own usually, but RBAC is coarse
 		"CanMenu":   true,
 	})
+	updatePermission("employee", "projects", map[string]interface{}{
+		"CanView":   true,
+		"CanCreate": false, // Employee cannot create new projects
+		"CanEdit":   false,
+		"CanDelete": false,
+		"CanMenu":   true, // Can view projects page
+	})
 
 	// 2. Purchasing: Can create purchases, Can approve daily updates
 	updatePermission("purchasing", "purchases", map[string]interface{}{
