@@ -68,11 +68,13 @@ func main() {
 
 	fmt.Println("Updating RBAC permissions...")
 
-	// 1. Employee: Cannot create purchases, Can create daily updates
+	// 1. Employee: Cannot view or access purchases module at all, Can create daily updates
 	updatePermission("employee", "purchases", map[string]interface{}{
+		"CanView":   false,
 		"CanCreate": false,
 		"CanEdit":   false,
 		"CanDelete": false,
+		"CanMenu":   false,
 	})
 	updatePermission("employee", "daily_updates", map[string]interface{}{
 		"CanView":   true,
