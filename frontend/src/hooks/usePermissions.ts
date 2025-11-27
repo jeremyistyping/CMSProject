@@ -60,18 +60,20 @@ export const usePermissions = (): UsePermissionsReturn => {
       setError(null);
 
       // Use the configured API instance which has auth interceptors
+      console.log('Fetching permissions from:', API_ENDPOINTS.PERMISSIONS_ME);
       const response = await api.get(API_ENDPOINTS.PERMISSIONS_ME);
-      
+      console.log('Permissions response:', response.data);
+
       setPermissions(response.data.permissions || {});
     } catch (err: any) {
       console.error('Error fetching permissions:', err);
-      
+
       // Use the centralized error handler
       const errorResult = handleApiError(err, 'usePermissions.fetchPermissions');
-      
+
       // Set the error message for the UI
       setError(errorResult.message);
-      
+
       // Always clear permissions on any error for security
       setPermissions({});
     } finally {
@@ -84,9 +86,12 @@ export const usePermissions = (): UsePermissionsReturn => {
   }, [user, token]);
 
   const getModulePermission = (module: string): ModulePermission => {
+    console.log(`[getModulePermission] Checking module: ${module}`, permissions);
     if (!permissions || !permissions[module]) {
+      console.log(`[getModulePermission] No permissions found for ${module}, returning default`);
       return DEFAULT_PERMISSION;
     }
+    console.log(`[getModulePermission] Found permissions for ${module}:`, permissions[module]);
     return permissions[module];
   };
 
@@ -127,8 +132,8 @@ export const usePermissions = (): UsePermissionsReturn => {
 
   const hasAnyPermission = (module: string): boolean => {
     const perm = getModulePermission(module);
-    return perm.can_view || perm.can_create || perm.can_edit || 
-           perm.can_delete || perm.can_approve || perm.can_export;
+    return perm.can_view || perm.can_create || perm.can_edit ||
+      perm.can_delete || perm.can_approve || perm.can_export;
   };
 
   return {
