@@ -56,6 +56,7 @@ import DailyUpdateModal from './DailyUpdateModal';
 import DailyUpdateViewModal from './DailyUpdateViewModal';
 import PhotoGallery from './PhotoGallery';
 import { generateDailyUpdatesPDF } from '@/utils/dailyUpdatesPdfExport';
+import { useModulePermissions } from '@/hooks/usePermissions';
 
 interface DailyUpdatesTabProps {
   projectId: string;
@@ -69,6 +70,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isPhotoGalleryOpen, onOpen: onPhotoGalleryOpen, onClose: onPhotoGalleryClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const { canCreate, canEdit, canDelete } = useModulePermissions('daily_updates');
 
   const [dailyUpdates, setDailyUpdates] = useState<DailyUpdate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
       setDailyUpdates(data || []);
     } catch (error: any) {
       console.error('Error fetching daily updates:', error);
-      
+
       // Backend not ready yet - show empty state instead of error
       if (error?.response?.status === 404) {
         console.log('Daily Updates endpoint not yet implemented in backend');
@@ -338,14 +340,16 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
             >
               Export PDF
             </Button>
-            <Button
-              leftIcon={<FiPlus />}
-              colorScheme="green"
-              size="sm"
-              onClick={handleAddNew}
-            >
-              Add Daily Update
-            </Button>
+            {canCreate && (
+              <Button
+                leftIcon={<FiPlus />}
+                colorScheme="green"
+                size="sm"
+                onClick={handleAddNew}
+              >
+                Add Daily Update
+              </Button>
+            )}
           </HStack>
         </HStack>
 
@@ -470,19 +474,23 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
                               >
                                 View Details
                               </MenuItem>
-                              <MenuItem
-                                icon={<FiEdit />}
-                                onClick={() => handleEdit(update)}
-                              >
-                                Edit
-                              </MenuItem>
-                              <MenuItem
-                                icon={<FiTrash2 />}
-                                color="red.500"
-                                onClick={() => handleDeleteClick(update.id)}
-                              >
-                                Delete
-                              </MenuItem>
+                              {canEdit && (
+                                <MenuItem
+                                  icon={<FiEdit />}
+                                  onClick={() => handleEdit(update)}
+                                >
+                                  Edit
+                                </MenuItem>
+                              )}
+                              {canDelete && (
+                                <MenuItem
+                                  icon={<FiTrash2 />}
+                                  color="red.500"
+                                  onClick={() => handleDeleteClick(update.id)}
+                                >
+                                  Delete
+                                </MenuItem>
+                              )}
                             </MenuList>
                           </Menu>
                         </HStack>
@@ -516,7 +524,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
                             Photos:
                           </Text>
                           {update.photos && update.photos.length > 0 ? (
-                            <HStack 
+                            <HStack
                               spacing={2}
                               p={2}
                               borderWidth="1px"

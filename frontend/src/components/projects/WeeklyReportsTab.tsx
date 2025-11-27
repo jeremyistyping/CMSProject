@@ -34,6 +34,7 @@ import weeklyReportService, {
   WeeklyReportDTO,
   CreateWeeklyReportRequest,
 } from '@/services/weeklyReportService';
+import { useModulePermissions } from '@/hooks/usePermissions';
 
 interface WeeklyReportsTabProps {
   projectId: number;
@@ -47,6 +48,7 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
   const [downloading, setDownloading] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
   const toast = useToast();
+  const { canCreate, canDelete } = useModulePermissions('projects');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -85,7 +87,7 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
     try {
       const data = await weeklyReportService.getWeeklyReports(projectId);
       setReports(data || []);
-      
+
       // Show info if no reports found (not an error)
       if (!data || data.length === 0) {
         console.log(`No weekly reports found for project ID ${projectId}`);
@@ -132,8 +134,8 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
       ...prev,
       [name]:
         name === 'total_work_days' ||
-        name === 'weather_delays' ||
-        name === 'team_size'
+          name === 'weather_delays' ||
+          name === 'team_size'
           ? parseInt(value) || 0
           : value,
     }));
@@ -271,123 +273,125 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
   return (
     <VStack align="stretch" spacing={6}>
       {/* Form Section */}
-      <Card bg={bgColor} borderWidth="1px" borderColor={borderColor}>
-        <CardBody>
-          <Heading size="md" mb={4} color={textColor}>
-            Generate Weekly Report
-          </Heading>
+      {canCreate && (
+        <Card bg={bgColor} borderWidth="1px" borderColor={borderColor}>
+          <CardBody>
+            <Heading size="md" mb={4} color={textColor}>
+              Generate Weekly Report
+            </Heading>
 
-          <form onSubmit={handleSubmit}>
-            <VStack spacing={4} align="stretch">
-              <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
-                <FormControl isRequired>
-                  <FormLabel>Report Week</FormLabel>
-                  <Input
-                    type="week"
-                    value={selectedWeek}
-                    onChange={handleWeekChange}
-                    size="md"
-                  />
-                </FormControl>
+            <form onSubmit={handleSubmit}>
+              <VStack spacing={4} align="stretch">
+                <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
+                  <FormControl isRequired>
+                    <FormLabel>Report Week</FormLabel>
+                    <Input
+                      type="week"
+                      value={selectedWeek}
+                      onChange={handleWeekChange}
+                      size="md"
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Project Manager</FormLabel>
+                    <Input
+                      name="project_manager"
+                      value={formData.project_manager}
+                      onChange={handleInputChange}
+                      placeholder="Manager name"
+                    />
+                  </FormControl>
+                </Grid>
+
+                <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
+                  <FormControl isRequired>
+                    <FormLabel>Total Work Days</FormLabel>
+                    <NumberInput
+                      min={0}
+                      value={formData.total_work_days}
+                      onChange={handleNumberChange('total_work_days')}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Weather Delays (days)</FormLabel>
+                    <NumberInput
+                      min={0}
+                      value={formData.weather_delays}
+                      onChange={handleNumberChange('weather_delays')}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+
+                  <FormControl isRequired>
+                    <FormLabel>Team Size</FormLabel>
+                    <NumberInput
+                      min={1}
+                      value={formData.team_size}
+                      onChange={handleNumberChange('team_size')}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                </Grid>
 
                 <FormControl>
-                  <FormLabel>Project Manager</FormLabel>
-                  <Input
-                    name="project_manager"
-                    value={formData.project_manager}
+                  <FormLabel>Major Accomplishments</FormLabel>
+                  <Textarea
+                    name="accomplishments"
+                    value={formData.accomplishments}
                     onChange={handleInputChange}
-                    placeholder="Manager name"
+                    rows={4}
+                    placeholder="List major accomplishments this week..."
                   />
-                </FormControl>
-              </Grid>
-
-              <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
-                <FormControl isRequired>
-                  <FormLabel>Total Work Days</FormLabel>
-                  <NumberInput
-                    min={0}
-                    value={formData.total_work_days}
-                    onChange={handleNumberChange('total_work_days')}
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
                 </FormControl>
 
                 <FormControl>
-                  <FormLabel>Weather Delays (days)</FormLabel>
-                  <NumberInput
-                    min={0}
-                    value={formData.weather_delays}
-                    onChange={handleNumberChange('weather_delays')}
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
+                  <FormLabel>Challenges & Issues</FormLabel>
+                  <Textarea
+                    name="challenges"
+                    value={formData.challenges}
+                    onChange={handleInputChange}
+                    rows={4}
+                    placeholder="Describe any challenges encountered..."
+                  />
                 </FormControl>
 
-                <FormControl isRequired>
-                  <FormLabel>Team Size</FormLabel>
-                  <NumberInput
-                    min={1}
-                    value={formData.team_size}
-                    onChange={handleNumberChange('team_size')}
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
+                <FormControl>
+                  <FormLabel>Next Week's Priorities</FormLabel>
+                  <Textarea
+                    name="next_week_priorities"
+                    value={formData.next_week_priorities}
+                    onChange={handleInputChange}
+                    rows={4}
+                    placeholder="List next week's priorities..."
+                  />
                 </FormControl>
-              </Grid>
 
-              <FormControl>
-                <FormLabel>Major Accomplishments</FormLabel>
-                <Textarea
-                  name="accomplishments"
-                  value={formData.accomplishments}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="List major accomplishments this week..."
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Challenges & Issues</FormLabel>
-                <Textarea
-                  name="challenges"
-                  value={formData.challenges}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="Describe any challenges encountered..."
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Next Week's Priorities</FormLabel>
-                <Textarea
-                  name="next_week_priorities"
-                  value={formData.next_week_priorities}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="List next week's priorities..."
-                />
-              </FormControl>
-
-              <Button type="submit" colorScheme="green" isLoading={submitting} size="lg">
-                Generate Report
-              </Button>
-            </VStack>
-          </form>
-        </CardBody>
-      </Card>
+                <Button type="submit" colorScheme="green" isLoading={submitting} size="lg">
+                  Generate Report
+                </Button>
+              </VStack>
+            </form>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Previous Reports Section */}
       <Card bg={bgColor} borderWidth="1px" borderColor={borderColor}>
@@ -457,12 +461,23 @@ export default function WeeklyReportsTab({ projectId, projectName }: WeeklyRepor
                           isDisabled={downloading}
                         />
                         <IconButton
-                          aria-label="Delete"
-                          icon={<FiTrash2 />}
-                          colorScheme="red"
+                          aria-label="Download PDF"
+                          icon={<FiDownload />}
+                          colorScheme="blue"
                           size="sm"
-                          onClick={() => handleDelete(report.id)}
+                          onClick={() => handleDownloadPDF(report.id)}
+                          isLoading={downloading}
+                          isDisabled={downloading}
                         />
+                        {canDelete && (
+                          <IconButton
+                            aria-label="Delete"
+                            icon={<FiTrash2 />}
+                            colorScheme="red"
+                            size="sm"
+                            onClick={() => handleDelete(report.id)}
+                          />
+                        )}
                       </HStack>
                     </HStack>
 

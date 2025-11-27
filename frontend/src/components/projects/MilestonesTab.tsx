@@ -18,6 +18,7 @@ import {
   FiTarget,
 } from 'react-icons/fi';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModulePermissions } from '@/hooks/usePermissions';
 import { Milestone } from '@/types/milestone';
 import MilestoneCard from './MilestoneCard';
 import MilestoneModal from './MilestoneModal';
@@ -30,6 +31,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = ({ projectId }) => {
   const { t } = useLanguage();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { canCreate, canEdit, canDelete } = useModulePermissions('projects');
 
   // State
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -226,9 +228,11 @@ const MilestonesTab: React.FC<MilestonesTabProps> = ({ projectId }) => {
         </HStack>
 
         {/* Add Milestone Button */}
-        <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddMilestone}>
-          Add Milestone
-        </Button>
+        {canCreate && (
+          <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddMilestone}>
+            Add Milestone
+          </Button>
+        )}
       </HStack>
 
       {/* Content */}
@@ -245,7 +249,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = ({ projectId }) => {
           <Text color="gray.400" fontSize="sm" mb={6}>
             Try adjusting your filter or add new milestones
           </Text>
-          {statusFilter === 'all' && priorityFilter === 'all' && (
+          {statusFilter === 'all' && priorityFilter === 'all' && canCreate && (
             <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddMilestone}>
               Add First Milestone
             </Button>
@@ -260,6 +264,8 @@ const MilestonesTab: React.FC<MilestonesTabProps> = ({ projectId }) => {
               onEdit={handleEditMilestone}
               onDelete={handleDeleteMilestone}
               onComplete={handleCompleteMilestone}
+              canEdit={canEdit}
+              canDelete={canDelete}
             />
           ))}
         </VStack>

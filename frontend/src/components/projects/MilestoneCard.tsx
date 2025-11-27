@@ -35,6 +35,8 @@ interface MilestoneCardProps {
   onEdit: (milestone: Milestone) => void;
   onDelete: (milestoneId: number) => void;
   onComplete?: (milestoneId: number) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 const MilestoneCard: React.FC<MilestoneCardProps> = ({
@@ -42,6 +44,8 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
   onEdit,
   onDelete,
   onComplete,
+  canEdit = false,
+  canDelete = false,
 }) => {
   const bgColor = useColorModeValue('white', 'var(--bg-secondary)');
   const borderColor = useColorModeValue('gray.200', 'var(--border-color)');
@@ -205,36 +209,42 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           </VStack>
 
           {/* Right Section - Actions */}
-          <Menu>
-            <MenuButton
-              as={IconButton}
-              icon={<FiMoreVertical />}
-              variant="ghost"
-              size="sm"
-              aria-label="Actions"
-            />
-            <MenuList>
-              {milestone.status !== 'completed' && onComplete && (
-                <MenuItem
-                  icon={<FiCheckCircle />}
-                  onClick={() => onComplete(milestone.id)}
-                  color="green.500"
-                >
-                  Mark as Complete
-                </MenuItem>
-              )}
-              <MenuItem icon={<FiEdit />} onClick={() => onEdit(milestone)}>
-                Edit
-              </MenuItem>
-              <MenuItem
-                icon={<FiTrash2 />}
-                color="red.500"
-                onClick={() => onDelete(milestone.id)}
-              >
-                Delete
-              </MenuItem>
-            </MenuList>
-          </Menu>
+          {(canEdit || canDelete) && (
+            <Menu>
+              <MenuButton
+                as={IconButton}
+                icon={<FiMoreVertical />}
+                variant="ghost"
+                size="sm"
+                aria-label="Actions"
+              />
+              <MenuList>
+                {milestone.status !== 'completed' && onComplete && canEdit && (
+                  <MenuItem
+                    icon={<FiCheckCircle />}
+                    onClick={() => onComplete(milestone.id)}
+                    color="green.500"
+                  >
+                    Mark as Complete
+                  </MenuItem>
+                )}
+                {canEdit && (
+                  <MenuItem icon={<FiEdit />} onClick={() => onEdit(milestone)}>
+                    Edit
+                  </MenuItem>
+                )}
+                {canDelete && (
+                  <MenuItem
+                    icon={<FiTrash2 />}
+                    color="red.500"
+                    onClick={() => onDelete(milestone.id)}
+                  >
+                    Delete
+                  </MenuItem>
+                )}
+              </MenuList>
+            </Menu>
+          )}
         </HStack>
       </CardBody>
     </Card>

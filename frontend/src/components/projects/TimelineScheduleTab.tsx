@@ -45,6 +45,7 @@ import {
   FiUsers,
 } from 'react-icons/fi';
 import projectService from '@/services/projectService';
+import { useModulePermissions } from '@/hooks/usePermissions';
 import { TimelineSchedule } from '@/types/project';
 import TimelineScheduleModal from './TimelineScheduleModal';
 import { format, parseISO, eachWeekOfInterval, startOfYear, endOfYear, startOfWeek, endOfWeek } from 'date-fns';
@@ -59,7 +60,8 @@ export default function TimelineScheduleTab({ projectId }: TimelineScheduleTabPr
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<TimelineSchedule | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  
+  const { canCreate, canEdit, canDelete } = useModulePermissions('projects');
+
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -162,9 +164,11 @@ export default function TimelineScheduleTab({ projectId }: TimelineScheduleTabPr
             <Text color="gray.500" fontSize="lg">
               No schedule items yet
             </Text>
-            <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddSchedule}>
-              Add First Schedule Item
-            </Button>
+            {canCreate && (
+              <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddSchedule}>
+                Add First Schedule Item
+              </Button>
+            )}
           </VStack>
         </Center>
       ) : (
@@ -206,26 +210,32 @@ export default function TimelineScheduleTab({ projectId }: TimelineScheduleTabPr
                   </Badge>
                 </Td>
                 <Td>
-                  <Menu>
-                    <MenuButton
-                      as={IconButton}
-                      icon={<FiMoreVertical />}
-                      variant="ghost"
-                      size="sm"
-                    />
-                    <MenuList>
-                      <MenuItem icon={<FiEdit2 />} onClick={() => handleEditSchedule(schedule)}>
-                        Edit
-                      </MenuItem>
-                      <MenuItem
-                        icon={<FiTrash2 />}
-                        color="red.500"
-                        onClick={() => handleDeleteSchedule(schedule.id)}
-                      >
-                        Delete
-                      </MenuItem>
-                    </MenuList>
-                  </Menu>
+                  {(canEdit || canDelete) && (
+                    <Menu>
+                      <MenuButton
+                        as={IconButton}
+                        icon={<FiMoreVertical />}
+                        variant="ghost"
+                        size="sm"
+                      />
+                      <MenuList>
+                        {canEdit && (
+                          <MenuItem icon={<FiEdit2 />} onClick={() => handleEditSchedule(schedule)}>
+                            Edit
+                          </MenuItem>
+                        )}
+                        {canDelete && (
+                          <MenuItem
+                            icon={<FiTrash2 />}
+                            color="red.500"
+                            onClick={() => handleDeleteSchedule(schedule.id)}
+                          >
+                            Delete
+                          </MenuItem>
+                        )}
+                      </MenuList>
+                    </Menu>
+                  )}
                 </Td>
               </Tr>
             ))}
@@ -371,9 +381,11 @@ export default function TimelineScheduleTab({ projectId }: TimelineScheduleTabPr
               borderRadius="0"
             />
           </HStack>
-          <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddSchedule}>
-            Add Schedule Item
-          </Button>
+          {canCreate && (
+            <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={handleAddSchedule}>
+              Add Schedule Item
+            </Button>
+          )}
         </HStack>
       </HStack>
 
