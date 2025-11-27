@@ -50,6 +50,8 @@ import MilestoneCard from '@/components/projects/MilestoneCard';
 import TimelineScheduleCard from '@/components/projects/TimelineScheduleCard';
 import { Milestone } from '@/types/milestone';
 import { TimelineSchedule } from '@/types/project';
+import { useAuth } from '@/contexts/AuthContext';
+import { useModulePermissions } from '@/hooks/usePermissions';
 
 // Mock data untuk demo
 const MOCK_PROJECT: Project = {
@@ -77,6 +79,8 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const toast = useToast();
   const projectId = params?.id as string;
+  const { user } = useAuth();
+  const { canEdit, canDelete } = useModulePermissions('projects');
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -254,17 +258,21 @@ export default function ProjectDetailPage() {
                   </Text>
                 </VStack>
                 <HStack spacing={2}>
-                  <Button
-                    leftIcon={<FiArchive />}
-                    colorScheme="yellow"
-                    variant="outline"
-                    onClick={handleArchive}
-                  >
-                    Archive Project
-                  </Button>
-                  <Button leftIcon={<FiEdit />} colorScheme="green" onClick={handleEdit}>
-                    Edit Project
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      leftIcon={<FiArchive />}
+                      colorScheme="yellow"
+                      variant="outline"
+                      onClick={handleArchive}
+                    >
+                      Archive Project
+                    </Button>
+                  )}
+                  {canEdit && (
+                    <Button leftIcon={<FiEdit />} colorScheme="green" onClick={handleEdit}>
+                      Edit Project
+                    </Button>
+                  )}
                 </HStack>
               </HStack>
 
