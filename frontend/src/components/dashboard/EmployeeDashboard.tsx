@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import { API_ENDPOINTS } from '@/config/api';
-import { 
-  Box, 
-  Heading, 
-  Text, 
+import {
+  Box,
+  Heading,
+  Text,
   Card,
   CardHeader,
   CardBody,
@@ -106,7 +106,7 @@ export const EmployeeDashboard = () => {
     };
     fetchEmployeeDashboard();
   }, []);
-  
+
   return (
     <Box>
       <Heading as="h2" size="xl" mb={6} color="gray.800">
@@ -148,7 +148,7 @@ export const EmployeeDashboard = () => {
                           {new Date(notif.created_at).toLocaleString('id-ID')}
                         </Text>
                       </Box>
-                      <Badge 
+                      <Badge
                         colorScheme={notif.urgency_level === 'urgent' ? 'red' : 'orange'}
                         size="sm"
                       >
@@ -184,7 +184,7 @@ export const EmployeeDashboard = () => {
                           {req.days_pending && `${req.days_pending} hari tertunda`}
                         </Text>
                       </Box>
-                      <Badge 
+                      <Badge
                         colorScheme={req.status === 'approved' ? 'green' : req.status === 'rejected' ? 'red' : 'yellow'}
                         size="sm"
                       >
@@ -217,7 +217,7 @@ export const EmployeeDashboard = () => {
                           Step {workflow.current_step} dari {workflow.total_steps}
                         </Text>
                       </Box>
-                      <Badge 
+                      <Badge
                         colorScheme={workflow.status === 'completed' ? 'green' : 'blue'}
                         size="sm"
                       >
@@ -240,17 +240,17 @@ export const EmployeeDashboard = () => {
             </CardHeader>
             <CardBody>
               <Text mb={4} color="gray.600">
-                Akses fitur-fitur employee dashboard dan approval workflow.
+                Akses cepat untuk langsung mengirim daily report dan refresh dashboard.
               </Text>
               <HStack spacing={4} flexWrap="wrap">
                 <Button
                   leftIcon={<FiFileText />}
-                  colorScheme="blue"
-                  variant="outline"
-                  onClick={() => router.push('/purchases')}
+                  colorScheme="green"
+                  variant="solid"
+                  onClick={() => router.push('/projects')}
                   size="md"
                 >
-                  Purchase Requests
+                  Kirim Daily Report
                 </Button>
                 <Button
                   leftIcon={<FiActivity />}
