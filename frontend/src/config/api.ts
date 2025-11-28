@@ -76,7 +76,21 @@ export const API_ENDPOINTS = {
   PERMISSIONS_CHECK: '/api/v1/permissions/check',
 
   // Approval Workflows (with /api/v1 prefix)
+  // Approval Workflows (with /api/v1 prefix)
   APPROVAL_WORKFLOWS: '/api/v1/approval-workflows',
+
+  // Generic Approval Endpoints (mapped to employee routes for now)
+  APPROVAL: {
+    MY_PENDING: '/api/v1/employee/approvals/pending',
+    REQUESTS: '/api/v1/employee/approvals/requests',
+    GET_REQUEST: (id: number) => `/api/v1/employee/approvals/${id}/history`, // Returns history + request
+    APPROVE_STEP: (id: number, stepId: number) => `/api/v1/employee/approvals/${id}/process`,
+    REJECT_STEP: (id: number, stepId: number) => `/api/v1/employee/approvals/${id}/process`,
+    CANCEL_REQUEST: (id: number) => `/api/v1/employee/approvals/${id}/cancel`, // Not implemented yet
+    ESCALATE_STEP: (id: number, stepId: number) => `/api/v1/employee/approvals/${id}/escalate`, // Not implemented yet
+    SUMMARY: '/api/v1/employee/approvals/statistics',
+    WORKFLOWS: '/api/v1/employee/approvals/workflows',
+  },
 
   // Contacts (with /api/v1 prefix)
   CONTACTS: '/api/v1/contacts',

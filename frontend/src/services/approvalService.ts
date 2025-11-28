@@ -153,7 +153,7 @@ class ApprovalService {
   }
 
   // SALES APPROVAL METHODS
-  
+
   // Submit sale for approval
   async submitSaleForApproval(saleId: number, data?: { comments?: string; priority?: string }): Promise<ApprovalRequest> {
     const response = await api.post(API_ENDPOINTS.SALES.SUBMIT_APPROVAL(saleId), data || {});
@@ -181,12 +181,12 @@ class ApprovalService {
 
   // Approve a sale step
   async approveSaleStep(approvalId: number, stepId: number, data: { comments?: string }): Promise<void> {
-    await api.post(API_ENDPOINTS.APPROVAL.APPROVE_STEP(approvalId, stepId), data);
+    await api.post(API_ENDPOINTS.APPROVAL.APPROVE_STEP(approvalId, stepId), { ...data, action: 'APPROVE' });
   }
 
   // Reject a sale step
   async rejectSaleStep(approvalId: number, stepId: number, data: { comments?: string }): Promise<void> {
-    await api.post(API_ENDPOINTS.APPROVAL.REJECT_STEP(approvalId, stepId), data);
+    await api.post(API_ENDPOINTS.APPROVAL.REJECT_STEP(approvalId, stepId), { ...data, action: 'REJECT' });
   }
 
   // Get sale approval history
@@ -196,10 +196,10 @@ class ApprovalService {
   }
 
   // Get all approval requests (generic)
-  async getApprovalRequests(params: { 
-    page?: number; 
-    limit?: number; 
-    status?: string; 
+  async getApprovalRequests(params: {
+    page?: number;
+    limit?: number;
+    status?: string;
     entity_type?: string;
     priority?: string;
     requester_id?: number;
@@ -214,7 +214,8 @@ class ApprovalService {
   // Get approval request by ID
   async getApprovalRequest(requestId: number): Promise<ApprovalRequest> {
     const response = await api.get(API_ENDPOINTS.APPROVAL.GET_REQUEST(requestId));
-    return response.data;
+    // Backend returns { data: { approval_request: ..., history: ... } }
+    return response.data.data?.approval_request || response.data;
   }
 
   // Cancel approval request
@@ -230,7 +231,8 @@ class ApprovalService {
   // Get pending approvals for current user (any entity type)
   async getMyPendingApprovals(): Promise<ApprovalRequest[]> {
     const response = await api.get(API_ENDPOINTS.APPROVAL.MY_PENDING);
-    return response.data.requests || [];
+    // Backend returns { data: { pending_approvals: [...] } }
+    return response.data.data?.pending_approvals || response.data.requests || [];
   }
 
   // Get approval summary/dashboard data
