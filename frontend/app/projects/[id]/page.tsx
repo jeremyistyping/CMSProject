@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
   Box,
   Button,
@@ -25,6 +25,14 @@ import {
   Center,
   useToast,
   IconButton,
+  SimpleGrid,
+  Avatar,
+  AvatarGroup,
+  Divider,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from '@chakra-ui/react';
 import {
   FiArrowLeft,
@@ -37,6 +45,15 @@ import {
   FiTarget,
   FiClock,
   FiDatabase,
+  FiMapPin,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiMoreVertical,
+  FiTrash2,
+  FiLayout,
+  FiTool,
+  FiZap,
+  FiPlus,
 } from 'react-icons/fi';
 import Layout from '@/components/layout/UnifiedLayout';
 import projectService from '@/services/projectService';
@@ -77,6 +94,7 @@ const MOCK_PROJECT: Project = {
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const projectId = params?.id as string;
   const { user } = useAuth();
@@ -102,6 +120,32 @@ export default function ProjectDetailPage() {
       fetchSchedules();
     }
   }, [projectId]);
+
+  // Handle tab selection from URL query param
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      switch (tabParam) {
+        case 'dashboard':
+          setActiveTab(0);
+          break;
+        case 'daily_updates':
+          setActiveTab(1);
+          break;
+        case 'milestones':
+          setActiveTab(2);
+          break;
+        case 'weekly_reports':
+          setActiveTab(3);
+          break;
+        case 'timeline':
+          setActiveTab(4);
+          break;
+        default:
+          setActiveTab(0);
+      }
+    }
+  }, [searchParams]);
 
   const fetchProject = async () => {
     try {
@@ -565,4 +609,3 @@ export default function ProjectDetailPage() {
     </Layout>
   );
 }
-

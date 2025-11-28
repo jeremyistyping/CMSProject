@@ -19,6 +19,7 @@ type DailyUpdateService interface {
 	GetDailyUpdatesByDateRange(projectID uint, startDate, endDate string) ([]models.DailyUpdate, error)
 	ApproveDailyUpdate(projectID uint, updateID uint, approver string) error
 	RejectDailyUpdate(projectID uint, updateID uint, rejector string, reason string) error
+	GetPendingDailyUpdates() ([]models.DailyUpdate, error)
 }
 
 type dailyUpdateService struct {
@@ -302,4 +303,16 @@ func (s *dailyUpdateService) RejectDailyUpdate(projectID uint, updateID uint, re
 	update.ApprovedAt = nil
 
 	return s.db.Save(&update).Error
+}
+
+// GetPendingDailyUpdates retrieves all daily updates with pending status
+func (s *dailyUpdateService) GetPendingDailyUpdates() ([]models.DailyUpdate, error) {
+	var updates []models.DailyUpdate
+	result := s.db.Preload("Project").Where("status = ?", "pending").Order("date DESC").Find(&updates)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return updates, nil
 }

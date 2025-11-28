@@ -383,7 +383,7 @@ func (dc *DailyUpdateController) ApproveDailyUpdate(c *gin.Context) {
 	}
 
 	// Get user from context (set by auth middleware)
-	username := "Unknown"
+	username := "Purchasing Admin"
 	if user, exists := c.Get("user"); exists {
 		if u, ok := user.(*models.User); ok {
 			username = u.Username
@@ -433,7 +433,7 @@ func (dc *DailyUpdateController) RejectDailyUpdate(c *gin.Context) {
 	}
 
 	// Get user from context
-	username := "Unknown"
+	username := "Purchasing Admin"
 	if user, exists := c.Get("user"); exists {
 		if u, ok := user.(*models.User); ok {
 			username = u.Username
@@ -446,4 +446,15 @@ func (dc *DailyUpdateController) RejectDailyUpdate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Daily update rejected successfully"})
+}
+
+// GetPendingDailyUpdates retrieves all pending daily updates
+func (dc *DailyUpdateController) GetPendingDailyUpdates(c *gin.Context) {
+	updates, err := dc.service.GetPendingDailyUpdates()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": updates})
 }

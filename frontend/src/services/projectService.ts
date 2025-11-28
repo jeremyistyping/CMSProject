@@ -149,6 +149,11 @@ export const projectService = {
     await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates/${updateId}/reject`, { reason });
   },
 
+  async getPendingDailyUpdates(): Promise<DailyUpdate[]> {
+    const response = await api.get(`${PROJECT_ENDPOINT}/daily-updates/pending`);
+    return response.data.data;
+  },
+
   // Weekly Reports
   async getWeeklyReports(projectId: string): Promise<WeeklyReport[]> {
     const response = await api.get(`${PROJECT_ENDPOINT}/${projectId}/weekly-reports`);

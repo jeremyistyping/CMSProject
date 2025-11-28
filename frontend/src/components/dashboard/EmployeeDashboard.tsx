@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import { API_ENDPOINTS } from '@/config/api';
+import projectService from '@/services/projectService';
 import {
   Box,
   Heading,
@@ -89,6 +90,7 @@ export const EmployeeDashboard = () => {
   const [employeeData, setEmployeeData] = useState<EmployeeDashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const fetchEmployeeDashboard = async () => {
@@ -106,6 +108,23 @@ export const EmployeeDashboard = () => {
     };
     fetchEmployeeDashboard();
   }, []);
+
+  const handleSendDailyReport = async () => {
+    try {
+      setIsRedirecting(true);
+      const projects = await projectService.getActiveProjects();
+      if (projects && projects.length === 1) {
+        router.push(`/projects/${projects[0].id}?tab=daily_updates`);
+      } else {
+        router.push('/projects');
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      router.push('/projects');
+    } finally {
+      setIsRedirecting(false);
+    }
+  };
 
   return (
     <Box>
@@ -247,7 +266,9 @@ export const EmployeeDashboard = () => {
                   leftIcon={<FiFileText />}
                   colorScheme="green"
                   variant="solid"
-                  onClick={() => router.push('/projects')}
+                  onClick={handleSendDailyReport}
+                  isLoading={isRedirecting}
+                  loadingText="Redirecting..."
                   size="md"
                 >
                   Kirim Daily Report

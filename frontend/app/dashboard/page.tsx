@@ -4,11 +4,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
-    AdminDashboard,
-    FinanceDashboard,
-    InventoryManagerDashboard,
-    DirectorDashboard,
-    EmployeeDashboard
+  AdminDashboard,
+  FinanceDashboard,
+  InventoryManagerDashboard,
+  DirectorDashboard,
+  EmployeeDashboard,
+  PurchasingDashboard
 } from '@/components/dashboard';
 import SimpleLayout from '@/components/layout/SimpleLayout';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
@@ -41,7 +42,7 @@ export default function DashboardPage() {
 
   // Handle unauthorized role redirect
   useEffect(() => {
-    if (user && !['admin', 'finance', 'inventory_manager', 'director', 'employee'].includes(user.role)) {
+    if (user && !['admin', 'finance', 'inventory_manager', 'director', 'employee', 'purchasing'].includes(user.role)) {
       setRedirecting(true);
       router.push('/unauthorized');
     }
@@ -89,6 +90,8 @@ export default function DashboardPage() {
         return <DirectorDashboard analytics={analytics} />;
       case 'employee':
         return <EmployeeDashboard />;
+      case 'purchasing':
+        return <PurchasingDashboard />;
       default:
         return (
           <Flex justify="center" align="center" minH="60vh">
@@ -102,7 +105,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'inventory_manager', 'employee']}>
+    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'inventory_manager', 'employee', 'purchasing']}>
       {renderDashboardByRole()}
     </SimpleLayout>
   );

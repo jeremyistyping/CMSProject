@@ -1,25 +1,42 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
+import {
+  Box,
+  Card,
+  CardHeader,
+  CardBody,
+  Heading,
+  Text,
   Progress,
   Badge,
   Alert,
+  AlertIcon,
   AlertDescription,
-  Button
-} from '@/components/ui';
-import { 
-  CheckCircle, 
-  AlertTriangle, 
-  XCircle, 
-  Settings,
-  TrendingUp,
-  DollarSign,
-  CreditCard,
-  Building
-} from 'lucide-react';
+  Button,
+  SimpleGrid,
+  VStack,
+  HStack,
+  Icon,
+  List,
+  ListItem,
+  ListIcon,
+  Divider,
+  useColorModeValue,
+  Flex,
+  Spinner
+} from '@chakra-ui/react';
+import {
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiXCircle,
+  FiSettings,
+  FiTrendingUp,
+  FiDollarSign,
+  FiCreditCard,
+  FiBriefcase
+} from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
 
 interface AccountInfo {
   id: number;
@@ -50,9 +67,13 @@ interface TaxAccountDashboard {
   };
 }
 
-const TaxAccountStatusDashboard: React.FC = () => {
+export const TaxAccountStatusDashboard: React.FC = () => {
   const [dashboard, setDashboard] = useState<TaxAccountDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   useEffect(() => {
     fetchDashboard();
@@ -62,7 +83,7 @@ const TaxAccountStatusDashboard: React.FC = () => {
     try {
       const response = await fetch('/api/v1/settings/tax-accounts/status');
       const data = await response.json();
-      
+
       if (data.success) {
         setDashboard(data.data);
       }
@@ -75,40 +96,40 @@ const TaxAccountStatusDashboard: React.FC = () => {
 
   const getStatusBadge = (status: AccountStatus) => {
     if (!status.is_configured) {
-      return <Badge variant="destructive">Not Configured</Badge>;
+      return <Badge colorScheme="red">Not Configured</Badge>;
     }
-    
+
     if (status.warnings && status.warnings.length > 0) {
-      return <Badge variant="secondary">Warning</Badge>;
+      return <Badge colorScheme="yellow">Warning</Badge>;
     }
-    
-    return <Badge variant="default">Configured</Badge>;
+
+    return <Badge colorScheme="green">Configured</Badge>;
   };
 
   const getStatusIcon = (status: AccountStatus) => {
     if (!status.is_configured) {
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      return <Icon as={FiXCircle} color="red.500" boxSize={4} />;
     }
-    
+
     if (status.warnings && status.warnings.length > 0) {
-      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      return <Icon as={FiAlertTriangle} color="yellow.500" boxSize={4} />;
     }
-    
-    return <CheckCircle className="h-4 w-4 text-green-500" />;
+
+    return <Icon as={FiCheckCircle} color="green.500" boxSize={4} />;
   };
 
   const getHealthScoreColor = (score: number) => {
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (score >= 80) return 'green';
+    if (score >= 60) return 'yellow';
+    return 'red';
   };
 
   if (loading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </CardContent>
+        <CardBody display="flex" justifyContent="center" alignItems="center" p={8}>
+          <Spinner size="lg" color="blue.500" />
+        </CardBody>
       </Card>
     );
   }
@@ -116,247 +137,211 @@ const TaxAccountStatusDashboard: React.FC = () => {
   if (!dashboard) {
     return (
       <Card>
-        <CardContent className="p-8">
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
+        <CardBody p={8}>
+          <Alert status="error">
+            <AlertIcon />
             <AlertDescription>
               Unable to load tax account configuration status.
             </AlertDescription>
           </Alert>
-        </CardContent>
+        </CardBody>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <VStack spacing={6} align="stretch">
       {/* Health Score Overview */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5" />
-            <span>Tax Account Configuration Health</span>
-          </CardTitle>
+        <CardHeader pb={0}>
+          <Heading size="md" display="flex" alignItems="center">
+            <Icon as={FiSettings} mr={2} />
+            Tax Account Configuration Health
+          </Heading>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Configuration Health</span>
-                <span className="text-sm text-gray-500">{dashboard.health_score}%</span>
-              </div>
-              <Progress 
-                value={dashboard.health_score} 
-                className="h-3"
-                // @ts-ignore - custom color class
-                style={{
-                  '--progress-background': getHealthScoreColor(dashboard.health_score)
-                } as any}
+        <CardBody>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+            <Box>
+              <Flex justify="space-between" mb={2}>
+                <Text fontSize="sm" fontWeight="medium">Configuration Health</Text>
+                <Text fontSize="sm" color="gray.500">{dashboard.health_score}%</Text>
+              </Flex>
+              <Progress
+                value={dashboard.health_score}
+                colorScheme={getHealthScoreColor(dashboard.health_score)}
+                size="sm"
+                borderRadius="full"
               />
-              <div className="mt-2 text-xs text-gray-500">
+              <Text mt={2} fontSize="xs" color="gray.500">
                 {dashboard.is_fully_configured ? 'All required accounts configured' : 'Some accounts need configuration'}
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Status:</span>
-                <Badge variant={dashboard.is_fully_configured ? 'default' : 'destructive'}>
+              </Text>
+            </Box>
+
+            <VStack align="stretch" spacing={2}>
+              <Flex justify="space-between" align="center">
+                <Text fontSize="sm">Status:</Text>
+                <Badge colorScheme={dashboard.is_fully_configured ? 'green' : 'red'}>
                   {dashboard.is_fully_configured ? 'Complete' : 'Incomplete'}
                 </Badge>
-              </div>
+              </Flex>
               {dashboard.last_updated && (
-                <div className="text-xs text-gray-500">
+                <Text fontSize="xs" color="gray.500">
                   Last updated: {dashboard.last_updated} by {dashboard.updated_by?.name || 'System'}
-                </div>
+                </Text>
               )}
-            </div>
-          </div>
-          
+            </VStack>
+          </SimpleGrid>
+
           {/* System Warnings */}
           {dashboard.system_warnings.length > 0 && (
-            <Alert className="mt-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="font-medium mb-1">Configuration Issues:</div>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {dashboard.system_warnings.map((warning, index) => (
-                    <li key={index}>{warning}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
+            <Alert status="warning" mt={4} borderRadius="md">
+              <AlertIcon />
+              <Box flex="1">
+                <AlertDescription display="block">
+                  <Text fontWeight="medium" mb={1}>Configuration Issues:</Text>
+                  <List styleType="disc" pl={4} spacing={1}>
+                    {dashboard.system_warnings.map((warning, index) => (
+                      <ListItem key={index} fontSize="sm">{warning}</ListItem>
+                    ))}
+                  </List>
+                </AlertDescription>
+              </Box>
             </Alert>
           )}
-        </CardContent>
+        </CardBody>
       </Card>
 
       {/* Account Configuration Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
         {/* Sales Transaction Accounts */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-base">
-              <CreditCard className="h-4 w-4" />
-              <span>Sales Transaction Accounts</span>
-            </CardTitle>
+          <CardHeader pb={2}>
+            <Heading size="sm" display="flex" alignItems="center">
+              <Icon as={FiCreditCard} mr={2} />
+              Sales Transaction Accounts
+            </Heading>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-2 border rounded">
-              <div className="flex items-center space-x-2">
-                {getStatusIcon(dashboard.sales_receivable)}
-                <div>
-                  <div className="text-sm font-medium">Receivable Account</div>
-                  {dashboard.sales_receivable.account ? (
-                    <div className="text-xs text-gray-500">
-                      [{dashboard.sales_receivable.account.code}] {dashboard.sales_receivable.account.name}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-red-500">Not configured</div>
-                  )}
-                </div>
-              </div>
-              {getStatusBadge(dashboard.sales_receivable)}
-            </div>
-            
-            <div className="flex items-center justify-between p-2 border rounded">
-              <div className="flex items-center space-x-2">
-                {getStatusIcon(dashboard.sales_cash)}
-                <div>
-                  <div className="text-sm font-medium">Cash Account</div>
-                  {dashboard.sales_cash.account ? (
-                    <div className="text-xs text-gray-500">
-                      [{dashboard.sales_cash.account.code}] {dashboard.sales_cash.account.name}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-red-500">Not configured</div>
-                  )}
-                </div>
-              </div>
-              {getStatusBadge(dashboard.sales_cash)}
-            </div>
-            
-            <div className="flex items-center justify-between p-2 border rounded">
-              <div className="flex items-center space-x-2">
-                {getStatusIcon(dashboard.sales_bank)}
-                <div>
-                  <div className="text-sm font-medium">Bank Account</div>
-                  {dashboard.sales_bank.account ? (
-                    <div className="text-xs text-gray-500">
-                      [{dashboard.sales_bank.account.code}] {dashboard.sales_bank.account.name}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-red-500">Not configured</div>
-                  )}
-                </div>
-              </div>
-              {getStatusBadge(dashboard.sales_bank)}
-            </div>
-          </CardContent>
+          <CardBody>
+            <VStack spacing={3} align="stretch">
+              {[
+                { label: 'Receivable Account', status: dashboard.sales_receivable },
+                { label: 'Cash Account', status: dashboard.sales_cash },
+                { label: 'Bank Account', status: dashboard.sales_bank }
+              ].map((item, idx) => (
+                <Flex key={idx} justify="space-between" align="center" p={2} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                  <HStack spacing={3}>
+                    {getStatusIcon(item.status)}
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">{item.label}</Text>
+                      {item.status.account ? (
+                        <Text fontSize="xs" color="gray.500">
+                          [{item.status.account.code}] {item.status.account.name}
+                        </Text>
+                      ) : (
+                        <Text fontSize="xs" color="red.500">Not configured</Text>
+                      )}
+                    </Box>
+                  </HStack>
+                  {getStatusBadge(item.status)}
+                </Flex>
+              ))}
+            </VStack>
+          </CardBody>
         </Card>
 
         {/* Revenue & Tax Accounts */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-base">
-              <TrendingUp className="h-4 w-4" />
-              <span>Revenue & Tax Accounts</span>
-            </CardTitle>
+          <CardHeader pb={2}>
+            <Heading size="sm" display="flex" alignItems="center">
+              <Icon as={FiTrendingUp} mr={2} />
+              Revenue & Tax Accounts
+            </Heading>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-2 border rounded">
-              <div className="flex items-center space-x-2">
-                {getStatusIcon(dashboard.sales_revenue)}
-                <div>
-                  <div className="text-sm font-medium">Revenue Account</div>
-                  {dashboard.sales_revenue.account ? (
-                    <div className="text-xs text-gray-500">
-                      [{dashboard.sales_revenue.account.code}] {dashboard.sales_revenue.account.name}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-red-500">Not configured</div>
-                  )}
-                </div>
-              </div>
-              {getStatusBadge(dashboard.sales_revenue)}
-            </div>
-            
-            <div className="flex items-center justify-between p-2 border rounded">
-              <div className="flex items-center space-x-2">
-                {getStatusIcon(dashboard.sales_output_vat)}
-                <div>
-                  <div className="text-sm font-medium">Output VAT Account</div>
-                  {dashboard.sales_output_vat.account ? (
-                    <div className="text-xs text-gray-500">
-                      [{dashboard.sales_output_vat.account.code}] {dashboard.sales_output_vat.account.name}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-red-500">Not configured</div>
-                  )}
-                </div>
-              </div>
-              {getStatusBadge(dashboard.sales_output_vat)}
-            </div>
+          <CardBody>
+            <VStack spacing={3} align="stretch">
+              {[
+                { label: 'Revenue Account', status: dashboard.sales_revenue },
+                { label: 'Output VAT Account', status: dashboard.sales_output_vat }
+              ].map((item, idx) => (
+                <Flex key={idx} justify="space-between" align="center" p={2} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                  <HStack spacing={3}>
+                    {getStatusIcon(item.status)}
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">{item.label}</Text>
+                      {item.status.account ? (
+                        <Text fontSize="xs" color="gray.500">
+                          [{item.status.account.code}] {item.status.account.name}
+                        </Text>
+                      ) : (
+                        <Text fontSize="xs" color="red.500">Not configured</Text>
+                      )}
+                    </Box>
+                  </HStack>
+                  {getStatusBadge(item.status)}
+                </Flex>
+              ))}
 
-            {/* Action Button */}
-            <div className="pt-4 border-t">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-                onClick={() => window.location.href = '/settings/tax-accounts'}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Configure Accounts
-              </Button>
-            </div>
-          </CardContent>
+              {/* Action Button */}
+              <Box pt={4} borderTopWidth="1px" borderColor={borderColor}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  w="full"
+                  leftIcon={<Icon as={FiSettings} />}
+                  onClick={() => router.push('/settings/tax-accounts')}
+                >
+                  Configure Accounts
+                </Button>
+              </Box>
+            </VStack>
+          </CardBody>
         </Card>
-      </div>
+      </SimpleGrid>
 
       {/* Account Usage Information */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Building className="h-4 w-4" />
-            <span>How These Accounts Are Used</span>
-          </CardTitle>
+        <CardHeader pb={2}>
+          <Heading size="md" display="flex" alignItems="center">
+            <Icon as={FiBriefcase} mr={2} />
+            How These Accounts Are Used
+          </Heading>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <h4 className="font-medium mb-2">Sales Transactions:</h4>
-              <ul className="space-y-1 text-gray-600">
-                <li>• <strong>Receivable Account:</strong> Records credit sales (customer owes money)</li>
-                <li>• <strong>Cash Account:</strong> Records immediate cash payments</li>
-                <li>• <strong>Bank Account:</strong> Records bank transfers and checks</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Revenue & Tax:</h4>
-              <ul className="space-y-1 text-gray-600">
-                <li>• <strong>Revenue Account:</strong> Records sales income</li>
-                <li>• <strong>Output VAT Account:</strong> Records tax obligations (PPN Keluaran)</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <DollarSign className="h-4 w-4 text-blue-600 mt-0.5" />
-              <div className="text-sm">
-                <div className="font-medium text-blue-900">Example Transaction:</div>
-                <div className="text-blue-700">
+        <CardBody>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} fontSize="sm">
+            <Box>
+              <Text fontWeight="medium" mb={2}>Sales Transactions:</Text>
+              <List spacing={1} color="gray.600">
+                <ListItem>• <strong>Receivable Account:</strong> Records credit sales (customer owes money)</ListItem>
+                <ListItem>• <strong>Cash Account:</strong> Records immediate cash payments</ListItem>
+                <ListItem>• <strong>Bank Account:</strong> Records bank transfers and checks</ListItem>
+              </List>
+            </Box>
+            <Box>
+              <Text fontWeight="medium" mb={2}>Revenue & Tax:</Text>
+              <List spacing={1} color="gray.600">
+                <ListItem>• <strong>Revenue Account:</strong> Records sales income</ListItem>
+                <ListItem>• <strong>Output VAT Account:</strong> Records tax obligations (PPN Keluaran)</ListItem>
+              </List>
+            </Box>
+          </SimpleGrid>
+
+          <Box mt={4} p={3} bg="blue.50" borderRadius="lg">
+            <HStack align="start" spacing={2}>
+              <Icon as={FiDollarSign} color="blue.600" mt={1} />
+              <Box fontSize="sm">
+                <Text fontWeight="medium" color="blue.900">Example Transaction:</Text>
+                <Text color="blue.700">
                   When you make a sale for $1,000 + $110 VAT:
                   <br />• Revenue Account gets credited $1,000
                   <br />• Output VAT Account gets credited $110
                   <br />• Cash/Bank/Receivable Account gets debited $1,110
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
+                </Text>
+              </Box>
+            </HStack>
+          </Box>
+        </CardBody>
       </Card>
-    </div>
+    </VStack>
   );
 };
 

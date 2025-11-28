@@ -1,5 +1,7 @@
-export { AdminDashboard } from './AdminDashboard';
-export { FinanceDashboard } from './FinanceDashboard';
-export { InventoryManagerDashboard } from './InventoryManagerDashboard';
-export { DirectorDashboard } from './DirectorDashboard';
-export { EmployeeDashboard } from './EmployeeDashboard';
+export * from './AdminDashboard';
+export * from './FinanceDashboard';
+export * from './InventoryManagerDashboard';
+export * from './DirectorDashboard';
+export * from './EmployeeDashboard';
+export * from './TaxAccountStatusDashboard';
+export * from './PurchasingDashboard';

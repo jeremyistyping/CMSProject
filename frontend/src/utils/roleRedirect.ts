@@ -17,7 +17,7 @@ export function getDefaultPageForRole(role: UserRole | string): string {
             return '/dashboard';
 
         case 'purchasing':
-            return '/cost-control/purchase-requests';
+            return '/dashboard';
 
         case 'cost_control':
             return '/cost-control';

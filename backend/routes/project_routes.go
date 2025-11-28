@@ -52,6 +52,7 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB, permMiddleware *mi
 		projects.GET("", permMiddleware.CanView("projects"), projectController.GetAllProjects)
 		projects.GET("/active", permMiddleware.CanView("projects"), projectController.GetActiveProjects)
 		projects.GET("/status", permMiddleware.CanView("projects"), projectController.GetProjectsByStatus)
+		projects.GET("/daily-updates/pending", permMiddleware.CanApprove("daily_updates"), dailyUpdateController.GetPendingDailyUpdates)
 		projects.GET("/:id", permMiddleware.CanView("projects"), projectController.GetProjectByID)
 		projects.GET("/:id/cost-summary", permMiddleware.CanView("projects"), projectController.GetProjectCostSummary)
 		projects.GET("/:id/progress-history", permMiddleware.CanView("projects"), projectProgressController.GetProjectProgressHistory)

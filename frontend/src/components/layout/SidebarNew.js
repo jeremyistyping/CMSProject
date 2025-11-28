@@ -60,6 +60,7 @@ const getMenuGroups = (t) => [
     title: 'Project Management',
     items: [
       { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR'] },
+      { name: 'Approval Daily Report', icon: FiCheckSquare, href: '/daily-report-approval', module: null, permission: null, roles: ['PURCHASING'] },
     ]
   },
   {

@@ -458,6 +458,24 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
                             <Text fontSize="xs" color={subtextColor}>
                               By: {update.created_by || 'Unknown'}
                             </Text>
+                            {/* Approval Status Badge */}
+                            {update.status && update.status !== 'pending' && (
+                              <Badge
+                                colorScheme={update.status === 'approved' ? 'green' : 'red'}
+                                fontSize="xs"
+                                px={2}
+                                py={1}
+                                borderRadius="md"
+                              >
+                                {update.status === 'approved' ? '✓ Approved' : '✗ Rejected'}
+                                {update.approved_by && ` by ${update.approved_by === 'Unknown' ? 'Purchasing Admin' : update.approved_by}`}
+                              </Badge>
+                            )}
+                            {update.status === 'pending' && (
+                              <Badge colorScheme="yellow" fontSize="xs" px={2} py={1} borderRadius="md">
+                                ⏳ Pending Approval
+                              </Badge>
+                            )}
                           </VStack>
                           <Menu>
                             <MenuButton

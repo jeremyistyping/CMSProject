@@ -212,7 +212,7 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
                 <Badge colorScheme="green" fontSize="md" px={3} py={1} borderRadius="full">
                   <HStack spacing={1}>
                     <Icon as={FiCheckCircle} />
-                    <Text>Approved</Text>
+                    <Text>Approved{dailyUpdate.approved_by && ` by ${dailyUpdate.approved_by === 'Unknown' ? 'Purchasing Admin' : dailyUpdate.approved_by}`}</Text>
                   </HStack>
                 </Badge>
               )}
@@ -220,7 +220,7 @@ const DailyUpdateViewModal: React.FC<DailyUpdateViewModalProps> = ({
                 <Badge colorScheme="red" fontSize="md" px={3} py={1} borderRadius="full">
                   <HStack spacing={1}>
                     <Icon as={FiXCircle} />
-                    <Text>Rejected</Text>
+                    <Text>Rejected{dailyUpdate.approved_by && ` by ${dailyUpdate.approved_by === 'Unknown' ? 'Purchasing Admin' : dailyUpdate.approved_by}`}</Text>
                   </HStack>
                 </Badge>
               )}
