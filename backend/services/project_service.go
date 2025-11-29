@@ -47,16 +47,16 @@ func (s *projectService) GetProjectCostSummary(id uint) (*models.ProjectCostSumm
 	}
 
 	summary := &models.ProjectCostSummary{
-		ProjectID:       project.ID,
-		ProjectName:     project.ProjectName,
-		Budget:          project.Budget,
-		ActualCost:      0,
-		MaterialCost:    0,
-		LaborCost:       0,
-		EquipmentCost:   0,
-		OverheadCost:    0,
-		Variance:        0,
-		VariancePercent: 0,
+		ProjectID:         project.ID,
+		ProjectName:       project.ProjectName,
+		Budget:            project.Budget,
+		ActualCost:        0,
+		MaterialCost:      0,
+		LaborCost:         0,
+		EquipmentCost:     0,
+		OverheadCost:      0,
+		Variance:          0,
+		VariancePercent:   0,
 		BudgetUtilization: 0,
 		RemainingBudget:   0,
 		IsOverBudget:      false,
@@ -67,7 +67,7 @@ func (s *projectService) GetProjectCostSummary(id uint) (*models.ProjectCostSumm
 
 	// Aggregate actual costs from unified_journal_ledger by account category
 	// This mirrors the logic used in ProjectReportService but without date filtering.
-	var materialCost, laborCost, equipmentCost, overheadCost float64
+	var materialCost, laborCost, equipmentCost, overheadCost int64
 
 	// Material
 	s.db.Raw(`
@@ -125,8 +125,8 @@ func (s *projectService) GetProjectCostSummary(id uint) (*models.ProjectCostSumm
 	summary.ActualCost = materialCost + laborCost + equipmentCost + overheadCost
 	summary.Variance = summary.Budget - summary.ActualCost
 	if summary.Budget > 0 {
-		summary.VariancePercent = (summary.Variance / summary.Budget) * 100
-		summary.BudgetUtilization = (summary.ActualCost / summary.Budget) * 100
+		summary.VariancePercent = (float64(summary.Variance) / float64(summary.Budget)) * 100
+		summary.BudgetUtilization = (float64(summary.ActualCost) / float64(summary.Budget)) * 100
 	}
 	summary.RemainingBudget = summary.Budget - summary.ActualCost
 	summary.IsOverBudget = summary.ActualCost > summary.Budget
@@ -153,15 +153,15 @@ func (s *projectService) CreateProject(project *models.Project) error {
 	if err := s.validateProject(project); err != nil {
 		return err
 	}
-	
+
 	// Set default status if not provided
 	if project.Status == "" {
 		project.Status = models.ProjectStatusActive
 	}
-	
+
 	// Ensure progress values are within valid range (0-100)
 	s.normalizeProgressValues(project)
-	
+
 	return s.repo.Create(project)
 }
 
@@ -172,21 +172,21 @@ func (s *projectService) UpdateProject(project *models.Project) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Validate updated data
 	if err := s.validateProject(project); err != nil {
 		return err
 	}
-	
+
 	// Ensure progress values are within valid range
 	s.normalizeProgressValues(project)
-	
+
 	// If project is being marked as completed, set completion date
 	if project.Status == models.ProjectStatusCompleted && existing.Status != models.ProjectStatusCompleted {
 		now := time.Now()
 		project.CompletionDate = &now
 	}
-	
+
 	return s.repo.Update(project)
 }
 
@@ -196,7 +196,7 @@ func (s *projectService) DeleteProject(id uint) error {
 	if _, err := s.repo.GetByID(id); err != nil {
 		return err
 	}
-	
+
 	return s.repo.Delete(id)
 }
 
@@ -206,7 +206,7 @@ func (s *projectService) ArchiveProject(id uint) error {
 	if _, err := s.repo.GetByID(id); err != nil {
 		return err
 	}
-	
+
 	return s.repo.Archive(id)
 }
 
@@ -216,7 +216,7 @@ func (s *projectService) UpdateProgress(id uint, progressData map[string]float64
 	if err != nil {
 		return err
 	}
-	
+
 	// Update progress values if provided
 	if val, ok := progressData["overall_progress"]; ok {
 		project.OverallProgress = s.clampProgress(val)
@@ -233,14 +233,14 @@ func (s *projectService) UpdateProgress(id uint, progressData map[string]float64
 	if val, ok := progressData["equipment_progress"]; ok {
 		project.EquipmentProgress = s.clampProgress(val)
 	}
-	
+
 	// If overall progress reaches 100%, mark as completed
 	if project.OverallProgress >= 100 && project.Status != models.ProjectStatusCompleted {
 		project.Status = models.ProjectStatusCompleted
 		now := time.Now()
 		project.CompletionDate = &now
 	}
-	
+
 	return s.repo.Update(project)
 }
 
@@ -259,19 +259,19 @@ func (s *projectService) validateProject(project *models.Project) error {
 	if strings.TrimSpace(project.ProjectName) == "" {
 		return errors.New("project name is required")
 	}
-	
+
 	if strings.TrimSpace(project.Customer) == "" {
 		return errors.New("customer is required")
 	}
-	
+
 	if strings.TrimSpace(project.City) == "" {
 		return errors.New("city is required")
 	}
-	
+
 	if project.Budget < 0 {
 		return errors.New("budget cannot be negative")
 	}
-	
+
 	// Validate project type
 	validTypes := []string{
 		models.ProjectTypeNewBuild,
@@ -289,7 +289,7 @@ func (s *projectService) validateProject(project *models.Project) error {
 	if !validType {
 		return errors.New("invalid project type")
 	}
-	
+
 	// Validate status if provided
 	if project.Status != "" {
 		validStatuses := []string{
@@ -309,7 +309,7 @@ func (s *projectService) validateProject(project *models.Project) error {
 			return errors.New("invalid project status")
 		}
 	}
-	
+
 	return nil
 }
 
@@ -332,4 +332,3 @@ func (s *projectService) clampProgress(value float64) float64 {
 	}
 	return value
 }
-

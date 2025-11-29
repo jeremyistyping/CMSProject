@@ -2,51 +2,52 @@ package models
 
 import (
 	"time"
+
 	"gorm.io/gorm"
 )
 
 // Project represents a construction project
 type Project struct {
-	ID                  uint           `json:"id" gorm:"primaryKey"`
-	ProjectName         string         `json:"project_name" gorm:"not null;size:200"`
-	ProjectDescription  string         `json:"project_description" gorm:"type:text"`
-	Customer            string         `json:"customer" gorm:"not null;size:200"`
-	City                string         `json:"city" gorm:"not null;size:100"`
-	Address             string         `json:"address" gorm:"type:text"`
-	ProjectType         string         `json:"project_type" gorm:"not null;size:50"` // New Build, Renovation, Expansion, Maintenance
-	
-	// Budget & Cost Tracking
-	Budget              float64        `json:"budget" gorm:"type:decimal(20,2);default:0"`
-	ActualCost          float64        `json:"actual_cost" gorm:"type:decimal(20,2);default:0"` // Total actual spending
-	MaterialCost        float64        `json:"material_cost" gorm:"type:decimal(20,2);default:0"`
-	LaborCost           float64        `json:"labor_cost" gorm:"type:decimal(20,2);default:0"`
-	EquipmentCost       float64        `json:"equipment_cost" gorm:"type:decimal(20,2);default:0"`
-	OverheadCost        float64        `json:"overhead_cost" gorm:"type:decimal(20,2);default:0"`
-	Variance            float64        `json:"variance" gorm:"type:decimal(20,2);default:0"` // Budget - Actual
-	VariancePercent     float64        `json:"variance_percent" gorm:"type:decimal(5,2);default:0"` // (Variance/Budget)*100
-	
-	Deadline            time.Time      `json:"deadline"`
-	Status              string         `json:"status" gorm:"not null;size:20;default:'active'"` // active, completed, on_hold, archived
-	
+	ID                 uint   `json:"id" gorm:"primaryKey"`
+	ProjectName        string `json:"project_name" gorm:"not null;size:200"`
+	ProjectDescription string `json:"project_description" gorm:"type:text"`
+	Customer           string `json:"customer" gorm:"not null;size:200"`
+	City               string `json:"city" gorm:"not null;size:100"`
+	Address            string `json:"address" gorm:"type:text"`
+	ProjectType        string `json:"project_type" gorm:"not null;size:50"` // New Build, Renovation, Expansion, Maintenance
+
+	// Budget & Cost Tracking (stored as integer rupiah to avoid floating-point precision loss)
+	Budget          int64   `json:"budget" gorm:"type:numeric(20,0);default:0"`
+	ActualCost      int64   `json:"actual_cost" gorm:"type:numeric(20,0);default:0"` // Total actual spending
+	MaterialCost    int64   `json:"material_cost" gorm:"type:numeric(20,0);default:0"`
+	LaborCost       int64   `json:"labor_cost" gorm:"type:numeric(20,0);default:0"`
+	EquipmentCost   int64   `json:"equipment_cost" gorm:"type:numeric(20,0);default:0"`
+	OverheadCost    int64   `json:"overhead_cost" gorm:"type:numeric(20,0);default:0"`
+	Variance        int64   `json:"variance" gorm:"type:numeric(20,0);default:0"`        // Budget - Actual
+	VariancePercent float64 `json:"variance_percent" gorm:"type:decimal(5,2);default:0"` // (Variance/Budget)*100
+
+	Deadline time.Time `json:"deadline"`
+	Status   string    `json:"status" gorm:"not null;size:20;default:'active'"` // active, completed, on_hold, archived
+
 	// Progress tracking
-	OverallProgress     float64        `json:"overall_progress" gorm:"type:decimal(5,2);default:0"` // 0-100
-	FoundationProgress  float64        `json:"foundation_progress" gorm:"type:decimal(5,2);default:0"`
-	UtilitiesProgress   float64        `json:"utilities_progress" gorm:"type:decimal(5,2);default:0"`
-	InteriorProgress    float64        `json:"interior_progress" gorm:"type:decimal(5,2);default:0"`
-	EquipmentProgress   float64        `json:"equipment_progress" gorm:"type:decimal(5,2);default:0"`
-	
+	OverallProgress    float64 `json:"overall_progress" gorm:"type:decimal(5,2);default:0"` // 0-100
+	FoundationProgress float64 `json:"foundation_progress" gorm:"type:decimal(5,2);default:0"`
+	UtilitiesProgress  float64 `json:"utilities_progress" gorm:"type:decimal(5,2);default:0"`
+	InteriorProgress   float64 `json:"interior_progress" gorm:"type:decimal(5,2);default:0"`
+	EquipmentProgress  float64 `json:"equipment_progress" gorm:"type:decimal(5,2);default:0"`
+
 	// Additional fields for future features
-	StartDate           *time.Time     `json:"start_date"`
-	CompletionDate      *time.Time     `json:"completion_date"`
-	Notes               string         `json:"notes" gorm:"type:text"`
-	
+	StartDate      *time.Time `json:"start_date"`
+	CompletionDate *time.Time `json:"completion_date"`
+	Notes          string     `json:"notes" gorm:"type:text"`
+
 	// Timestamps
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
-	DeletedAt           gorm.DeletedAt `json:"-" gorm:"index"`
-	
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+
 	// Relations
-	Purchases           []Purchase     `json:"purchases,omitempty" gorm:"foreignKey:ProjectID"`
+	Purchases []Purchase `json:"purchases,omitempty" gorm:"foreignKey:ProjectID"`
 }
 
 // TableName specifies the table name for Project model
@@ -96,7 +97,7 @@ func (p *Project) DaysUntilDeadline() int {
 }
 
 // UpdateCostTracking updates project cost tracking fields
-func (p *Project) UpdateCostTracking(materialCost, laborCost, equipmentCost, overheadCost float64) {
+func (p *Project) UpdateCostTracking(materialCost, laborCost, equipmentCost, overheadCost int64) {
 	p.MaterialCost = materialCost
 	p.LaborCost = laborCost
 	p.EquipmentCost = equipmentCost
@@ -104,7 +105,7 @@ func (p *Project) UpdateCostTracking(materialCost, laborCost, equipmentCost, ove
 	p.ActualCost = materialCost + laborCost + equipmentCost + overheadCost
 	p.Variance = p.Budget - p.ActualCost
 	if p.Budget > 0 {
-		p.VariancePercent = (p.Variance / p.Budget) * 100
+		p.VariancePercent = (float64(p.Variance) / float64(p.Budget)) * 100
 	} else {
 		p.VariancePercent = 0
 	}
@@ -120,40 +121,39 @@ func (p *Project) GetBudgetUtilization() float64 {
 	if p.Budget == 0 {
 		return 0
 	}
-	return (p.ActualCost / p.Budget) * 100
+	return (float64(p.ActualCost) / float64(p.Budget)) * 100
 }
 
 // GetRemainingBudget returns remaining budget
-func (p *Project) GetRemainingBudget() float64 {
+func (p *Project) GetRemainingBudget() int64 {
 	return p.Budget - p.ActualCost
 }
 
 // DTOs for Project Cost Tracking
 type ProjectCostSummary struct {
-	ProjectID          uint    `json:"project_id"`
-	ProjectName        string  `json:"project_name"`
-	Budget             float64 `json:"budget"`
-	ActualCost         float64 `json:"actual_cost"`
-	MaterialCost       float64 `json:"material_cost"`
-	LaborCost          float64 `json:"labor_cost"`
-	EquipmentCost      float64 `json:"equipment_cost"`
-	OverheadCost       float64 `json:"overhead_cost"`
-	Variance           float64 `json:"variance"`
-	VariancePercent    float64 `json:"variance_percent"`
-	BudgetUtilization  float64 `json:"budget_utilization"`
-	RemainingBudget    float64 `json:"remaining_budget"`
-	IsOverBudget       bool    `json:"is_over_budget"`
-	TotalPurchases     int64   `json:"total_purchases"`
-	OverallProgress    float64 `json:"overall_progress"`
-	Status             string  `json:"status"`
+	ProjectID         uint    `json:"project_id"`
+	ProjectName       string  `json:"project_name"`
+	Budget            int64   `json:"budget"`
+	ActualCost        int64   `json:"actual_cost"`
+	MaterialCost      int64   `json:"material_cost"`
+	LaborCost         int64   `json:"labor_cost"`
+	EquipmentCost     int64   `json:"equipment_cost"`
+	OverheadCost      int64   `json:"overhead_cost"`
+	Variance          int64   `json:"variance"`
+	VariancePercent   float64 `json:"variance_percent"`
+	BudgetUtilization float64 `json:"budget_utilization"`
+	RemainingBudget   int64   `json:"remaining_budget"`
+	IsOverBudget      bool    `json:"is_over_budget"`
+	TotalPurchases    int64   `json:"total_purchases"`
+	OverallProgress   float64 `json:"overall_progress"`
+	Status            string  `json:"status"`
 }
 
 type ProjectPurchaseSummary struct {
-	ProjectID       uint    `json:"project_id"`
-	ProjectName     string  `json:"project_name"`
-	TotalPurchases  int64   `json:"total_purchases"`
-	TotalAmount     float64 `json:"total_amount"`
-	ApprovedAmount  float64 `json:"approved_amount"`
-	PendingAmount   float64 `json:"pending_amount"`
+	ProjectID      uint   `json:"project_id"`
+	ProjectName    string `json:"project_name"`
+	TotalPurchases int64  `json:"total_purchases"`
+	TotalAmount    int64  `json:"total_amount"`
+	ApprovedAmount int64  `json:"approved_amount"`
+	PendingAmount  int64  `json:"pending_amount"`
 }
-

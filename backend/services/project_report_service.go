@@ -228,14 +228,14 @@ func (s *ProjectReportService) GenerateBudgetVsActualReport(params models.Projec
 				COACode:      "BUDGET",
 				COAName:      "Project Budget (Unallocated)",
 				COAType:      "EXPENSE",
-				Budget:       project.Budget,
+				Budget:       float64(project.Budget),
 				Actual:       0,
-				Variance:     -project.Budget,
+				Variance:     -float64(project.Budget),
 				VarianceRate: -100,
 				Status:       "ON_TARGET",
 			}
 			report.COAGroups = append(report.COAGroups, unallocatedRow)
-			report.TotalBudget = project.Budget
+			report.TotalBudget = float64(project.Budget)
 			report.TotalVariance = report.TotalActual - report.TotalBudget
 		}
 	}
@@ -475,7 +475,7 @@ func (s *ProjectReportService) GenerateProgressVsCostReport(params models.Projec
 		ProjectName: project.ProjectName,
 		StartDate:   params.StartDate,
 		EndDate:     params.EndDate,
-		Budget:      project.Budget,
+		Budget:      float64(project.Budget),
 		Points:      []models.ProgressVsCostPoint{},
 	}
 
@@ -575,7 +575,7 @@ func (s *ProjectReportService) GenerateProgressVsCostReport(params models.Projec
 
 		var costProgress float64
 		if project.Budget > 0 {
-			costProgress = (lastCumulative / project.Budget) * 100
+			costProgress = (lastCumulative / float64(project.Budget)) * 100
 		}
 		gap := costProgress - lastProgress
 
@@ -583,7 +583,7 @@ func (s *ProjectReportService) GenerateProgressVsCostReport(params models.Projec
 			Date:             d,
 			PhysicalProgress: lastProgress,
 			CumulativeActual: lastCumulative,
-			Budget:           project.Budget,
+			Budget:           float64(project.Budget),
 			CostProgress:     costProgress,
 			ProgressGap:      gap,
 		})

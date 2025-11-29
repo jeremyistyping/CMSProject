@@ -121,7 +121,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanView:    true,
 					CanCreate:  true, // Allowed to create projects
 					CanEdit:    true,
-					CanDelete:  false,
+					CanDelete:  true, // Allowed to delete projects
 					CanApprove: true,
 					CanExport:  true,
 					CanMenu:    true,
