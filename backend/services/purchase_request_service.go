@@ -20,12 +20,13 @@ type PurchaseRequestService interface {
 }
 
 type purchaseRequestService struct {
-	repo repositories.PurchaseRequestRepository
-	db   *gorm.DB
+	repo            repositories.PurchaseRequestRepository
+	db              *gorm.DB
+	approvalService *ApprovalService
 }
 
-func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository, db *gorm.DB) PurchaseRequestService {
-	return &purchaseRequestService{repo, db}
+func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository, db *gorm.DB, approvalService *ApprovalService) PurchaseRequestService {
+	return &purchaseRequestService{repo, db, approvalService}
 }
 
 func (s *purchaseRequestService) CreatePR(pr *models.PurchaseRequest) error {
@@ -40,7 +41,32 @@ func (s *purchaseRequestService) CreatePR(pr *models.PurchaseRequest) error {
 	}
 	pr.TotalAmount = total
 
-	return s.repo.Create(pr)
+	// Create the PR
+	if err := s.repo.Create(pr); err != nil {
+		return err
+	}
+
+	// Create approval request for the PR
+	if s.approvalService != nil {
+		dto := models.CreateApprovalRequestDTO{
+			EntityType:     models.EntityTypePurchaseRequest,
+			EntityID:       pr.ID,
+			Amount:         pr.TotalAmount,
+			RequestTitle:   fmt.Sprintf("Purchase Request %s - Project %d", pr.Code, pr.ProjectID),
+			RequestMessage: fmt.Sprintf("PR requesting materials for project %d with total amount %.2f", pr.ProjectID, pr.TotalAmount),
+			Priority:       models.ApprovalPriorityNormal,
+		}
+
+		approvalReq, err := s.approvalService.CreateApprovalRequest(dto, pr.CreatedBy)
+		if err != nil {
+			// Log error but don't fail PR creation
+			fmt.Printf("⚠️  Failed to create approval request for PR %d: %v\n", pr.ID, err)
+		} else {
+			fmt.Printf("✅ Created approval request %s for PR %s\n", approvalReq.RequestCode, pr.Code)
+		}
+	}
+
+	return nil
 }
 
 func (s *purchaseRequestService) UpdatePR(id uint, pr *models.PurchaseRequest) error {

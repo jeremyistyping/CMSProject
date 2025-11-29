@@ -51,7 +51,7 @@ const getMenuGroups = (t) => [
   {
     title: t('navigation.dashboard'),
     items: [
-      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR'] },
+      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
       // Employee Dashboard / Daily Reports
       { name: 'Daily Reports', icon: FiFileText, href: '/projects', module: null, permission: null, roles: ['EMPLOYEE'] },
     ]
@@ -59,7 +59,7 @@ const getMenuGroups = (t) => [
   {
     title: 'Project Management',
     items: [
-      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR'] },
+      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
       { name: 'Approval Daily Report', icon: FiCheckSquare, href: '/daily-report-approval', module: null, permission: null, roles: ['PURCHASING'] },
     ]
   },
@@ -69,29 +69,29 @@ const getMenuGroups = (t) => [
       // Untuk saat ini, menu Cost Control ditampilkan berdasarkan role saja,
       // tidak bergantung pada permission module. Halaman di dalamnya tetap
       // melakukan pengecekan permission cost_control.
-      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
-      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
-      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
-      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER'] },
+      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
   {
     title: 'Master Data',
     items: [
       { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
-      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR'] },
+      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
   {
     title: 'Financial',
     items: [
-      { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
   {
     title: t('navigation.reports'),
     items: [
-      { name: t('navigation.reports'), icon: FiBarChart, href: '/reports', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR'] },
+      { name: t('navigation.reports'), icon: FiBarChart, href: '/reports', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
   {

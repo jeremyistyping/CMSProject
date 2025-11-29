@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Modal,
     ModalOverlay,
@@ -24,10 +24,18 @@ import {
     useToast,
     FormControl,
     FormLabel,
+    Tabs,
+    TabList,
+    TabPanels,
+    Tab,
+    TabPanel,
+    Spinner,
 } from '@chakra-ui/react';
 import { PurchaseRequest } from '../../types/purchaseRequest';
 import purchaseRequestService from '../../services/purchaseRequestService';
+import approvalService, { ApprovalRequest, ApprovalAction } from '../../services/approvalService';
 import MaterialImpactCard from './MaterialImpactCard';
+import ApprovalTimeline from './ApprovalTimeline';
 
 interface PRDetailModalProps {
     isOpen: boolean;
@@ -39,28 +47,101 @@ interface PRDetailModalProps {
 const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUpdate }) => {
     const toast = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const [rejectionReason, setRejectionReason] = useState('');
+    const [comments, setComments] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
 
-    if (!pr) return null;
+    // Approval state
+    const [approvalRequest, setApprovalRequest] = useState<ApprovalRequest | null>(null);
+    const [loadingApproval, setLoadingApproval] = useState(false);
+    const [currentUserRole, setCurrentUserRole] = useState<string>('');
+
+    useEffect(() => {
+        if (pr && isOpen) {
+            fetchApprovalStatus();
+            // Get current user role from localStorage or auth context
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                const user = JSON.parse(userData);
+                setCurrentUserRole(user.role || '');
+            }
+        }
+    }, [pr, isOpen]);
+
+    const fetchApprovalStatus = async () => {
+        if (!pr) return;
+
+        try {
+            setLoadingApproval(true);
+            // Fetch approval request for this PR
+            const response = await approvalService.getApprovalRequests({
+                entity_type: 'PURCHASE_REQUEST',
+                page: 1,
+                limit: 1,
+            });
+
+            // Find the approval request for this specific PR
+            if (response.data && response.data.length > 0) {
+                const prApproval = response.data.find((req: any) => req.entity_id === pr.id);
+                if (prApproval) {
+                    setApprovalRequest(prApproval);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching approval status:', error);
+        } finally {
+            setLoadingApproval(false);
+        }
+    };
+
+    const canApproveCurrentStep = (): boolean => {
+        if (!approvalRequest || !currentUserRole) return false;
+
+        // Find active step
+        const activeStep = approvalRequest.approval_steps?.find(step => step.is_active && step.status === 'PENDING');
+        if (!activeStep) return false;
+
+        // Check if current user's role matches the required role
+        return activeStep.step.approver_role.toLowerCase() === currentUserRole.toLowerCase();
+    };
+
+    const getCurrentActiveStep = (): ApprovalAction | null => {
+        if (!approvalRequest) return null;
+        return approvalRequest.approval_steps?.find(step => step.is_active && step.status === 'PENDING') || null;
+    };
 
     const handleApprove = async () => {
+        if (!pr || !approvalRequest) return;
+
+        const activeStep = getCurrentActiveStep();
+        if (!activeStep) {
+            toast({
+                title: 'Error',
+                description: 'No active approval step found',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
         try {
             setIsLoading(true);
-            await purchaseRequestService.updateStatus(pr.id, 'APPROVED');
+            await approvalService.approveSaleStep(approvalRequest.id, activeStep.step_id, { comments });
+
             toast({
                 title: 'Success',
-                description: 'Purchase Request approved',
+                description: `${activeStep.step.step_name} approved successfully`,
                 status: 'success',
                 duration: 3000,
                 isClosable: true,
             });
+            setComments('');
             onUpdate();
-            onClose();
-        } catch (error) {
+            fetchApprovalStatus(); // Refresh approval status
+        } catch (error: any) {
             toast({
                 title: 'Error',
-                description: 'Failed to approve Purchase Request',
+                description: error.response?.data?.error || 'Failed to approve',
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
@@ -71,7 +152,7 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
     };
 
     const handleReject = async () => {
-        if (!rejectionReason) {
+        if (!comments.trim()) {
             toast({
                 title: 'Error',
                 description: 'Please provide a reason for rejection',
@@ -82,9 +163,24 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
             return;
         }
 
+        if (!pr || !approvalRequest) return;
+
+        const activeStep = getCurrentActiveStep();
+        if (!activeStep) {
+            toast({
+                title: 'Error',
+                description: 'No active approval step found',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+            return;
+        }
+
         try {
             setIsLoading(true);
-            await purchaseRequestService.updateStatus(pr.id, 'REJECTED', rejectionReason);
+            await approvalService.rejectSaleStep(approvalRequest.id, activeStep.step_id, { comments });
+
             toast({
                 title: 'Success',
                 description: 'Purchase Request rejected',
@@ -95,11 +191,11 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
             onUpdate();
             onClose();
             setIsRejecting(false);
-            setRejectionReason('');
-        } catch (error) {
+            setComments('');
+        } catch (error: any) {
             toast({
                 title: 'Error',
-                description: 'Failed to reject Purchase Request',
+                description: error.response?.data?.error || 'Failed to reject',
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
@@ -108,6 +204,8 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
             setIsLoading(false);
         }
     };
+
+    if (!pr) return null;
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -119,10 +217,12 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
         }
     };
 
+    const showApprovalActions = canApproveCurrentStep() && approvalRequest?.status === 'PENDING';
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="xl">
             <ModalOverlay />
-            <ModalContent maxW="800px">
+            <ModalContent maxW="900px">
                 <ModalHeader>
                     <HStack spacing={4}>
                         <Text>Purchase Request Details</Text>
@@ -136,136 +236,189 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
                 </ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
-                    <VStack align="stretch" spacing={6}>
-                        {/* Header Info */}
-                        <Box p={4} bg="gray.50" borderRadius="md">
-                            <HStack justify="space-between" align="start" spacing={8}>
-                                <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm" color="gray.500">Project</Text>
-                                    <Text fontWeight="medium">{pr.project?.project_name}</Text>
+                    <Tabs variant="enclosed" colorScheme="blue">
+                        <TabList>
+                            <Tab>Details</Tab>
+                            <Tab>Approval Timeline</Tab>
+                            <Tab>Material Impact</Tab>
+                        </TabList>
+
+                        <TabPanels>
+                            {/* Details Tab */}
+                            <TabPanel>
+                                <VStack align="stretch" spacing={6}>
+                                    {/* Header Info */}
+                                    <Box p={4} bg="gray.50" borderRadius="md">
+                                        <HStack justify="space-between" align="start" spacing={8} flexWrap="wrap">
+                                            <VStack align="start" spacing={1}>
+                                                <Text fontSize="sm" color="gray.500">Project</Text>
+                                                <Text fontWeight="medium">{pr.project?.project_name}</Text>
+                                            </VStack>
+                                            <VStack align="start" spacing={1}>
+                                                <Text fontSize="sm" color="gray.500">Requester</Text>
+                                                <Text fontWeight="medium">{pr.requester?.name}</Text>
+                                            </VStack>
+                                            <VStack align="start" spacing={1}>
+                                                <Text fontSize="sm" color="gray.500">Request Date</Text>
+                                                <Text fontWeight="medium">{new Date(pr.request_date).toLocaleDateString('id-ID')}</Text>
+                                            </VStack>
+                                            <VStack align="start" spacing={1}>
+                                                <Text fontSize="sm" color="gray.500">Required Date</Text>
+                                                <Text fontWeight="medium">
+                                                    {pr.required_date ? new Date(pr.required_date).toLocaleDateString('id-ID') : '-'}
+                                                </Text>
+                                            </VStack>
+                                        </HStack>
+                                    </Box>
+
+                                    {/* Notes */}
+                                    {pr.notes && (
+                                        <Box>
+                                            <Text fontWeight="bold" mb={2}>Notes</Text>
+                                            <Text fontSize="sm" color="gray.700">{pr.notes}</Text>
+                                        </Box>
+                                    )}
+
+                                    {/* Items Table */}
+                                    <Box>
+                                        <Text fontWeight="bold" mb={2}>Items</Text>
+                                        <Table size="sm" variant="simple">
+                                            <Thead>
+                                                <Tr>
+                                                    <Th>Item Name</Th>
+                                                    <Th isNumeric>Qty</Th>
+                                                    <Th>Unit</Th>
+                                                    <Th isNumeric>Est. Price</Th>
+                                                    <Th isNumeric>Total</Th>
+                                                </Tr>
+                                            </Thead>
+                                            <Tbody>
+                                                {pr.items?.map((item) => (
+                                                    <Tr key={item.id}>
+                                                        <Td>{item.item_name}</Td>
+                                                        <Td isNumeric>{item.quantity}</Td>
+                                                        <Td>{item.unit}</Td>
+                                                        <Td isNumeric>
+                                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.estimated_price)}
+                                                        </Td>
+                                                        <Td isNumeric>
+                                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.total_price)}
+                                                        </Td>
+                                                    </Tr>
+                                                ))}
+                                                <Tr fontWeight="bold" bg="gray.50">
+                                                    <Td colSpan={4} textAlign="right">Total Estimated Amount</Td>
+                                                    <Td isNumeric>
+                                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(pr.total_amount)}
+                                                    </Td>
+                                                </Tr>
+                                            </Tbody>
+                                        </Table>
+                                    </Box>
+
+                                    {/* Rejection Info */}
+                                    {pr.status === 'REJECTED' && pr.rejection_reason && (
+                                        <Box p={4} bg="red.50" borderRadius="md" borderColor="red.200" borderWidth="1px">
+                                            <Text fontWeight="bold" color="red.800" mb={1}>Rejection Reason:</Text>
+                                            <Text fontSize="sm" color="red.800">{pr.rejection_reason}</Text>
+                                        </Box>
+                                    )}
                                 </VStack>
-                                <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm" color="gray.500">Requester</Text>
-                                    <Text fontWeight="medium">{pr.requester?.name}</Text>
-                                </VStack>
-                                <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm" color="gray.500">Request Date</Text>
-                                    <Text fontWeight="medium">{new Date(pr.request_date).toLocaleDateString('id-ID')}</Text>
-                                </VStack>
-                                <VStack align="start" spacing={1}>
-                                    <Text fontSize="sm" color="gray.500">Required Date</Text>
-                                    <Text fontWeight="medium">
-                                        {pr.required_date ? new Date(pr.required_date).toLocaleDateString('id-ID') : '-'}
-                                    </Text>
-                                </VStack>
-                            </HStack>
-                        </Box>
+                            </TabPanel>
 
-                        {/* Notes */}
-                        {pr.notes && (
-                            <Box>
-                                <Text fontWeight="bold" mb={2}>Notes</Text>
-                                <Text fontSize="sm" color="gray.700">{pr.notes}</Text>
-                            </Box>
-                        )}
+                            {/* Approval Timeline Tab */}
+                            <TabPanel>
+                                {loadingApproval ? (
+                                    <Box textAlign="center" py={8}>
+                                        <Spinner />
+                                        <Text mt={2} fontSize="sm" color="gray.500">Loading approval timeline...</Text>
+                                    </Box>
+                                ) : (
+                                    <ApprovalTimeline
+                                        approval_request={approvalRequest || undefined}
+                                        approval_actions={approvalRequest?.approval_steps || []}
+                                        isLoading={loadingApproval}
+                                    />
+                                )}
 
-                        {/* Items Table */}
-                        <Box>
-                            <Text fontWeight="bold" mb={2}>Items</Text>
-                            <Table size="sm" variant="simple">
-                                <Thead>
-                                    <Tr>
-                                        <Th>Item Name</Th>
-                                        <Th isNumeric>Qty</Th>
-                                        <Th>Unit</Th>
-                                        <Th isNumeric>Est. Price</Th>
-                                        <Th isNumeric>Total</Th>
-                                    </Tr>
-                                </Thead>
-                                <Tbody>
-                                    {pr.items?.map((item) => (
-                                        <Tr key={item.id}>
-                                            <Td>{item.item_name}</Td>
-                                            <Td isNumeric>{item.quantity}</Td>
-                                            <Td>{item.unit}</Td>
-                                            <Td isNumeric>
-                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.estimated_price)}
-                                            </Td>
-                                            <Td isNumeric>
-                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.total_price)}
-                                            </Td>
-                                        </Tr>
-                                    ))}
-                                    <Tr fontWeight="bold" bg="gray.50">
-                                        <Td colSpan={4} textAlign="right">Total Estimated Amount</Td>
-                                        <Td isNumeric>
-                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(pr.total_amount)}
-                                        </Td>
-                                    </Tr>
-                                </Tbody>
-                            </Table>
-                        </Box>
+                                {/* Approval Actions */}
+                                {showApprovalActions && (
+                                    <Box mt={6} p={4} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
+                                        <Text fontWeight="bold" mb={3} color="blue.800">
+                                            🔔 Action Required - {getCurrentActiveStep()?.step.step_name}
+                                        </Text>
 
-                        {/* Material Impact */}
-                        <MaterialImpactCard purchaseRequestId={pr.id} />
+                                        <FormControl mb={4}>
+                                            <FormLabel fontSize="sm">Comments {isRejecting && <Text as="span" color="red.500">*</Text>}</FormLabel>
+                                            <Textarea
+                                                value={comments}
+                                                onChange={(e) => setComments(e.target.value)}
+                                                placeholder={isRejecting ? "Please explain why this request is being rejected..." : "Optional comments..."}
+                                                size="sm"
+                                            />
+                                        </FormControl>
 
-                        {/* Approval Info */}
-                        {pr.approved_by && (
-                            <Box p={4} bg="green.50" borderRadius="md" borderColor="green.200" borderWidth="1px">
-                                <HStack>
-                                    <Text fontSize="sm" color="green.800">
-                                        Approved by <b>{pr.approver?.name}</b> on {new Date(pr.approved_at!).toLocaleDateString('id-ID')}
-                                    </Text>
-                                </HStack>
-                            </Box>
-                        )}
+                                        {!isRejecting ? (
+                                            <HStack>
+                                                <Button
+                                                    colorScheme="red"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setIsRejecting(true)}
+                                                >
+                                                    Reject
+                                                </Button>
+                                                <Button
+                                                    colorScheme="green"
+                                                    size="sm"
+                                                    onClick={handleApprove}
+                                                    isLoading={isLoading}
+                                                >
+                                                    Approve
+                                                </Button>
+                                            </HStack>
+                                        ) : (
+                                            <HStack>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIsRejecting(false);
+                                                        setComments('');
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    colorScheme="red"
+                                                    size="sm"
+                                                    onClick={handleReject}
+                                                    isLoading={isLoading}
+                                                >
+                                                    Confirm Rejection
+                                                </Button>
+                                            </HStack>
+                                        )}
+                                    </Box>
+                                )}
+                            </TabPanel>
 
-                        {/* Rejection Info */}
-                        {pr.status === 'REJECTED' && pr.rejection_reason && (
-                            <Box p={4} bg="red.50" borderRadius="md" borderColor="red.200" borderWidth="1px">
-                                <Text fontWeight="bold" color="red.800" mb={1}>Rejection Reason:</Text>
-                                <Text fontSize="sm" color="red.800">{pr.rejection_reason}</Text>
-                            </Box>
-                        )}
-
-                        {/* Rejection Input */}
-                        {isRejecting && (
-                            <FormControl isRequired>
-                                <FormLabel>Reason for Rejection</FormLabel>
-                                <Textarea
-                                    value={rejectionReason}
-                                    onChange={(e) => setRejectionReason(e.target.value)}
-                                    placeholder="Please explain why this request is being rejected..."
-                                />
-                            </FormControl>
-                        )}
-                    </VStack>
+                            {/* Material Impact Tab */}
+                            <TabPanel>
+                                <MaterialImpactCard purchaseRequestId={pr.id} />
+                            </TabPanel>
+                        </TabPanels>
+                    </Tabs>
                 </ModalBody>
 
                 <ModalFooter>
-                    <Button variant="ghost" mr={3} onClick={() => {
+                    <Button variant="ghost" onClick={() => {
                         setIsRejecting(false);
+                        setComments('');
                         onClose();
                     }}>
                         Close
                     </Button>
-
-                    {pr.status === 'PENDING' && !isRejecting && (
-                        <>
-                            <Button colorScheme="red" variant="outline" mr={3} onClick={() => setIsRejecting(true)}>
-                                Reject
-                            </Button>
-                            <Button colorScheme="green" onClick={handleApprove} isLoading={isLoading}>
-                                Approve
-                            </Button>
-                        </>
-                    )}
-
-                    {isRejecting && (
-                        <Button colorScheme="red" onClick={handleReject} isLoading={isLoading}>
-                            Confirm Rejection
-                        </Button>
-                    )}
                 </ModalFooter>
             </ModalContent>
         </Modal>

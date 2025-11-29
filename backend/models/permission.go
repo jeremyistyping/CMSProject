@@ -113,22 +113,20 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				}
 			}
 		}
-	case "manager", "gm", "project_director", "managing_director":
-		// Manager/GM/Project Director have access to projects and limited financial view
+	case "gm", "project_director":
+		// GM and Project Director have full access to projects (including creation)
 		for _, module := range modules {
 			if module == "projects" || module == "daily_updates" {
-				// Full access to projects
 				permissions[module] = &ModulePermission{
 					CanView:    true,
-					CanCreate:  true,
+					CanCreate:  true, // Allowed to create projects
 					CanEdit:    true,
-					CanDelete:  false, // Safety
+					CanDelete:  false,
 					CanApprove: true,
 					CanExport:  true,
 					CanMenu:    true,
 				}
 			} else if module == "purchases" || module == "sales" || module == "payments" || module == "cash_bank" || module == "reports" {
-				// View/Approve access for operational/financial modules
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -139,7 +137,6 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanMenu:    true,
 				}
 			} else if module == "settings" {
-				// Limited settings access
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -150,7 +147,52 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanMenu:    false,
 				}
 			} else {
-				// View access for other modules
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			}
+		}
+
+	case "manager", "managing_director":
+		// Manager and Managing Director can VIEW projects but NOT create them
+		for _, module := range modules {
+			if module == "projects" || module == "daily_updates" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false, // NOT allowed to create projects
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "purchases" || module == "sales" || module == "payments" || module == "cash_bank" || module == "reports" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "settings" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			} else {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,

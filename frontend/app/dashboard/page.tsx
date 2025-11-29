@@ -42,7 +42,7 @@ export default function DashboardPage() {
 
   // Handle unauthorized role redirect
   useEffect(() => {
-    if (user && !['admin', 'finance', 'inventory_manager', 'director', 'employee', 'purchasing'].includes(user.role)) {
+    if (user && !['admin', 'finance', 'inventory_manager', 'director', 'employee', 'purchasing', 'project_director', 'gm', 'managing_director'].includes(user.role)) {
       setRedirecting(true);
       router.push('/unauthorized');
     }
@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
   const roleNeedsAnalytics = useMemo(() => {
     const role = user?.role;
-    return role === 'admin' || role === 'director' || role === 'finance';
+    return role === 'admin' || role === 'director' || role === 'finance' || role === 'project_director' || role === 'gm' || role === 'managing_director';
   }, [user]);
 
   const isLoading = redirecting || (roleNeedsAnalytics ? analyticsLoading : false);
@@ -87,6 +87,9 @@ export default function DashboardPage() {
       case 'inventory_manager':
         return <InventoryManagerDashboard />;
       case 'director':
+      case 'project_director':
+      case 'gm':
+      case 'managing_director':
         return <DirectorDashboard analytics={analytics} />;
       case 'employee':
         return <EmployeeDashboard />;
@@ -105,7 +108,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'inventory_manager', 'employee', 'purchasing']}>
+    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'inventory_manager', 'employee', 'purchasing', 'project_director', 'gm', 'managing_director']}>
       {renderDashboardByRole()}
     </SimpleLayout>
   );

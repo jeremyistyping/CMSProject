@@ -1,1385 +1,369 @@
-2025/11/20 10:16:58 Connecting to PostgreSQL database with URL: postgres://postgres:Moon@localhost:5432/CMSNew?sslmode=disable
-2025/11/20 10:16:58 Database connected successfully with optimized connection pool
-2025/11/20 10:16:58 🔄 Running database migrations...
-2025/11/20 10:16:58 🔄 Starting database migrations...
-2025/11/20 10:16:58 📊 Current migration version: 25
-2025/11/20 10:16:58 ✅ Database is up to date - no migrations needed
-2025/11/20 10:16:58 ✅ Database migrations complete - version: 25
-2025/11/20 10:16:58 Starting database migration...
-2025/11/20 10:16:58 🔧 Running pre-migration fixes...
-2025/11/20 10:16:58 Dropping audit-related views that might conflict with migration...
-2025/11/20 10:16:58 ✅ Dropped view: critical_audit_changes
-2025/11/20 10:16:58 ✅ Dropped view: audit_trail_summary
-2025/11/20 10:16:58 ✅ Dropped view: audit_logs_view
-2025/11/20 10:16:58 ✅ Dropped view: recent_audit_activities
-2025/11/20 10:16:58 ✅ Dropped view: user_audit_summary
-2025/11/20 10:16:58 ✅ Audit-related views cleanup completed
-2025/11/20 10:16:58 Handling column type conflicts...
-2025/11/20 10:16:58 Current audit_logs.action column: type=character varying, max_length=0xc00000b850
-2025/11/20 10:16:58 ✅ Column type conflicts handled
-2025/11/20 10:16:58 ✅ Pre-migration fixes completed
-2025/11/20 10:16:58 Checking and fixing payment_date null values...
-2025/11/20 10:16:58 Updating NULL payment_date values in sale_payments table...
-2025/11/20 10:16:58 ✅ Updated 0 NULL payment_date values in sale_payments table
-2025/11/20 10:16:58 Making payment_date column NOT NULL...
-2025/11/20 10:16:58 ✅ Set payment_date column as NOT NULL successfully
-2025/11/20 10:16:58 Updating NULL payment_method values in sale_payments table...
-2025/11/20 10:16:58 ✅ Updated 0 NULL payment_method values in sale_payments table
-2025/11/20 10:16:58 Making payment_method column NOT NULL...
-2025/11/20 10:16:58 ✅ Set payment_method column as NOT NULL successfully
-2025/11/20 10:16:58 Payment date null values fix completed
-2025/11/20 10:16:58 Cleaning up problematic database constraints...
-2025/11/20 10:16:58 Found 4 existing constraints/indexes on accounts table
-2025/11/20 10:16:58 ✅ Dropped constraint accounts_code_active_unique
-2025/11/20 10:16:58 ✅ Dropped constraint idx_accounts_code_active
-2025/11/20 10:16:58 ✅ Dropped constraint idx_accounts_code_unique_active
-2025/11/20 10:16:58 Removing any remaining unique constraints on code column...
-2025/11/20 10:16:58 ✅ Target partial unique index idx_accounts_code_active already exists
-2025/11/20 10:16:58 Final state: 3 constraints/indexes on accounts table: [accounts_code_active_unique idx_accounts_code_active idx_accounts_code_unique_active]
-2025/11/20 10:16:58 Database constraint cleanup completed
-2025/11/20 10:16:58 Cleaning up ProductUnit constraints...
-2025/11/20 10:16:58 uni_product_units_code constraint does not exist, nothing to drop
-2025/11/20 10:16:58 Found 1 code-related indexes on product_units
-2025/11/20 10:16:58 Code-related index found: idx_product_units_code (will be managed by GORM)
-2025/11/20 10:16:58 ProductUnit constraint cleanup completed
-2025/11/20 10:16:58 Cleaning up JournalEntries constraints...
-2025/11/20 10:16:58 No problematic code-related constraints found on journal_entries
-2025/11/20 10:16:58 Found 1 code-related indexes on journal_entries
-2025/11/20 10:16:58 Code-related index found: idx_journal_entries_code (will be managed by GORM)
-2025/11/20 10:16:58 JournalEntries constraint cleanup completed
-2025/11/20 10:16:58 🔧 Running comprehensive constraint cleanup...
-2025/11/20 10:16:58 Cleaning constraints for table: contacts
-2025/11/20 10:16:58 Dropping constraint uni_contacts_code from contacts...
-2025/11/20 10:16:58 ✅ Dropped uni_contacts_code successfully
-2025/11/20 10:16:58 Cleaning constraints for table: sales
-2025/11/20 10:16:58 Dropping constraint uni_sales_code from sales...
-2025/11/20 10:16:58 ✅ Dropped uni_sales_code successfully
-2025/11/20 10:16:58 Cleaning constraints for table: purchases
-2025/11/20 10:16:58 Dropping constraint uni_purchases_code from purchases...
-2025/11/20 10:16:58 ✅ Dropped uni_purchases_code successfully
-2025/11/20 10:16:58 Cleaning constraints for table: journal_entries
-2025/11/20 10:16:58 Cleaning constraints for table: product_units
-2025/11/20 10:16:58 Cleaning constraints for table: accounts
-2025/11/20 10:16:58 Cleaning constraints for table: products
-2025/11/20 10:16:58 Dropping constraint uni_products_code from products...
-2025/11/20 10:16:58 ✅ Dropped uni_products_code successfully
-2025/11/20 10:16:58 ✅ Comprehensive constraint cleanup completed
-2025/11/20 10:16:58 🚀 Running aggressive constraint cleanup for all database objects...
-2025/11/20 10:16:58 ✅ Dropped constraint uni_journal_entries_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint uni_product_units_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint uni_accounts_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint uni_products_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint uni_contacts_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint uni_sales_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint uni_purchases_code from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint products_code_key from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint contacts_code_key from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint sales_code_key from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint purchases_code_key from journal_entries
-2025/11/20 10:16:58 ✅ Dropped constraint journal_entries_code_key from journal_entries
-2025/11/20 10:16:58 Dropping code-related constraint uni_warehouse_locations_code from warehouse_locations...
-2025/11/20 10:16:58 ✅ Dropped uni_warehouse_locations_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_invoice_types_code from invoice_types...
-2025/11/20 10:16:58 ✅ Dropped uni_invoice_types_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_cash_banks_code from cash_banks...
-2025/11/20 10:16:58 ✅ Dropped uni_cash_banks_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_approval_requests_request_code from approval_requests...
-2025/11/20 10:16:58 ✅ Dropped uni_approval_requests_request_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_expense_categories_code from expense_categories...
-2025/11/20 10:16:58 ✅ Dropped uni_expense_categories_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_expenses_code from expenses...
-2025/11/20 10:16:58 ✅ Dropped uni_expenses_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_asset_categories_code from asset_categories...
-2025/11/20 10:16:58 ✅ Dropped uni_asset_categories_code successfully
-2025/11/20 10:16:58 Dropping code-related constraint uni_assets_code from assets...
-2025/11/20 10:16:58 ✅ Dropped uni_assets_code successfully
-2025/11/20 10:16:58 ✅ Aggressive constraint cleanup completed
-2025/11/20 10:17:00 Failed to migrate core models: ERROR: cannot alter type of a column used by a view or rule (SQLSTATE 0A000)
-2025/11/20 10:17:00 Warning: Migration encountered errors but continuing to allow manual column creation...
-2025/11/20 10:17:00 Core models migration completed successfully
-2025/11/20 10:17:00 Ensuring SSOT core tables exist (safe mode)...
-2025/11/20 10:17:00 SSOT core tables ensured.
-2025/11/20 10:17:00 ✅ Simple SSOT journal tables migrated successfully
-2025/11/20 10:17:00 Starting approval models migration...
-2025/11/20 10:17:00 Approval models migration completed successfully
-2025/11/20 10:17:00 Database migration completed successfully
-2025/11/20 10:17:00 Checking and creating missing columns from model definitions...
-2025/11/20 10:17:00 Missing columns check completed
-2025/11/20 10:17:00 Starting enhanced sales model migration...
-2025/11/20 10:17:00 Enhanced sales model fields already exist, skipping migration
-2025/11/20 10:17:00 Starting enhanced new sales fields migration...
-2025/11/20 10:17:00 Updating existing sale_items records with default values for new fields...
-2025/11/20 10:17:00 Updated existing sale_items records with new field defaults
-2025/11/20 10:17:00 Updated sale_items records without matching products
-2025/11/20 10:17:00 Foreign key constraint for tax_account_id already exists, skipping
-2025/11/20 10:17:00 Adding indexes for new sales fields...
-2025/11/20 10:17:00 Enhanced new sales fields migration completed successfully
-2025/11/20 10:17:00 Starting tax field size update to prevent numeric overflow...
-2025/11/20 10:17:00 Tax field sizes already updated, skipping migration
-2025/11/20 10:17:00 🔧 Fixing purchase_items decimal field overflow...
-2025/11/20 10:17:00 ✅ Purchase items field overflow fix completed
-2025/11/20 10:17:00 === Starting Sales Data Integrity Fix ===
-2025/11/20 10:17:00 No sales records found, skipping sales data integrity fix
-2025/11/20 10:17:00 Starting enhanced cash bank model migration...
-2025/11/20 10:17:00 Enhanced cash bank model fields already exist, skipping migration
-2025/11/20 10:17:00 🔄 Running settings table migration...
-2025/11/20 10:17:00 ✅ Settings table created successfully
-2025/11/20 10:17:00 ✅ Settings migration completed successfully
-2025/11/20 10:17:00 🛡️  PRODUCTION MODE: All balance synchronization disabled to protect account balances
-2025/11/20 10:17:00 ✅ Account balances will never be automatically modified during startup
-2025/11/20 10:17:00 Migration 'cleanup_duplicate_notifications_v1.0' already applied at 2025-11-10 10:44:43.767742 +0700 +07, skipping...
-2025/11/20 10:17:00 Checking accounting_periods table for description column...
-2025/11/20 10:17:00 description column already exists in accounting_periods table
-2025/11/20 10:17:00 Fixing accounting_periods table structure...
-2025/11/20 10:17:00 year and month columns do not exist, no fix needed
-2025/11/20 10:17:00 Creating enhanced accounting indexes...
-2025/11/20 10:17:00 Database indexes created successfully
-2025/11/20 10:17:00 Starting Payment Performance Optimization Migration...
-2025/11/20 10:17:00 Payment performance optimization already applied, skipping
-2025/11/20 10:17:00 🔧 Resetting product image fix migration record...
-2025/11/20 10:17:00 ℹ️  Product image migration record not found, nothing to reset
-2025/11/20 10:17:00 ✅ Product image migration reset completed
-2025/11/20 10:17:00 🔧 Starting Product Image Fix Migration...
-2025/11/20 10:17:00 ℹ️  Product Image Fix Migration not found in records, proceeding with migration...
-2025/11/20 10:17:00   🔧 Ensuring image_path column specifications...
-2025/11/20 10:17:00     📊 Current image_path column: type=character varying, nullable=YES, default=
-2025/11/20 10:17:00     🔧 Adjusting image_path column specifications...
-2025/11/20 10:17:00     ✅ Modified image_path column type to VARCHAR(255)
-2025/11/20 10:17:00     ✅ Set default value for image_path column
-2025/11/20 10:17:00   🔧 Cleaning up invalid image paths...
-2025/11/20 10:17:00     ✅ No products with invalid image paths found
-2025/11/20 10:17:00   🔧 Ensuring uploads directory structure...
-2025/11/20 10:17:00     ✅ Upload directory structure ensured
-2025/11/20 10:17:00 📝 Recording migration completion: product_image_fix_v1.0 (applied 3 fixes)
-2025/11/20 10:17:00 ℹ️  Migration record 'product_image_fix_v1.0' already exists - this happens when multiple processes start simultaneously
-2025/11/20 10:17:00 ✅ Product Image Fix Migration completed successfully!
-2025/11/20 10:17:00 📝 Applied fixes: [Image path column validation Invalid image paths cleanup Uploads directory structure]
-2025/11/20 10:17:00 🔄 This is normal behavior and indicates the migration system is working correctly.
-2025/11/20 10:17:00 🔧 Starting Asset Category Migration...
-2025/11/20 10:17:00 ✅ Asset Category Migration already applied at 2025-11-10 10:44:43.90631 +0700 +07
-2025/11/20 10:17:00 Database enhancements migration 'database_enhancements_v2024.1' already applied at 2025-11-10 10:44:44.660704 +0700 +07, skipping...
-2025/11/20 10:17:00 Missing columns fix migration 'fix_missing_columns_v2024.1' already applied at 2025-11-10 10:44:44.734268 +0700 +07, skipping...
-2025/11/20 10:17:00 🔧 Starting remaining issues fix migration...
-2025/11/20 10:17:00 Remaining issues fix migration 'fix_remaining_issues_v2024.1' already applied at 2025-11-10 10:44:44.745723 +0700 +07, skipping...
-2025/11/20 10:17:00 🧹 Running index cleanup and optimization...
-2025/11/20 10:17:00 Dropped problematic index: idx_inventory_product_type
-2025/11/20 10:17:00 Dropped problematic index: idx_financial_ratios_date
-2025/11/20 10:17:00 Dropped problematic index: idx_cash_bank_transactions_flow
-2025/11/20 10:17:00 ✅ Created optimized index: idx_inventory_product_type_fixed
-2025/11/20 10:17:00 ✅ Created optimized index: idx_inventory_reference
-2025/11/20 10:17:00 ✅ Created optimized index: idx_financial_ratios_calc_date
-2025/11/20 10:17:00 ✅ Created optimized index: idx_cash_bank_transactions_flow_fixed
-2025/11/20 10:17:00 ✅ Created optimized index: idx_users_name_search
-2025/11/20 10:17:00 ✅ Index cleanup and optimization completed
-2025/11/20 10:17:00 🔄 Starting auto-migrations...
-2025/11/20 10:17:00 🔧 Running pre-migration compatibility fixes...
-2025/11/20 10:17:00 ℹ️  Description column already exists
-2025/11/20 10:17:00 📊 Updated 0 problematic migrations to SUCCESS status
-2025/11/20 10:17:00 ✅ Pre-migration compatibility fixes completed
-2025/11/20 10:17:00 Including additional migration dir: C:\Users\jeremia.kaligis\Desktop\CMS New\backend\database\migrations
-2025/11/20 10:17:00 Using migration dir: C:\Users\jeremia.kaligis\Desktop\CMS New\backend\migrations
-2025/11/20 10:17:00 Found 86 migration files (combined): [000000000_comprehensive_migration_fix.sql 000000_create_migration_log.down.sql 000000_create_migration_log.up.sql 000001_add_cashbank_gl_validation.down.sql 000001_add_cashbank_gl_validation.up.sql 000025_increase_payment_code_size.down.sql 000025_increase_payment_code_size.up.sql 000_fix_balance_sync_functions.sql 000_fix_concurrent_index.sql 000_fix_sales_performance_index.sql 000_fix_unified_journal_ledger_columns.sql 006_update_tax_field_sizes.sql 007_add_pph_percent_column.sql 007_fix_purchase_items_discount_tax_overflow.sql 008_add_purchase_payment_fields.sql 009_add_purchase_payment_fields.sql 010_add_credit_account_to_purchases.sql 011_purchase_payment_integration.sql 012_purchase_payment_integration_pg.sql 013_payment_performance_optimization.sql 014_fix_purchase_outstanding_amounts.sql 015_create_migration_logs_table.sql 016_fix_bank_mandiri_balance_bug.sql 020_add_sales_data_integrity_constraints.sql 020_create_unified_journal_ssot.sql 021_add_sales_performance_indices.sql 022_comprehensive_model_updates.sql 023_create_purchase_approval_workflows.sql 025_safe_ssot_journal_migration_fix.sql 026_fix_event_log_trigger.sql 026_fix_sync_account_balance_fn_bigint.sql 026_purchase_balance_minimal.sql 027_create_tax_account_settings.sql 027_unified_journal_ssot_add_sync_fn_bigint.sql 028_unified_journal_ssot_sync_fn_bigint_v2.sql 029_prevent_shared_coa_accounts.sql 031_fix_account_mapping_for_tax_and_revenue.sql 032_balance_sync_system_v2_fixed.sql 033_cashbank_coa_asset_sync_trigger.sql 034_create_bank_reconciliation_tables.sql 035_remove_settings_next_numbers.sql 036_add_sales_prefix_settings.sql 037_add_invoice_types_system.sql 038_add_activity_logs_table.sql 038_create_settings_history.sql 039_fix_nullable_user_id_logs.sql 040_lock_critical_tax_accounts.sql 041_add_cost_control_approval_fields.sql 041_create_accounting_periods_table.sql 041_fix_vat_accounts_display.sql 042_fix_account_2102_and_balance_sheet.sql 042_integrate_project_purchase.sql 050_create_daily_updates_table.sql 051_create_milestones_table.sql 052_add_milestone_fields.sql 052_add_tomorrows_plan_to_daily_updates.sql 053_create_weekly_reports_table.sql 054_create_timeline_schedules_table.sql 055_add_category_progress_to_daily_updates.sql 20241220_add_journal_entry_id_to_payments.sql 20250930_auto_balance_sync_triggers.sql 20250930_comprehensive_auto_balance_sync.sql 20251017_disable_auto_balance_sync_triggers.sql 20251024111557_fix_category_unique_constraint.sql 20251114_create_project_budgets_table.sql 20251115_create_project_progress_and_actual_costs.sql 999_fix_migration_logs.sql 999_skip_broken_migrations.sql DROP_MATERIALIZED_VIEW_account_balances.sql add_accounts_code_unique_constraint.sql add_blacklist_indexes.sql add_invoice_types_system.sql add_permission_index.sql balance_sync_system.sql balance_sync_system_fixed.sql cashbank_coa_sync_trigger.sql database_enhancements_v2024_1.sql fix_activity_logs_user_id_nullable.sql fix_audit_logs_schema.sql fix_date_constraint.sql manual_037_fix_rollback_error_info.sql manual_037_rollback_invoice_types_system.sql manual_quick_fix_037_rollback_error.sql manual_reset_037_migration_log.sql manual_status_037_invoice_types.sql prevent_duplicate_accounts.sql]
-2025/11/20 10:17:00 🔄 Running: 055_add_category_progress_to_daily_updates.sql
-2025/11/20 10:17:00 🏠 Running complex migration (SSOT): 055_add_category_progress_to_daily_updates.sql
-2025/11/20 10:17:00 🔧 Progress: 1/1 statements...
-2025/11/20 10:17:00 ✅ Complex migration completed: 055_add_category_progress_to_daily_updates.sql (10ms)
-2025/11/20 10:17:00 ✅ Database migrations: 86 completed successfully
-2025/11/20 10:17:00 🔧 Installing balance sync system...
-2025/11/20 10:17:00 🔧 Executing balance sync migration: 20250930_comprehensive_auto_balance_sync.sql
-2025/11/20 10:17:00    ⏭️  Skipping statement 21 - required function 'recalculate_cashbank_balance' not available yet
-2025/11/20 10:17:00    ⏭️  Skipping statement 22 - required function 'recalculate_cashbank_balance' not available yet
-2025/11/20 10:17:00    ⏭️  Skipping statement 31 - function 'recalculate_cashbank_balance' not found for COMMENT
-2025/11/20 10:17:00    ⏭️  Skipping statement 32 - function 'validate_account_balance_consistency' not found for COMMENT
-2025/11/20 10:17:00    ⏭️  Skipping statement 33 - function 'manual_sync_cashbank_coa' not found for COMMENT
-2025/11/20 10:17:00    ⏭️  Skipping statement 35 - function 'ensure_cashbank_not_header' not found for COMMENT
-2025/11/20 10:17:00 ✅ Balance sync system installed successfully
-2025/11/20 10:17:00 ✅ Balance sync system installed successfully
-2025/11/20 10:17:00 🔒 Starting duplicate accounts prevention migration...
-2025/11/20 10:17:00 Using inline migration for better control...
-2025/11/20 10:17:00 📝 Applying inline migration for duplicate prevention...
-2025/11/20 10:17:00 ✅ No duplicate accounts found
-2025/11/20 10:17:00 🔒 Creating unique constraint on account code...
-2025/11/20 10:17:00 ✅ Unique index created successfully
-2025/11/20 10:17:00 🔧 Installing validation trigger...
-2025/11/20 10:17:00 ✅ Validation trigger installed successfully
-2025/11/20 10:17:00 📊 Creating monitoring view...
-2025/11/20 10:17:00 ✅ Monitoring view created successfully
-2025/11/20 10:17:00 ✅ Inline migration completed successfully!
-2025/11/20 10:17:00 🔧 Running Cash Bank-COA Sync Migration...
-2025/11/20 10:17:00 ✅ Cash Bank-COA Sync Migration already applied, skipping...
-2025/11/20 10:17:00 [AUTO-FIX] Starting revenue duplication fix...
-2025/11/20 10:17:00 [AUTO-FIX] Step 1/5: Marking parent accounts as headers...
-2025/11/20 10:17:00 [AUTO-FIX] Step 2/5: Standardizing revenue account names in journal_entries...
-2025/11/20 10:17:00 [AUTO-FIX] ℹ️  Skipping journal_entries (4xxx) standardization: columns not present
-2025/11/20 10:17:00 [AUTO-FIX] Step 3/5: Standardizing expense account names in journal_entries...
-2025/11/20 10:17:00 [AUTO-FIX] ℹ️  Skipping journal_entries (5xxx) standardization: columns not present
-2025/11/20 10:17:00 [AUTO-FIX] Step 4/5: Standardizing unified journal lines (4xxx)...
-2025/11/20 10:17:00 [AUTO-FIX] ℹ️  Skipping unified_journal_lines (4xxx): columns not present
-2025/11/20 10:17:00 [AUTO-FIX] Step 5/5: Standardizing unified journal lines (5xxx)...
-2025/11/20 10:17:00 [AUTO-FIX] ℹ️  Skipping unified_journal_lines (5xxx): columns not present
-2025/11/20 10:17:00 [AUTO-FIX] Verifying fix...
-2025/11/20 10:17:00 [AUTO-FIX] ✅ Verification passed: No duplicate account names
-2025/11/20 10:17:00 [AUTO-FIX] Revenue duplication fix completed!
-2025/11/20 10:17:00 🔍 Checking audit_logs schema...
-2025/11/20 10:17:00 ✅ Action column size already correct (VARCHAR(50))
-2025/11/20 10:17:00 ✅ Notes column already exists
-2025/11/20 10:17:00 
-2025/11/20 10:17:00 ✅ audit_logs schema is already up to date - no changes needed
-2025/11/20 10:17:00 ✅ Activity logs user_id fix already applied
-2025/11/20 10:17:00 ✅ Auto-migrations completed
-2025/11/20 10:17:00 ⚡ Starting SSOT Journal System verification...
-2025/11/20 10:17:00 🔍 Checking SSOT Journal Migration status...
-2025/11/20 10:17:00 ✅ SSOT migration has been previously applied (count: 3)
-2025/11/20 10:17:00 ✅ SSOT tables verified successfully
-2025/11/20 10:17:00 ✅ SSOT Journal System is ready and verified!
-2025/11/20 10:17:00 Permissions table migrated successfully
-2025/11/20 10:17:00 Default permissions created for user: tester_212197252 (role: admin)
-2025/11/20 10:17:00 Starting database seeding...
-2025/11/20 10:17:00 🔄 Starting user seeding with robust UPSERT...
-2025/11/20 10:17:00 ⚠️  Warning: Failed to create user admin: ERROR: duplicate key value violates unique constraint "uni_users_email" (SQLSTATE 23505)
-2025/11/20 10:17:00 ⏭️  User finance already exists, skipping
-2025/11/20 10:17:00 ⏭️  User inventory already exists, skipping
-2025/11/20 10:17:00 ⏭️  User director already exists, skipping
-2025/11/20 10:17:00 ⏭️  User employee already exists, skipping
-2025/11/20 10:17:00 📊 User seeding completed: 0/5 users processed successfully
-2025/11/20 10:17:00 Permissions table migrated successfully
-2025/11/20 10:17:00 🔒 PRODUCTION MODE: Seeding accounts with improved duplicate handling...
-2025/11/20 10:17:00 🔒 Account exists: 1000 - ASET LANCAR (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 1101 - KAS PROYEK (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 1102 - BANK (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 1201 - DEPOSIT (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 1114 - PPH 21 DIBAYAR DIMUKA (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 1115 - PPH 23 DIBAYAR DIMUKA (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 1240 - PPN MASUKAN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 2000 - KEWAJIBAN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 2101 - UTANG USAHA (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 2103 - PPN KELUARAN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 2104 - PPH YANG DIPOTONG (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 2111 - UTANG PPH 21 (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 2112 - UTANG PPH 23 (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 3000 - EKUITAS (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 3101 - MODAL PEMILIK (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 7000 - LABA / RUGI PROYEK (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 4000 - PENDAPATAN PROYEK (INCOME) (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 4101 - PENDAPATAN TERMIN 1 (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 4102 - PENDAPATAN TERMIN 2 (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 4201 - RETENSI (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5000 - BEBAN LANGSUNG PROYEK (DIRECT COST) (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5100 - MATERIAL BANGUNAN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5101 - SEMEN & PASIR (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5102 - BESI & BAJA (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5103 - PLUMBING & FITTING (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5104 - KACA, ALUMINIUM (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5105 - CAT & FINISHING (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5200 - SEWA ALAT BERAT / EQUIPMENT HIRE (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5201 - SEWA ALAT BERAT (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5202 - TRANSPORT & MOBILISASI (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5300 - TENAGA KERJA (LABOUR) (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5301 - MANDOR (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5302 - TUKANG & HELPER (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5303 - OVERTIME & BONUS (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5400 - BIAYA OPERASIONAL SITE (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5401 - AIR & LISTRIK KERJA (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5402 - TRANSPORTASI & TOL (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5403 - KONSUMSI & ENTERTAIN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5404 - AKOMODASI (KOSAN, HOTEL) (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5405 - ATK & ALAT KECIL (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 5406 - KOMPENSASI & KEAMANAN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 6000 - OVERHEAD KANTOR & ADMIN (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 6101 - ADMIN FEE (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 6102 - PAJAK PROYEK (PPH, PPN) (preserving balance)
-2025/11/20 10:17:00 🔒 Account exists: 6103 - FEE MARKETING (preserving balance)
-2025/11/20 10:17:00 ✅ Account seeding completed successfully
-2025/11/20 10:17:00 ✅ Accounts seeded successfully with duplicate protection
-2025/11/20 10:17:00 Seeding contacts...
-2025/11/20 10:17:00 Seed contacts already exist (3 records), skipping seed
-2025/11/20 10:17:00 Seed products already exist (3 records), skipping seed
-2025/11/20 10:17:00 Seed permissions already exist (3 records), skipping seed
-2025/11/20 10:17:00 Database seeding completed successfully
-2025/11/20 10:17:00 🚀 Running startup tasks...
-2025/11/20 10:17:00 🔧 Fixing account header status...
-2025/11/20 10:17:00 ✅ Account header status fixed successfully in 1.584ms
-2025/11/20 10:17:00 🔍 Validating account hierarchy...
-2025/11/20 10:17:00 ✅ Account hierarchy validated successfully - 62 accounts processed in 703.2µs
-2025/11/20 10:17:00 ✅ Startup tasks completed successfully
-2025/11/20 10:17:00 ⚡ Starting database performance optimization...
-2025/11/20 10:17:00 🚀 Starting full database optimization...
-2025/11/20 10:17:00 🔧 Starting database index optimization...
-2025/11/20 10:17:00 ⚠️ Warning: Failed to create index idx_sales_status_customer on sales: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:00 ⚠️ Warning: Failed to create index idx_sales_outstanding on sales: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:00 ⚠️ Warning: Failed to create index idx_sales_date_status on sales: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:00 ⚠️ Warning: Failed to create index idx_payments_contact_date on payments: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:00 ⚠️ Warning: Failed to create index idx_payments_status_method on payments: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_cash_banks_active on cash_banks: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_journal_source on ssot_journal_entries: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_journal_date_status on ssot_journal_entries: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_products_category_active on products: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_products_stock on products: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_accounts_code_parent on accounts: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_accounts_type_active on accounts: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_contacts_type_name on contacts: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_purchases_vendor_status on purchases: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:01 ⚠️ Warning: Failed to create index idx_purchases_date_status on purchases: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
-2025/11/20 10:17:02 🎯 Database optimization complete: 0/15 indexes created successfully
-2025/11/20 10:17:02 ⚙️ Applying database optimization settings...
-2025/11/20 10:17:02 ✅ Database connection pool optimized
-2025/11/20 10:17:02 ⚠️ Warning: Enable query cache for session failed: ERROR: unrecognized configuration parameter "query_cache_type" (SQLSTATE 42704)
-2025/11/20 10:17:02 ⚠️ Warning: Set query cache size to 64MB failed: ERROR: unrecognized configuration parameter "query_cache_size" (SQLSTATE 42704)
-2025/11/20 10:17:02 🔍 Analyzing database for slow query patterns...
-2025/11/20 10:17:02 📊 Largest tables by size:
-2025/11/20 10:17:02 ⚠️ Query failed: ERROR: syntax error at or near "'Size (MB)'" (SQLSTATE 42601)
-2025/11/20 10:17:02 📊 Tables with high row counts:
-2025/11/20 10:17:02 ⚠️ Query failed: ERROR: syntax error at or near "'Table Name'" (SQLSTATE 42601)
-2025/11/20 10:17:02 🎯 Full database optimization completed in 1.5330759s
-2025/11/20 10:17:02 ✅ Database optimization completed successfully!
-2025/11/20 10:17:02 Swagger docs not found at docs\swagger.json, skipping dynamic update
-2025/11/20 10:17:02 🎆 Setting up Enhanced Swagger with authentication support...
-2025/11/20 10:17:02 🚀 Setting up enhanced Swagger routes with authentication support...
-2025/11/20 10:17:02 🔍 Starting enhanced Swagger validation and fixing...
-2025/11/20 10:17:02 ⚠️ swagger.json not found at docs\swagger.json
-2025/11/20 10:17:02 ⚠️ Enhanced Swagger errors detected:
-2025/11/20 10:17:02   - swagger.json not found
-2025/11/20 10:17:02 ✅ Enhanced Dynamic Swagger UI available at: http://localhost:8080/enhanced-swagger/index.html
-2025/11/20 10:17:02 🔐 Authentication Helper built-in - login with admin@company.com / admin123
-2025/11/20 10:17:02 🔍 Swagger Debug Tool available at: http://localhost:8080/swagger-debug.html
-2025/11/20 10:17:02 🌟 Enhanced JSON endpoint: http://localhost:8080/openapi/enhanced-doc.json
-2025/11/20 10:17:02 ✅ Enhanced Swagger routes configured successfully!
-2025/11/20 10:17:02 📁 Serving static files from: C:\Users\jeremia.kaligis\Desktop\CMS New\backend\uploads
-2025/11/20 10:17:02 🖼️  Registering /uploads route handler...
-2025/11/20 10:17:02 ✅ /uploads route handler registered!
-2025/11/20 10:17:02 Audit logs table exists, checking for missing columns...
-2025/11/20 10:17:02 ✅ Audit logs table migration completed safely
-2025/11/20 10:17:02 ✅ Activity Logger initialized successfully
-2025/11/20 10:17:02 🔗 Setting up frontend compatibility routes...
-2025/11/20 10:17:02 ✅ Frontend compatibility routes configured successfully
-2025/11/20 10:17:02 ✅ Legacy payment routes disabled - using SalesJournalServiceV2 consistent flow only
-2025/11/20 10:17:02 ⚠️  Swagger spec not found: swagger spec not found (looked for docs/swagger.json and docs/swagger_comprehensive.json)
-2025/11/20 10:17:02 ℹ️  Serving minimal embedded spec so Swagger UI can still load. Run 'swag init' to generate full docs.
-2025/11/20 10:17:02 📄 Serving Swagger spec from: embedded-minimal
-2025/11/20 10:17:02 Server starting on port 8080
-2025/11/20 10:17:14 [API-USAGE] POST /api/v1/auth/register - 69ms
-2025/11/20 10:17:14 Login attempt - Email: tester_1659698247@example.com, Password length: 11
-2025/11/20 10:17:14 [API-USAGE] POST /api/v1/auth/login - 67ms
-2025/11/20 10:17:14 [API-USAGE] POST /api/v1/projects - 8ms
-2025/11/20 10:17:14 📝 CreateDailyUpdate - Project ID: 10, Content-Type: application/json
-2025/11/20 10:17:14 💾 Calling service.CreateDailyUpdate...
-2025/11/20 10:17:14 ✅ Daily update created successfully - ID: 16
-2025/11/20 10:17:14 [API-USAGE] POST /api/v1/projects/10/daily-updates - 5ms
-2025/11/20 10:17:14 [API-USAGE] GET /api/v1/projects/10 - 13ms
-2025/11/20 10:17:14 [API-USAGE] PUT /api/v1/projects/10/daily-updates/16 - 5ms
-2025/11/20 10:17:14 [API-USAGE] GET /api/v1/projects/10 - 2ms
-2025/11/20 10:18:34 [API-USAGE] POST /api/v1/auth/register - 95ms
-2025/11/20 10:18:34 Login attempt - Email: tester_1476396169@example.com, Password length: 11
-2025/11/20 10:18:34 [API-USAGE] POST /api/v1/auth/login - 100ms
-2025/11/20 10:18:34 [API-USAGE] POST /api/v1/projects - 4ms
-2025/11/20 10:18:34 📝 CreateDailyUpdate - Project ID: 11, Content-Type: application/json
-2025/11/20 10:18:34 💾 Calling service.CreateDailyUpdate...
-2025/11/20 10:18:34 ✅ Daily update created successfully - ID: 17
-2025/11/20 10:18:34 [API-USAGE] POST /api/v1/projects/11/daily-updates - 5ms
-2025/11/20 10:18:34 [API-USAGE] GET /api/v1/projects/11 - 8ms
-2025/11/20 10:18:34 [API-USAGE] PUT /api/v1/projects/11/daily-updates/17 - 2ms
-2025/11/20 10:18:34 [API-USAGE] GET /api/v1/projects/11 - 4ms
-2025/11/20 10:19:21 [API-USAGE] POST /api/v1/auth/register - 103ms
-2025/11/20 10:19:21 Login attempt - Email: tester_1658292945@example.com, Password length: 11
-2025/11/20 10:19:21 [API-USAGE] POST /api/v1/auth/login - 101ms
-2025/11/20 10:19:21 [API-USAGE] POST /api/v1/projects - 4ms
-2025/11/20 10:19:21 📝 CreateDailyUpdate - Project ID: 12, Content-Type: application/json
-2025/11/20 10:19:21 💾 Calling service.CreateDailyUpdate...
-2025/11/20 10:19:21 ✅ Daily update created successfully - ID: 18
-2025/11/20 10:19:21 [API-USAGE] POST /api/v1/projects/12/daily-updates - 5ms
-2025/11/20 10:19:21 [API-USAGE] GET /api/v1/projects/12 - 4ms
-2025/11/20 10:19:21 [API-USAGE] PUT /api/v1/projects/12/daily-updates/18 - 5ms
-2025/11/20 10:19:21 [API-USAGE] GET /api/v1/projects/12 - 4ms
-2025/11/20 10:19:48 [API-USAGE] POST /api/v1/auth/register - 123ms
-2025/11/20 10:19:48 Login attempt - Email: tester_978465862@example.com, Password length: 11
-2025/11/20 10:19:48 [API-USAGE] POST /api/v1/auth/login - 108ms
-2025/11/20 10:19:48 [API-USAGE] POST /api/v1/projects - 4ms
-2025/11/20 10:19:48 📝 CreateDailyUpdate - Project ID: 13, Content-Type: application/json
-2025/11/20 10:19:48 💾 Calling service.CreateDailyUpdate...
-2025/11/20 10:19:48 ✅ Daily update created successfully - ID: 19
-2025/11/20 10:19:48 [API-USAGE] POST /api/v1/projects/13/daily-updates - 3ms
-2025/11/20 10:19:48 [API-USAGE] GET /api/v1/projects/13 - 3ms
-2025/11/20 10:19:48 [API-USAGE] PUT /api/v1/projects/13/daily-updates/19 - 9ms
-2025/11/20 10:19:48 [API-USAGE] GET /api/v1/projects/13 - 2ms
-2025/11/20 10:21:47 [API-USAGE] GET /api/v1/auth/validate-token - 5ms
-2025/11/20 10:21:47 [API-USAGE] GET /api/v1/auth/validate-token - 4ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/auth/validate-token - 4ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/auth/validate-token - 3ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 22ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/permissions/me - 8ms
-2025/11/20 10:21:48 [PERMISSION DEBUG] UserID: 1, Role: admin, Module: reports, Action: view
-2025/11/20 10:21:48 [PERMISSION DEBUG] Found custom permission record for user 1, module reports
-2025/11/20 10:21:48 [PERMISSION DEBUG] Custom permission result: true
-2025/11/20 10:21:48 [PERMISSION DEBUG] Final result - hasPermission: true
-2025/11/20 10:21:48 [PERMISSION DEBUG] Access granted for user 1, role admin, module reports, action view
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/dashboard/analytics - 59ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 99ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/permissions/me - 8ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 116ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:21:48 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:21:49 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/projects - 7ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/projects - 3ms
-2025/11/20 10:22:05 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:22:06 [API-USAGE] GET /api/v1/permissions/me - 2ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 13ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/projects/13 - 5ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/projects/13 - 8ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:12 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:14 [API-USAGE] GET /api/v1/projects/13/daily-updates - 11ms
-2025/11/20 10:22:14 [API-USAGE] GET /api/v1/projects/13/daily-updates - 10ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 39ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/notifications/approvals - 64ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 63ms
-2025/11/20 10:22:25 [PERMISSION DEBUG] UserID: 1, Role: admin, Module: reports, Action: view
-2025/11/20 10:22:25 [PERMISSION CACHE] Cache hit for user 1, module reports, action view: true
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 141ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 274ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/notifications/approvals - 189ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 211ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/dashboard/analytics - 239ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/permissions/me - 264ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:25 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 19ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/notifications/approvals - 47ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 48ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 59ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/notifications/approvals - 13ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/projects - 9ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:26 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 17ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/notifications/approvals - 24ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 12ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 21ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/notifications/approvals - 11ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:22:32 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/projects - 6ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:34 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:22:37 [API-USAGE] DELETE /api/v1/projects/1 - 4ms
-2025/11/20 10:22:37 [API-USAGE] GET /api/v1/projects - 3ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/notifications/approvals - 68ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 56ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 57ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 58ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/notifications/approvals - 2ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 3ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 3ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:22:39 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:23:39 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 10:23:39 [API-USAGE] GET /api/v1/notifications/approvals - 18ms
-2025/11/20 10:23:39 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 19ms
-2025/11/20 10:23:39 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 21ms
-2025/11/20 10:24:40 [API-USAGE] GET /api/v1/notifications/approvals - 2ms
-2025/11/20 10:24:40 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 3ms
-2025/11/20 10:24:40 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 10:24:40 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 10:25:40 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 10:25:40 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:25:40 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:25:40 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 3ms
-2025/11/20 10:26:40 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:26:40 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 10:26:40 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 10:26:40 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 10:27:40 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 84ms
-2025/11/20 10:27:40 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 85ms
-2025/11/20 10:27:40 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 88ms
-2025/11/20 10:27:40 [API-USAGE] GET /api/v1/notifications/approvals - 98ms
-2025/11/20 10:28:40 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 10:28:40 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 10:28:40 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 14ms
-2025/11/20 10:28:40 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 21ms
-2025/11/20 10:29:40 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 10:29:40 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 10:29:40 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 10:29:40 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/auth/validate-token - 4ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/auth/validate-token - 4ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/permissions/me - 2ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/permissions/me - 2ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 10:30:33 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/projects - 7ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/projects - 3ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:30:38 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 10:30:41 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 10:30:42 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:30:42 [API-USAGE] GET /api/v1/permissions/me - 8ms
-2025/11/20 10:30:42 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 10:30:42 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 10:31:41 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 10:31:41 [API-USAGE] GET /api/v1/notifications/approvals - 11ms
-2025/11/20 10:31:41 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:31:41 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 11ms
-2025/11/20 10:32:42 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 111ms
-2025/11/20 10:32:42 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 119ms
-2025/11/20 10:32:42 [API-USAGE] GET /api/v1/notifications/approvals - 123ms
-2025/11/20 10:32:42 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 184ms
-2025/11/20 10:33:41 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 10:33:41 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:33:41 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:33:41 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 15ms
-2025/11/20 10:33:50 [API-USAGE] POST /api/v1/projects - 24ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/projects/14 - 3ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/projects/14 - 8ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/permissions/me - 8ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:33:51 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 10:34:52 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 10:34:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 10:34:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 10:34:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 10:35:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:35:52 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 10:35:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 10:35:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 15ms
-2025/11/20 10:36:52 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:36:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:36:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:36:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 10:37:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 95ms
-2025/11/20 10:37:52 [API-USAGE] GET /api/v1/notifications/approvals - 98ms
-2025/11/20 10:37:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 99ms
-2025/11/20 10:37:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 103ms
-2025/11/20 10:38:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 10:38:52 [API-USAGE] GET /api/v1/notifications/approvals - 13ms
-2025/11/20 10:38:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:38:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 10:39:52 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 10:39:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 10:39:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:39:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:40:52 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 10:40:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:40:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 10:40:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 10:41:53 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 10:41:53 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:41:53 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 10:41:53 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 10:42:54 [API-USAGE] GET /api/v1/notifications/approvals - 96ms
-2025/11/20 10:42:54 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 98ms
-2025/11/20 10:42:54 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 103ms
-2025/11/20 10:42:54 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 110ms
-2025/11/20 10:43:55 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:43:55 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 10:43:55 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 19ms
-2025/11/20 10:43:55 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 10:44:56 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:44:56 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:44:56 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 10:44:56 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 10:45:57 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 10:45:57 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 10:45:57 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 10:45:57 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 3ms
-2025/11/20 10:46:58 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:46:58 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:46:58 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 3ms
-2025/11/20 10:46:58 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 10:47:59 [API-USAGE] GET /api/v1/notifications/approvals - 121ms
-2025/11/20 10:47:59 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 121ms
-2025/11/20 10:47:59 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 127ms
-2025/11/20 10:47:59 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 129ms
-2025/11/20 10:49:00 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 10:49:00 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:49:00 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 10:49:00 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 11ms
-2025/11/20 10:50:01 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:50:01 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 10:50:01 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 10:50:01 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 10:50:52 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 10:50:52 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 10:50:52 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 10:50:52 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 27ms
-2025/11/20 10:51:53 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 10:51:53 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 10:51:53 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 10:51:53 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 10:52:54 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 10:52:54 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 10:52:54 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 10:52:54 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 10:53:55 [API-USAGE] GET /api/v1/notifications/approvals - 107ms
-2025/11/20 10:53:55 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 97ms
-2025/11/20 10:53:55 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 101ms
-2025/11/20 10:53:55 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 102ms
-2025/11/20 10:54:56 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 10:54:56 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 10:54:56 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 15ms
-2025/11/20 10:54:56 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 19ms
-2025/11/20 10:55:57 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:55:57 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 10:55:57 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 10:55:57 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 11ms
-2025/11/20 10:56:58 [API-USAGE] GET /api/v1/notifications/approvals - 11ms
-2025/11/20 10:56:58 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 10:56:58 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 12ms
-2025/11/20 10:56:58 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 16ms
-2025/11/20 10:57:59 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 10:57:59 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 10:57:59 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 10:57:59 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 15ms
-2025/11/20 10:59:00 [API-USAGE] GET /api/v1/notifications/approvals - 106ms
-2025/11/20 10:59:00 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 106ms
-2025/11/20 10:59:00 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 102ms
-2025/11/20 10:59:00 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 106ms
-2025/11/20 11:00:01 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:00:01 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 11:00:01 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 11:00:01 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 13ms
-2025/11/20 11:01:02 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 11:01:02 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 13ms
-2025/11/20 11:01:02 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 15ms
-2025/11/20 11:01:02 [API-USAGE] GET /api/v1/notifications/approvals - 22ms
-2025/11/20 11:02:03 [API-USAGE] GET /api/v1/notifications/approvals - 11ms
-2025/11/20 11:02:03 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 11:02:03 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:02:03 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 11:03:04 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:03:04 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 11:03:04 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 11:03:04 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 11:04:05 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 84ms
-2025/11/20 11:04:05 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 91ms
-2025/11/20 11:04:05 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 91ms
-2025/11/20 11:04:05 [API-USAGE] GET /api/v1/notifications/approvals - 100ms
-2025/11/20 11:05:06 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 11:05:06 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 11:05:06 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 11:05:06 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 11:06:07 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 11:06:07 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 11:06:07 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 11:06:07 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 11:07:08 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 11:07:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:07:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 11:07:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 11:08:09 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 11:08:09 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 11:08:09 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 11:08:09 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 15ms
-2025/11/20 11:08:59 Login attempt - Email: admin@example.com, Password length: 11
-2025/11/20 11:08:59 [API-USAGE] POST /api/v1/auth/login - 7ms
-2025/11/20 11:08:59 🔐 SECURITY: Access denied 401 for POST /api/v1/auth/login from ::1 (UA: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.22621.4249)
-2025/11/20 11:09:10 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 99ms
-2025/11/20 11:09:10 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 112ms
-2025/11/20 11:09:10 [API-USAGE] GET /api/v1/notifications/approvals - 120ms
-2025/11/20 11:09:10 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 124ms
-2025/11/20 11:09:28 [API-USAGE] POST /api/v1/auth/register - 153ms
-2025/11/20 11:09:28 Login attempt - Email: checker_649164815@example.com, Password length: 11
-2025/11/20 11:09:28 [API-USAGE] POST /api/v1/auth/login - 91ms
-2025/11/20 11:09:28 [API-USAGE] GET /api/v1/projects - 7ms
-2025/11/20 11:10:05 [API-USAGE] POST /api/v1/auth/register - 90ms
-2025/11/20 11:10:05 Login attempt - Email: tester_394856549@example.com, Password length: 11
-2025/11/20 11:10:05 [API-USAGE] POST /api/v1/auth/login - 88ms
-2025/11/20 11:10:05 [API-USAGE] POST /api/v1/projects - 4ms
-2025/11/20 11:10:11 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 11:10:11 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 11:10:11 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 11:10:11 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 14ms
-2025/11/20 11:10:59 [API-USAGE] POST /api/v1/auth/register - 90ms
-2025/11/20 11:10:59 Login attempt - Email: updater_1191892209@example.com, Password length: 11
-2025/11/20 11:10:59 [API-USAGE] POST /api/v1/auth/login - 91ms
-2025/11/20 11:10:59 [API-USAGE] PUT /api/v1/projects/14 - 5ms
-2025/11/20 11:11:12 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 11:11:12 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 11:11:12 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 11:11:12 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 11:12:10 [API-USAGE] POST /api/v1/auth/register - 74ms
-2025/11/20 11:12:10 Login attempt - Email: updater_1304617164@example.com, Password length: 11
-2025/11/20 11:12:10 [API-USAGE] POST /api/v1/auth/login - 67ms
-2025/11/20 11:12:10 [API-USAGE] GET /api/v1/projects/14 - 6ms
-2025/11/20 11:12:10 [API-USAGE] PUT /api/v1/projects/14 - 7ms
-2025/11/20 11:12:13 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 11:12:13 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 11:12:13 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 11:12:13 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:13:14 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 11:13:14 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 11:13:14 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 11:13:14 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:14:15 [API-USAGE] GET /api/v1/notifications/approvals - 89ms
-2025/11/20 11:14:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 94ms
-2025/11/20 11:14:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 172ms
-2025/11/20 11:14:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 179ms
-2025/11/20 11:15:12 [API-USAGE] POST /api/v1/auth/register - 91ms
-2025/11/20 11:15:12 Login attempt - Email: final_test_668484312@example.com, Password length: 11
-2025/11/20 11:15:12 [API-USAGE] POST /api/v1/auth/login - 110ms
-2025/11/20 11:15:12 [API-USAGE] POST /api/v1/projects - 7ms
-2025/11/20 11:15:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:15:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 11:15:16 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:15:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 3ms
-2025/11/20 11:16:15 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:16:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 11:16:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 11:16:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 11:16:17 [API-USAGE] GET /api/v1/auth/validate-token - 5ms
-2025/11/20 11:16:17 [API-USAGE] GET /api/v1/projects/14 - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/auth/validate-token - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/projects/14 - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/approvals - 13ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/permissions/me - 17ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 11:16:18 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 11:16:21 [API-USAGE] GET /api/v1/projects/14/daily-updates - 7ms
-2025/11/20 11:16:21 [API-USAGE] GET /api/v1/projects/14/daily-updates - 7ms
-2025/11/20 11:17:19 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:17:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 11:17:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 11:17:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 11:18:19 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:18:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 11:18:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 11:18:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 11:19:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 85ms
-2025/11/20 11:19:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 90ms
-2025/11/20 11:19:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 95ms
-2025/11/20 11:19:19 [API-USAGE] GET /api/v1/notifications/approvals - 103ms
-2025/11/20 11:20:19 [API-USAGE] GET /api/v1/notifications/approvals - 16ms
-2025/11/20 11:20:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 11:20:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 17ms
-2025/11/20 11:20:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 17ms
-2025/11/20 11:21:19 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 11:21:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 11:21:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 11:21:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 11:22:19 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 11:22:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 13ms
-2025/11/20 11:22:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 16ms
-2025/11/20 11:22:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 20ms
-2025/11/20 11:23:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:23:19 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 11:23:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 11:23:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 18ms
-2025/11/20 11:24:20 [API-USAGE] GET /api/v1/notifications/approvals - 105ms
-2025/11/20 11:24:20 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 127ms
-2025/11/20 11:24:20 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 119ms
-2025/11/20 11:24:20 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 121ms
-2025/11/20 11:25:21 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 11:25:21 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/approvals from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:25:21 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 3ms
-2025/11/20 11:25:21 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/type/MIN_STOCK from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:25:21 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:25:21 🔐 SECURITY: Access denied 401 for GET /api/v1/dashboard/stock-alerts from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:25:21 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 11:25:21 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/type/REORDER_ALERT from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:26:22 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 11:26:22 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/type/MIN_STOCK from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:26:22 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 11:26:22 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/approvals from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:26:22 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 28ms
-2025/11/20 11:26:22 🔐 SECURITY: Access denied 401 for GET /api/v1/dashboard/stock-alerts from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:26:22 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 33ms
-2025/11/20 11:26:22 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/type/REORDER_ALERT from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:27:23 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 11:27:23 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/approvals from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:27:23 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 11:27:23 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/type/MIN_STOCK from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:27:23 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 11:27:23 🔐 SECURITY: Access denied 401 for GET /api/v1/dashboard/stock-alerts from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:27:23 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 11:27:23 🔐 SECURITY: Access denied 401 for GET /api/v1/notifications/type/REORDER_ALERT from ::1 (UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36)
-2025/11/20 11:58:34 Login attempt - Email: admin@company.com, Password length: 11
-2025/11/20 11:58:35 Deactivated 1 old sessions for user 1 during login
-2025/11/20 11:58:35 [API-USAGE] POST /api/v1/auth/login - 291ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/notifications/approvals - 27ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 21ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 118ms
-2025/11/20 11:58:36 [PERMISSION DEBUG] UserID: 1, Role: admin, Module: reports, Action: view
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/permissions/me - 11ms
-2025/11/20 11:58:36 [PERMISSION DEBUG] Found custom permission record for user 1, module reports
-2025/11/20 11:58:36 [PERMISSION DEBUG] Custom permission result: true
-2025/11/20 11:58:36 [PERMISSION DEBUG] Final result - hasPermission: true
-2025/11/20 11:58:36 [PERMISSION DEBUG] Access granted for user 1, role admin, module reports, action view
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 125ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/permissions/me - 9ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/dashboard/analytics - 100ms
-2025/11/20 11:58:36 [API-USAGE] GET /api/v1/notifications/approvals - 206ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 9ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/projects - 8ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 15ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/projects - 7ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 11:58:38 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 11:58:45 [API-USAGE] GET /api/v1/permissions/me - 9ms
-2025/11/20 11:58:46 [API-USAGE] GET /api/v1/projects/14 - 12ms
-2025/11/20 11:58:46 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:46 [API-USAGE] GET /api/v1/projects/14 - 4ms
-2025/11/20 11:58:46 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:46 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 11:58:48 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:58:49 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 11:58:49 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:49 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:49 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/projects - 8ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 11:58:50 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 11:58:53 [API-USAGE] DELETE /api/v1/projects/16 - 7ms
-2025/11/20 11:58:53 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 11:58:56 [API-USAGE] DELETE /api/v1/projects/15 - 3ms
-2025/11/20 11:58:56 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 11:58:58 [API-USAGE] DELETE /api/v1/projects/13 - 9ms
-2025/11/20 11:58:58 [API-USAGE] GET /api/v1/projects - 7ms
-2025/11/20 11:58:59 [API-USAGE] DELETE /api/v1/projects/12 - 9ms
-2025/11/20 11:59:00 [API-USAGE] GET /api/v1/projects - 7ms
-2025/11/20 11:59:01 [API-USAGE] DELETE /api/v1/projects/11 - 4ms
-2025/11/20 11:59:01 [API-USAGE] GET /api/v1/projects - 3ms
-2025/11/20 11:59:02 [API-USAGE] DELETE /api/v1/projects/10 - 6ms
-2025/11/20 11:59:02 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 11:59:03 [API-USAGE] DELETE /api/v1/projects/9 - 6ms
-2025/11/20 11:59:03 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 11:59:05 [API-USAGE] DELETE /api/v1/projects/8 - 5ms
-2025/11/20 11:59:05 [API-USAGE] GET /api/v1/projects - 5ms
-2025/11/20 11:59:06 [API-USAGE] DELETE /api/v1/projects/7 - 8ms
-2025/11/20 11:59:06 [API-USAGE] GET /api/v1/projects - 4ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/projects/14 - 5ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/projects/14 - 3ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 11:59:07 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 11:59:10 [API-USAGE] GET /api/v1/projects/14/daily-updates - 5ms
-2025/11/20 11:59:10 [API-USAGE] GET /api/v1/projects/14/daily-updates - 5ms
-2025/11/20 12:00:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 17ms
-2025/11/20 12:00:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 17ms
-2025/11/20 12:00:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 20ms
-2025/11/20 12:00:08 [API-USAGE] GET /api/v1/notifications/approvals - 20ms
-2025/11/20 12:01:08 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 12:01:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 12:01:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 12:01:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 12:02:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:02:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 12:02:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 12:02:08 [API-USAGE] GET /api/v1/notifications/approvals - 16ms
-2025/11/20 12:03:08 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 12:03:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 12:03:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 12:03:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 12:04:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 94ms
-2025/11/20 12:04:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 103ms
-2025/11/20 12:04:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 107ms
-2025/11/20 12:04:08 [API-USAGE] GET /api/v1/notifications/approvals - 114ms
-2025/11/20 12:05:08 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:05:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:05:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 14ms
-2025/11/20 12:05:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 15ms
-2025/11/20 12:06:08 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:06:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 12:06:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 11ms
-2025/11/20 12:06:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 12:07:09 [API-USAGE] GET /api/v1/notifications/approvals - 11ms
-2025/11/20 12:07:09 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 12:07:09 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:07:09 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:08:10 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 12:08:10 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 12:08:10 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:08:10 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 12:09:11 [API-USAGE] GET /api/v1/notifications/approvals - 99ms
-2025/11/20 12:09:11 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 125ms
-2025/11/20 12:09:11 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 131ms
-2025/11/20 12:09:11 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 137ms
-2025/11/20 12:10:12 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 12:10:12 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 12:10:12 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 12:10:12 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 12ms
-2025/11/20 12:11:13 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 12:11:13 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:11:13 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 12:11:13 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 14ms
-2025/11/20 12:12:14 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 12:12:14 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:12:14 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:12:14 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 12:13:15 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 12:13:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 13ms
-2025/11/20 12:13:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 17ms
-2025/11/20 12:13:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 21ms
-2025/11/20 12:14:12 [API-USAGE] GET /api/v1/notifications/approvals - 123ms
-2025/11/20 12:14:12 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 125ms
-2025/11/20 12:14:12 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 128ms
-2025/11/20 12:14:12 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 131ms
-2025/11/20 12:15:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 16ms
-2025/11/20 12:15:08 [API-USAGE] GET /api/v1/notifications/approvals - 17ms
-2025/11/20 12:15:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 17ms
-2025/11/20 12:15:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 22ms
-2025/11/20 12:16:07 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:16:07 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:16:07 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 17ms
-2025/11/20 12:16:07 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 19ms
-2025/11/20 12:16:39 [API-USAGE] GET /api/v1/projects/14/daily-updates - 7ms
-2025/11/20 12:16:39 [API-USAGE] GET /api/v1/projects/14/daily-updates - 10ms
-2025/11/20 12:16:46 [API-USAGE] GET /api/v1/projects/14/daily-updates - 4ms
-2025/11/20 12:16:46 [API-USAGE] GET /api/v1/projects/14/daily-updates - 3ms
-2025/11/20 12:16:47 [API-USAGE] GET /api/v1/projects/14/milestones - 11ms
-2025/11/20 12:16:47 [API-USAGE] GET /api/v1/projects/14/milestones - 3ms
-2025/11/20 12:16:48 [API-USAGE] GET /api/v1/projects/14/daily-updates - 5ms
-2025/11/20 12:16:48 [API-USAGE] GET /api/v1/projects/14/daily-updates - 3ms
-2025/11/20 12:17:00 [API-USAGE] GET /api/v1/projects/14/daily-updates - 5ms
-2025/11/20 12:17:00 [API-USAGE] GET /api/v1/projects/14/daily-updates - 4ms
-2025/11/20 12:17:08 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:17:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 12:17:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:17:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 10ms
-2025/11/20 12:18:08 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 12:18:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 12:18:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 12:18:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 12:19:08 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:19:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:19:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 12:19:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 13ms
-2025/11/20 12:20:09 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 112ms
-2025/11/20 12:20:09 [API-USAGE] GET /api/v1/notifications/approvals - 124ms
-2025/11/20 12:20:09 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 116ms
-2025/11/20 12:20:09 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 134ms
-2025/11/20 12:21:08 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:21:08 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 12:21:08 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 12ms
-2025/11/20 12:21:08 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 13ms
-2025/11/20 12:21:12 [API-USAGE] GET /api/v1/projects/14/daily-updates - 13ms
-2025/11/20 12:21:12 [API-USAGE] GET /api/v1/projects/14/daily-updates - 9ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/auth/validate-token - 7ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/projects/14 - 11ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/auth/validate-token - 4ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/projects/14 - 3ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 16ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 20ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/approvals - 17ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 17ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:21:16 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:21:17 [API-USAGE] GET /api/v1/projects/14/daily-updates - 8ms
-2025/11/20 12:21:17 [API-USAGE] GET /api/v1/projects/14/daily-updates - 9ms
-2025/11/20 12:22:16 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 12:22:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 12:22:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 12:22:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 9ms
-2025/11/20 12:23:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:23:16 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:23:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:23:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 12:24:17 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 12:24:17 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 12:24:17 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 12:24:17 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 12:25:17 [API-USAGE] GET /api/v1/notifications/approvals - 93ms
-2025/11/20 12:25:17 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 95ms
-2025/11/20 12:25:17 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 106ms
-2025/11/20 12:25:17 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 109ms
-2025/11/20 12:26:17 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 12:26:17 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 13ms
-2025/11/20 12:26:17 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 14ms
-2025/11/20 12:26:17 [API-USAGE] GET /api/v1/notifications/approvals - 16ms
-2025/11/20 12:27:00 [API-USAGE] GET /api/v1/projects/14/daily-updates - 9ms
-2025/11/20 12:27:01 [API-USAGE] GET /api/v1/projects/14/daily-updates - 12ms
-2025/11/20 12:27:16 [API-USAGE] GET /api/v1/notifications/approvals - 11ms
-2025/11/20 12:27:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 13ms
-2025/11/20 12:27:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 16ms
-2025/11/20 12:27:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 19ms
-2025/11/20 12:28:17 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:28:17 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 12:28:17 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:28:17 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 13ms
-2025/11/20 12:29:16 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 12:29:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 12:29:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 12:29:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 13ms
-2025/11/20 12:30:17 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:30:17 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 12:30:17 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 12:30:17 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 11ms
-2025/11/20 12:31:11 [API-USAGE] GET /api/v1/projects/14/daily-updates - 17ms
-2025/11/20 12:31:11 [API-USAGE] GET /api/v1/projects/14/daily-updates - 23ms
-2025/11/20 12:31:16 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 12:31:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 23ms
-2025/11/20 12:31:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 85ms
-2025/11/20 12:31:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 90ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/auth/validate-token - 8ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/auth/validate-token - 6ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/projects/14 - 10ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/projects/14 - 11ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 12ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 17ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/permissions/me - 8ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 5ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:31:19 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:31:21 [API-USAGE] GET /api/v1/projects/14/daily-updates - 3ms
-2025/11/20 12:31:21 [API-USAGE] GET /api/v1/projects/14/daily-updates - 2ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/auth/validate-token - 9ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/projects/14 - 14ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/auth/validate-token - 6ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/projects/14 - 7ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 12:32:32 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:32:34 [API-USAGE] GET /api/v1/auth/validate-token - 12ms
-2025/11/20 12:32:34 [API-USAGE] GET /api/v1/projects/14 - 13ms
-2025/11/20 12:32:34 [API-USAGE] GET /api/v1/auth/validate-token - 7ms
-2025/11/20 12:32:34 [API-USAGE] GET /api/v1/projects/14 - 6ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 8ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 8ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/permissions/me - 2ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:32:35 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:33:36 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 12:33:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 11ms
-2025/11/20 12:33:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 7ms
-2025/11/20 12:33:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 12:34:36 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 12:34:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 3ms
-2025/11/20 12:34:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:34:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:35:36 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:35:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:35:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:35:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 6ms
-2025/11/20 12:36:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 103ms
-2025/11/20 12:36:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 107ms
-2025/11/20 12:36:36 [API-USAGE] GET /api/v1/notifications/approvals - 115ms
-2025/11/20 12:36:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 114ms
-2025/11/20 12:37:36 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 12:37:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 16ms
-2025/11/20 12:37:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 18ms
-2025/11/20 12:37:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 28ms
-2025/11/20 12:38:36 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:38:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 12:38:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 12:38:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 14ms
-2025/11/20 12:39:36 [API-USAGE] GET /api/v1/notifications/approvals - 9ms
-2025/11/20 12:39:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:39:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 10ms
-2025/11/20 12:39:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 14ms
-2025/11/20 12:40:37 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 12ms
-2025/11/20 12:40:37 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 12:40:37 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 12:40:37 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:41:38 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 93ms
-2025/11/20 12:41:38 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 110ms
-2025/11/20 12:41:38 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 112ms
-2025/11/20 12:41:38 [API-USAGE] GET /api/v1/notifications/approvals - 116ms
-2025/11/20 12:42:36 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 12:42:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 12:42:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 14ms
-2025/11/20 12:42:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 23ms
-2025/11/20 12:43:36 [API-USAGE] GET /api/v1/notifications/approvals - 10ms
-2025/11/20 12:43:36 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 13ms
-2025/11/20 12:43:36 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 16ms
-2025/11/20 12:43:36 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 24ms
-2025/11/20 12:44:37 [API-USAGE] GET /api/v1/notifications/approvals - 31ms
-2025/11/20 12:44:37 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 26ms
-2025/11/20 12:44:37 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 30ms
-2025/11/20 12:44:37 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 35ms
-2025/11/20 12:45:38 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:45:38 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 12:45:38 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 6ms
-2025/11/20 12:45:38 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 9ms
-2025/11/20 12:46:39 [API-USAGE] GET /api/v1/notifications/approvals - 99ms
-2025/11/20 12:46:39 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 105ms
-2025/11/20 12:46:39 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 112ms
-2025/11/20 12:46:39 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 120ms
-2025/11/20 12:47:13 [API-USAGE] GET /api/v1/auth/validate-token - 9ms
-2025/11/20 12:47:13 [API-USAGE] GET /api/v1/projects/14 - 12ms
-2025/11/20 12:47:13 [API-USAGE] GET /api/v1/auth/validate-token - 7ms
-2025/11/20 12:47:13 [API-USAGE] GET /api/v1/projects/14 - 7ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/approvals - 7ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/approvals - 5ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/permissions/me - 10ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/approvals - 14ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 10ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/permissions/me - 13ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 21ms
-2025/11/20 12:47:14 [API-USAGE] GET /api/v1/permissions/me - 7ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/auth/validate-token - 6ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/auth/validate-token - 13ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/projects/14 - 19ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/projects/14 - 18ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 7ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/permissions/me - 4ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 4ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/approvals - 12ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 4ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/permissions/me - 6ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/approvals - 4ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 4ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/permissions/me - 5ms
-2025/11/20 12:47:15 [API-USAGE] GET /api/v1/permissions/me - 3ms
-2025/11/20 12:47:18 [API-USAGE] GET /api/v1/projects/14/daily-updates - 8ms
-2025/11/20 12:47:18 [API-USAGE] GET /api/v1/projects/14/daily-updates - 4ms
-2025/11/20 12:48:05 📝 CreateDailyUpdate - Project ID: 14, Content-Type: multipart/form-data; boundary=----WebKitFormBoundary1TyT2UcQeiY6ZXsE
-2025/11/20 12:48:05 📋 Parsed Data - Date: 2025-11-20 00:00:00 +0000 UTC, Weather: Sunny, Workers: 0, Description: Starting progress
-2025/11/20 12:48:05 📷 Received 1 photo files for upload
-2025/11/20 12:48:05 ✅ Saved 1 photos to disk
-2025/11/20 12:48:05 🔗 Photo 1: uploads\daily-updates\20251120-124805-cca367a9.png -> /uploads/daily-updates/20251120-124805-cca367a9.png
-2025/11/20 12:48:05 💾 Storing 1 photo URLs in database: [/uploads/daily-updates/20251120-124805-cca367a9.png]
-2025/11/20 12:48:05 💾 Calling service.CreateDailyUpdate...
-2025/11/20 12:48:05 ✅ Daily update created successfully - ID: 20
-2025/11/20 12:48:05 [API-USAGE] POST /api/v1/projects/14/daily-updates - 33ms
-2025/11/20 12:48:05 [API-USAGE] GET /api/v1/projects/14/daily-updates - 4ms
-2025/11/20 12:48:15 [API-USAGE] GET /api/v1/notifications/approvals - 6ms
-2025/11/20 12:48:15 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 5ms
-2025/11/20 12:48:15 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 6ms
-2025/11/20 12:48:15 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 5ms
-2025/11/20 12:48:22 [API-USAGE] GET /api/v1/projects/14/daily-updates - 4ms
-2025/11/20 12:48:22 [API-USAGE] GET /api/v1/projects/14/daily-updates - 5ms
-2025/11/20 12:48:38 [API-USAGE] GET /api/v1/projects/14/daily-updates - 8ms
-2025/11/20 12:48:38 [API-USAGE] GET /api/v1/projects/14/daily-updates - 4ms
-2025/11/20 12:49:16 [API-USAGE] GET /api/v1/notifications/type/MIN_STOCK - 7ms
-2025/11/20 12:49:16 [API-USAGE] GET /api/v1/notifications/approvals - 8ms
-2025/11/20 12:49:16 [API-USAGE] GET /api/v1/dashboard/stock-alerts - 8ms
-2025/11/20 12:49:16 [API-USAGE] GET /api/v1/notifications/type/REORDER_ALERT - 11ms
-exit status 0xffffffff
+2025/11/28 20:10:31 Connecting to PostgreSQL database with URL: postgres://postgres:Moon@localhost:5432/CMSNew?sslmode=disable
+2025/11/28 20:10:31 Database connected successfully with optimized connection pool
+2025/11/28 20:10:31 🔄 Running database migrations...
+2025/11/28 20:10:31 🔄 Starting database migrations...
+2025/11/28 20:10:31 📊 Current migration version: 25
+2025/11/28 20:10:31 ✅ Database is up to date - no migrations needed
+2025/11/28 20:10:31 ✅ Database migrations complete - version: 25
+2025/11/28 20:10:31 Starting database migration...
+2025/11/28 20:10:31 🔧 Running pre-migration fixes...
+2025/11/28 20:10:31 Dropping audit-related views that might conflict with migration...
+2025/11/28 20:10:32 ✅ Dropped view: critical_audit_changes
+2025/11/28 20:10:32 ✅ Dropped view: audit_trail_summary
+2025/11/28 20:10:32 ✅ Dropped view: audit_logs_view
+2025/11/28 20:10:32 ✅ Dropped view: recent_audit_activities
+2025/11/28 20:10:32 ✅ Dropped view: user_audit_summary
+2025/11/28 20:10:32 ✅ Audit-related views cleanup completed
+2025/11/28 20:10:32 Handling column type conflicts...
+2025/11/28 20:10:32 Current audit_logs.action column: type=character varying, max_length=0xc0003817c0
+2025/11/28 20:10:32 ✅ Column type conflicts handled
+2025/11/28 20:10:32 ✅ Pre-migration fixes completed
+2025/11/28 20:10:32 Checking and fixing payment_date null values...
+2025/11/28 20:10:32 Updating NULL payment_date values in sale_payments table...
+2025/11/28 20:10:32 ✅ Updated 0 NULL payment_date values in sale_payments table
+2025/11/28 20:10:32 Making payment_date column NOT NULL...
+2025/11/28 20:10:32 ✅ Set payment_date column as NOT NULL successfully
+2025/11/28 20:10:32 Updating NULL payment_method values in sale_payments table...
+2025/11/28 20:10:32 ✅ Updated 0 NULL payment_method values in sale_payments table
+2025/11/28 20:10:32 Making payment_method column NOT NULL...
+2025/11/28 20:10:32 ✅ Set payment_method column as NOT NULL successfully
+2025/11/28 20:10:32 Payment date null values fix completed
+2025/11/28 20:10:32 Cleaning up problematic database constraints...
+2025/11/28 20:10:32 Found 4 existing constraints/indexes on accounts table
+2025/11/28 20:10:32 ✅ Dropped constraint accounts_code_active_unique
+2025/11/28 20:10:32 ✅ Dropped constraint idx_accounts_code_active
+2025/11/28 20:10:32 ✅ Dropped constraint idx_accounts_code_unique_active
+2025/11/28 20:10:32 Removing any remaining unique constraints on code column...
+2025/11/28 20:10:32 ✅ Target partial unique index idx_accounts_code_active already exists
+2025/11/28 20:10:32 Final state: 3 constraints/indexes on accounts table: [accounts_code_active_unique idx_accounts_code_active idx_accounts_code_unique_active]
+2025/11/28 20:10:32 Database constraint cleanup completed
+2025/11/28 20:10:32 Cleaning up ProductUnit constraints...
+2025/11/28 20:10:32 uni_product_units_code constraint does not exist, nothing to drop
+2025/11/28 20:10:32 Found 1 code-related indexes on product_units
+2025/11/28 20:10:32 Code-related index found: idx_product_units_code (will be managed by GORM)
+2025/11/28 20:10:32 ProductUnit constraint cleanup completed
+2025/11/28 20:10:32 Cleaning up JournalEntries constraints...
+2025/11/28 20:10:32 No problematic code-related constraints found on journal_entries
+2025/11/28 20:10:32 Found 1 code-related indexes on journal_entries
+2025/11/28 20:10:32 Code-related index found: idx_journal_entries_code (will be managed by GORM)
+2025/11/28 20:10:32 JournalEntries constraint cleanup completed
+2025/11/28 20:10:32 🔧 Running comprehensive constraint cleanup...
+2025/11/28 20:10:32 Cleaning constraints for table: products
+2025/11/28 20:10:32 Dropping constraint uni_products_code from products...
+2025/11/28 20:10:32 ✅ Dropped uni_products_code successfully
+2025/11/28 20:10:32 Cleaning constraints for table: contacts
+2025/11/28 20:10:32 Dropping constraint uni_contacts_code from contacts...
+2025/11/28 20:10:32 ✅ Dropped uni_contacts_code successfully
+2025/11/28 20:10:32 Cleaning constraints for table: sales
+2025/11/28 20:10:32 Dropping constraint uni_sales_code from sales...
+2025/11/28 20:10:32 ✅ Dropped uni_sales_code successfully
+2025/11/28 20:10:32 Cleaning constraints for table: purchases
+2025/11/28 20:10:32 Dropping constraint uni_purchases_code from purchases...
+2025/11/28 20:10:32 ✅ Dropped uni_purchases_code successfully
+2025/11/28 20:10:32 Cleaning constraints for table: journal_entries
+2025/11/28 20:10:32 Cleaning constraints for table: product_units
+2025/11/28 20:10:32 Cleaning constraints for table: accounts
+2025/11/28 20:10:32 ✅ Comprehensive constraint cleanup completed
+2025/11/28 20:10:32 🚀 Running aggressive constraint cleanup for all database objects...
+2025/11/28 20:10:32 ✅ Dropped constraint uni_journal_entries_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint uni_product_units_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint uni_accounts_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint uni_products_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint uni_contacts_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint uni_sales_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint uni_purchases_code from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint products_code_key from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint contacts_code_key from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint sales_code_key from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint purchases_code_key from journal_entries
+2025/11/28 20:10:32 ✅ Dropped constraint journal_entries_code_key from journal_entries
+2025/11/28 20:10:32 Dropping code-related constraint uni_warehouse_locations_code from warehouse_locations...
+2025/11/28 20:10:32 ✅ Dropped uni_warehouse_locations_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_invoice_types_code from invoice_types...
+2025/11/28 20:10:32 ✅ Dropped uni_invoice_types_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_cash_banks_code from cash_banks...
+2025/11/28 20:10:32 ✅ Dropped uni_cash_banks_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_approval_requests_request_code from approval_requests...
+2025/11/28 20:10:32 ✅ Dropped uni_approval_requests_request_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_expense_categories_code from expense_categories...
+2025/11/28 20:10:32 ✅ Dropped uni_expense_categories_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_expenses_code from expenses...
+2025/11/28 20:10:32 ✅ Dropped uni_expenses_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_asset_categories_code from asset_categories...
+2025/11/28 20:10:32 ✅ Dropped uni_asset_categories_code successfully
+2025/11/28 20:10:32 Dropping code-related constraint uni_assets_code from assets...
+2025/11/28 20:10:32 ✅ Dropped uni_assets_code successfully
+2025/11/28 20:10:32 ✅ Aggressive constraint cleanup completed
+2025/11/28 20:10:34 Failed to migrate core models: ERROR: cannot alter type of a column used by a view or rule (SQLSTATE 0A000)
+2025/11/28 20:10:34 Warning: Migration encountered errors but continuing to allow manual column creation...
+2025/11/28 20:10:34 Core models migration completed successfully
+2025/11/28 20:10:34 Ensuring SSOT core tables exist (safe mode)...
+2025/11/28 20:10:34 SSOT core tables ensured.
+2025/11/28 20:10:34 ✅ Simple SSOT journal tables migrated successfully
+2025/11/28 20:10:34 Starting approval models migration...
+2025/11/28 20:10:35 Approval models migration completed successfully
+2025/11/28 20:10:35 Database migration completed successfully
+2025/11/28 20:10:35 Checking and creating missing columns from model definitions...
+2025/11/28 20:10:35 Missing columns check completed
+2025/11/28 20:10:35 Starting enhanced sales model migration...
+2025/11/28 20:10:35 Enhanced sales model fields already exist, skipping migration
+2025/11/28 20:10:35 Starting enhanced new sales fields migration...
+2025/11/28 20:10:35 Updating existing sale_items records with default values for new fields...
+2025/11/28 20:10:35 Updated existing sale_items records with new field defaults
+2025/11/28 20:10:35 Updated sale_items records without matching products
+2025/11/28 20:10:35 Foreign key constraint for tax_account_id already exists, skipping
+2025/11/28 20:10:35 Adding indexes for new sales fields...
+2025/11/28 20:10:35 Enhanced new sales fields migration completed successfully
+2025/11/28 20:10:35 Starting tax field size update to prevent numeric overflow...
+2025/11/28 20:10:35 Tax field sizes already updated, skipping migration
+2025/11/28 20:10:35 🔧 Fixing purchase_items decimal field overflow...
+2025/11/28 20:10:35 ✅ Purchase items field overflow fix completed
+2025/11/28 20:10:35 === Starting Sales Data Integrity Fix ===
+2025/11/28 20:10:35 No sales records found, skipping sales data integrity fix
+2025/11/28 20:10:35 Starting enhanced cash bank model migration...
+2025/11/28 20:10:35 Enhanced cash bank model fields already exist, skipping migration
+2025/11/28 20:10:35 🔄 Running settings table migration...
+2025/11/28 20:10:35 ✅ Settings table created successfully
+2025/11/28 20:10:35 ✅ Settings migration completed successfully
+2025/11/28 20:10:35 🛡️  PRODUCTION MODE: All balance synchronization disabled to protect account balances
+2025/11/28 20:10:35 ✅ Account balances will never be automatically modified during startup
+2025/11/28 20:10:35 Migration 'cleanup_duplicate_notifications_v1.0' already applied at 2025-11-10 10:44:43.767742 +0700 +07, skipping...
+2025/11/28 20:10:35 Checking accounting_periods table for description column...
+2025/11/28 20:10:35 description column already exists in accounting_periods table
+2025/11/28 20:10:35 Fixing accounting_periods table structure...
+2025/11/28 20:10:35 year and month columns do not exist, no fix needed
+2025/11/28 20:10:35 Creating enhanced accounting indexes...
+2025/11/28 20:10:35 Database indexes created successfully
+2025/11/28 20:10:35 Starting Payment Performance Optimization Migration...
+2025/11/28 20:10:35 Payment performance optimization already applied, skipping
+2025/11/28 20:10:35 🔧 Resetting product image fix migration record...
+2025/11/28 20:10:35 ℹ️  Product image migration record not found, nothing to reset
+2025/11/28 20:10:35 ✅ Product image migration reset completed
+2025/11/28 20:10:35 🔧 Starting Product Image Fix Migration...
+2025/11/28 20:10:35 ℹ️  Product Image Fix Migration not found in records, proceeding with migration...
+2025/11/28 20:10:35   🔧 Ensuring image_path column specifications...
+2025/11/28 20:10:35     📊 Current image_path column: type=character varying, nullable=YES, default=
+2025/11/28 20:10:35     🔧 Adjusting image_path column specifications...
+2025/11/28 20:10:35     ✅ Modified image_path column type to VARCHAR(255)
+2025/11/28 20:10:35     ✅ Set default value for image_path column
+2025/11/28 20:10:35   🔧 Cleaning up invalid image paths...
+2025/11/28 20:10:35     ✅ No products with invalid image paths found
+2025/11/28 20:10:35   🔧 Ensuring uploads directory structure...
+2025/11/28 20:10:35     ✅ Upload directory structure ensured
+2025/11/28 20:10:35 📝 Recording migration completion: product_image_fix_v1.0 (applied 3 fixes)
+2025/11/28 20:10:35 ℹ️  Migration record 'product_image_fix_v1.0' already exists - this happens when multiple processes start simultaneously
+2025/11/28 20:10:35 ✅ Product Image Fix Migration completed successfully!
+2025/11/28 20:10:35 📝 Applied fixes: [Image path column validation Invalid image paths cleanup Uploads directory structure]
+2025/11/28 20:10:35 🔄 This is normal behavior and indicates the migration system is working correctly.
+2025/11/28 20:10:35 🔧 Starting Asset Category Migration...
+2025/11/28 20:10:35 ✅ Asset Category Migration already applied at 2025-11-10 10:44:43.90631 +0700 +07
+2025/11/28 20:10:35 Database enhancements migration 'database_enhancements_v2024.1' already applied at 2025-11-10 10:44:44.660704 +0700 +07, skipping...
+2025/11/28 20:10:35 Missing columns fix migration 'fix_missing_columns_v2024.1' already applied at 2025-11-10 10:44:44.734268 +0700 +07, skipping...
+2025/11/28 20:10:35 🔧 Starting remaining issues fix migration...
+2025/11/28 20:10:35 Remaining issues fix migration 'fix_remaining_issues_v2024.1' already applied at 2025-11-10 10:44:44.745723 +0700 +07, skipping...
+2025/11/28 20:10:35 🧹 Running index cleanup and optimization...
+2025/11/28 20:10:35 Dropped problematic index: idx_inventory_product_type
+2025/11/28 20:10:35 Dropped problematic index: idx_financial_ratios_date
+2025/11/28 20:10:35 Dropped problematic index: idx_cash_bank_transactions_flow
+2025/11/28 20:10:35 ✅ Created optimized index: idx_inventory_reference
+2025/11/28 20:10:35 ✅ Created optimized index: idx_financial_ratios_calc_date
+2025/11/28 20:10:35 ✅ Created optimized index: idx_cash_bank_transactions_flow_fixed
+2025/11/28 20:10:35 ✅ Created optimized index: idx_users_name_search
+2025/11/28 20:10:35 ✅ Created optimized index: idx_inventory_product_type_fixed
+2025/11/28 20:10:35 ✅ Index cleanup and optimization completed
+2025/11/28 20:10:35 🔄 Starting auto-migrations...
+2025/11/28 20:10:35 🔧 Running pre-migration compatibility fixes...
+2025/11/28 20:10:35 ℹ️  Description column already exists
+2025/11/28 20:10:35 📊 Updated 0 problematic migrations to SUCCESS status
+2025/11/28 20:10:35 ✅ Pre-migration compatibility fixes completed
+2025/11/28 20:10:35 Including additional migration dir: C:\Users\jeremia.kaligis\Desktop\CMS New\backend\database\migrations
+2025/11/28 20:10:35 Using migration dir: C:\Users\jeremia.kaligis\Desktop\CMS New\backend\migrations
+2025/11/28 20:10:35 Found 89 migration files (combined): [000000000_comprehensive_migration_fix.sql 000000_create_migration_log.down.sql 000000_create_migration_log.up.sql 000001_add_cashbank_gl_validation.down.sql 000001_add_cashbank_gl_validation.up.sql 000025_increase_payment_code_size.down.sql 000025_increase_payment_code_size.up.sql 000_fix_balance_sync_functions.sql 000_fix_concurrent_index.sql 000_fix_sales_performance_index.sql 000_fix_unified_journal_ledger_columns.sql 006_update_tax_field_sizes.sql 007_add_pph_percent_column.sql 007_fix_purchase_items_discount_tax_overflow.sql 008_add_purchase_payment_fields.sql 009_add_purchase_payment_fields.sql 010_add_credit_account_to_purchases.sql 011_purchase_payment_integration.sql 012_purchase_payment_integration_pg.sql 013_payment_performance_optimization.sql 014_fix_purchase_outstanding_amounts.sql 015_create_migration_logs_table.sql 016_fix_bank_mandiri_balance_bug.sql 020_add_sales_data_integrity_constraints.sql 020_create_unified_journal_ssot.sql 021_add_sales_performance_indices.sql 022_comprehensive_model_updates.sql 023_create_purchase_approval_workflows.sql 025_safe_ssot_journal_migration_fix.sql 026_fix_event_log_trigger.sql 026_fix_sync_account_balance_fn_bigint.sql 026_purchase_balance_minimal.sql 027_create_tax_account_settings.sql 027_unified_journal_ssot_add_sync_fn_bigint.sql 028_unified_journal_ssot_sync_fn_bigint_v2.sql 029_prevent_shared_coa_accounts.sql 031_fix_account_mapping_for_tax_and_revenue.sql 032_balance_sync_system_v2_fixed.sql 033_cashbank_coa_asset_sync_trigger.sql 034_create_bank_reconciliation_tables.sql 035_remove_settings_next_numbers.sql 036_add_sales_prefix_settings.sql 037_add_invoice_types_system.sql 038_add_activity_logs_table.sql 038_create_settings_history.sql 039_fix_nullable_user_id_logs.sql 040_lock_critical_tax_accounts.sql 041_add_cost_control_approval_fields.sql 041_create_accounting_periods_table.sql 041_fix_vat_accounts_display.sql 042_fix_account_2102_and_balance_sheet.sql 042_integrate_project_purchase.sql 050_create_daily_updates_table.sql 051_create_milestones_table.sql 052_add_milestone_fields.sql 052_add_tomorrows_plan_to_daily_updates.sql 053_create_weekly_reports_table.sql 054_create_timeline_schedules_table.sql 055_add_category_progress_to_daily_updates.sql 056_create_purchase_requests_table.sql 057_add_daily_update_approval.sql 057_add_project_id_to_inventory.sql 20241220_add_journal_entry_id_to_payments.sql 20250930_auto_balance_sync_triggers.sql 20250930_comprehensive_auto_balance_sync.sql 20251017_disable_auto_balance_sync_triggers.sql 20251024111557_fix_category_unique_constraint.sql 20251114_create_project_budgets_table.sql 20251115_create_project_progress_and_actual_costs.sql 999_fix_migration_logs.sql 999_skip_broken_migrations.sql DROP_MATERIALIZED_VIEW_account_balances.sql add_accounts_code_unique_constraint.sql add_blacklist_indexes.sql add_invoice_types_system.sql add_permission_index.sql balance_sync_system.sql balance_sync_system_fixed.sql cashbank_coa_sync_trigger.sql database_enhancements_v2024_1.sql fix_activity_logs_user_id_nullable.sql fix_audit_logs_schema.sql fix_date_constraint.sql manual_037_fix_rollback_error_info.sql manual_037_rollback_invoice_types_system.sql manual_quick_fix_037_rollback_error.sql manual_reset_037_migration_log.sql manual_status_037_invoice_types.sql prevent_duplicate_accounts.sql]
+2025/11/28 20:10:35 🔄 Running: 057_add_project_id_to_inventory.sql
+2025/11/28 20:10:35 🏠 Running complex migration (SSOT): 057_add_project_id_to_inventory.sql
+2025/11/28 20:10:35 🔧 Progress: 1/4 statements...
+2025/11/28 20:10:35 ❌ Migration failed: 057_add_project_id_to_inventory.sql - SQL error at statement 2: ERROR: relation "inventory" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:35 
+2025/11/28 20:10:35 ============================================
+2025/11/28 20:10:35 ⚠️  1 migration(s) failed. Check logs above for details.
+2025/11/28 20:10:35 ============================================
+2025/11/28 20:10:35 🔧 Installing balance sync system...
+2025/11/28 20:10:35 🔧 Executing balance sync migration: 20250930_comprehensive_auto_balance_sync.sql
+2025/11/28 20:10:35    ⏭️  Skipping statement 21 - required function 'recalculate_cashbank_balance' not available yet
+2025/11/28 20:10:35    ⏭️  Skipping statement 22 - required function 'recalculate_cashbank_balance' not available yet
+2025/11/28 20:10:35    ⏭️  Skipping statement 31 - function 'recalculate_cashbank_balance' not found for COMMENT
+2025/11/28 20:10:35    ⏭️  Skipping statement 32 - function 'validate_account_balance_consistency' not found for COMMENT
+2025/11/28 20:10:35    ⏭️  Skipping statement 33 - function 'manual_sync_cashbank_coa' not found for COMMENT
+2025/11/28 20:10:35    ⏭️  Skipping statement 35 - function 'ensure_cashbank_not_header' not found for COMMENT
+2025/11/28 20:10:35 ✅ Balance sync system installed successfully
+2025/11/28 20:10:35 ✅ Balance sync system installed successfully
+2025/11/28 20:10:35 🔒 Starting duplicate accounts prevention migration...
+2025/11/28 20:10:35 Using inline migration for better control...
+2025/11/28 20:10:35 📝 Applying inline migration for duplicate prevention...
+2025/11/28 20:10:35 ✅ No duplicate accounts found
+2025/11/28 20:10:35 🔒 Creating unique constraint on account code...
+2025/11/28 20:10:35 ✅ Unique index created successfully
+2025/11/28 20:10:35 🔧 Installing validation trigger...
+2025/11/28 20:10:35 ✅ Validation trigger installed successfully
+2025/11/28 20:10:35 📊 Creating monitoring view...
+2025/11/28 20:10:35 ✅ Monitoring view created successfully
+2025/11/28 20:10:35 ✅ Inline migration completed successfully!
+2025/11/28 20:10:35 🔧 Running Cash Bank-COA Sync Migration...
+2025/11/28 20:10:35 ✅ Cash Bank-COA Sync Migration already applied, skipping...
+2025/11/28 20:10:35 [AUTO-FIX] Starting revenue duplication fix...
+2025/11/28 20:10:35 [AUTO-FIX] Step 1/5: Marking parent accounts as headers...
+2025/11/28 20:10:35 [AUTO-FIX] Step 2/5: Standardizing revenue account names in journal_entries...
+2025/11/28 20:10:35 [AUTO-FIX] ℹ️  Skipping journal_entries (4xxx) standardization: columns not present
+2025/11/28 20:10:35 [AUTO-FIX] Step 3/5: Standardizing expense account names in journal_entries...
+2025/11/28 20:10:35 [AUTO-FIX] ℹ️  Skipping journal_entries (5xxx) standardization: columns not present
+2025/11/28 20:10:35 [AUTO-FIX] Step 4/5: Standardizing unified journal lines (4xxx)...
+2025/11/28 20:10:35 [AUTO-FIX] ℹ️  Skipping unified_journal_lines (4xxx): columns not present
+2025/11/28 20:10:35 [AUTO-FIX] Step 5/5: Standardizing unified journal lines (5xxx)...
+2025/11/28 20:10:35 [AUTO-FIX] ℹ️  Skipping unified_journal_lines (5xxx): columns not present
+2025/11/28 20:10:35 [AUTO-FIX] Verifying fix...
+2025/11/28 20:10:35 [AUTO-FIX] ✅ Verification passed: No duplicate account names
+2025/11/28 20:10:35 [AUTO-FIX] Revenue duplication fix completed!
+2025/11/28 20:10:35 🔍 Checking audit_logs schema...
+2025/11/28 20:10:35 ✅ Action column size already correct (VARCHAR(50))
+2025/11/28 20:10:35 ✅ Notes column already exists
+2025/11/28 20:10:35 
+2025/11/28 20:10:35 ✅ audit_logs schema is already up to date - no changes needed
+2025/11/28 20:10:35 ✅ Activity logs user_id fix already applied
+2025/11/28 20:10:35 ✅ Auto-migrations completed
+2025/11/28 20:10:35 ⚡ Starting SSOT Journal System verification...
+2025/11/28 20:10:35 🔍 Checking SSOT Journal Migration status...
+2025/11/28 20:10:35 ✅ SSOT migration has been previously applied (count: 3)
+2025/11/28 20:10:35 ✅ SSOT tables verified successfully
+2025/11/28 20:10:35 ✅ SSOT Journal System is ready and verified!
+2025/11/28 20:10:35 Permissions table migrated successfully
+2025/11/28 20:10:35 Starting database seeding...
+2025/11/28 20:10:35 🔄 Starting user seeding with robust UPSERT...
+2025/11/28 20:10:35 ⚠️  Warning: Failed to create user admin: ERROR: duplicate key value violates unique constraint "uni_users_email" (SQLSTATE 23505)
+2025/11/28 20:10:35 ⏭️  User finance already exists, skipping
+2025/11/28 20:10:35 ⏭️  User inventory already exists, skipping
+2025/11/28 20:10:35 ⏭️  User director already exists, skipping
+2025/11/28 20:10:35 ⏭️  User employee already exists, skipping
+2025/11/28 20:10:35 ⏭️  User purchasing already exists, skipping
+2025/11/28 20:10:35 ⏭️  User cost_control already exists, skipping
+2025/11/28 20:10:35 ⏭️  User gm already exists, skipping
+2025/11/28 20:10:35 ⏭️  User project_director already exists, skipping
+2025/11/28 20:10:35 ⏭️  User managing_director already exists, skipping
+2025/11/28 20:10:35 📊 User seeding completed: 0/10 users processed successfully
+2025/11/28 20:10:35 Permissions table migrated successfully
+2025/11/28 20:10:35 🔒 PRODUCTION MODE: Seeding accounts with improved duplicate handling...
+2025/11/28 20:10:35 🔒 Account exists: 1000 - ASET LANCAR (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 1101 - KAS PROYEK (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 1102 - BANK (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 1201 - DEPOSIT (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 1114 - PPH 21 DIBAYAR DIMUKA (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 1115 - PPH 23 DIBAYAR DIMUKA (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 1240 - PPN MASUKAN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 2000 - KEWAJIBAN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 2101 - UTANG USAHA (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 2103 - PPN KELUARAN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 2104 - PPH YANG DIPOTONG (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 2111 - UTANG PPH 21 (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 2112 - UTANG PPH 23 (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 3000 - EKUITAS (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 3101 - MODAL PEMILIK (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 7000 - LABA / RUGI PROYEK (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 4000 - PENDAPATAN PROYEK (INCOME) (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 4101 - PENDAPATAN TERMIN 1 (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 4102 - PENDAPATAN TERMIN 2 (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 4201 - RETENSI (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5000 - BEBAN LANGSUNG PROYEK (DIRECT COST) (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5100 - MATERIAL BANGUNAN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5101 - SEMEN & PASIR (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5102 - BESI & BAJA (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5103 - PLUMBING & FITTING (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5104 - KACA, ALUMINIUM (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5105 - CAT & FINISHING (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5200 - SEWA ALAT BERAT / EQUIPMENT HIRE (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5201 - SEWA ALAT BERAT (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5202 - TRANSPORT & MOBILISASI (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5300 - TENAGA KERJA (LABOUR) (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5301 - MANDOR (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5302 - TUKANG & HELPER (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5303 - OVERTIME & BONUS (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5400 - BIAYA OPERASIONAL SITE (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5401 - AIR & LISTRIK KERJA (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5402 - TRANSPORTASI & TOL (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5403 - KONSUMSI & ENTERTAIN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5404 - AKOMODASI (KOSAN, HOTEL) (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5405 - ATK & ALAT KECIL (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 5406 - KOMPENSASI & KEAMANAN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 6000 - OVERHEAD KANTOR & ADMIN (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 6101 - ADMIN FEE (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 6102 - PAJAK PROYEK (PPH, PPN) (preserving balance)
+2025/11/28 20:10:35 🔒 Account exists: 6103 - FEE MARKETING (preserving balance)
+2025/11/28 20:10:35 ✅ Account seeding completed successfully
+2025/11/28 20:10:35 ✅ Accounts seeded successfully with duplicate protection
+2025/11/28 20:10:35 Seeding contacts...
+2025/11/28 20:10:35 Seed contacts already exist (3 records), skipping seed
+2025/11/28 20:10:35 Seed products already exist (3 records), skipping seed
+2025/11/28 20:10:35 Seed permissions already exist (3 records), skipping seed
+2025/11/28 20:10:35 Database seeding completed successfully
+2025/11/28 20:10:35 🚀 Running startup tasks...
+2025/11/28 20:10:35 🔧 Fixing account header status...
+2025/11/28 20:10:35 ✅ Account header status fixed successfully in 2.2918ms
+2025/11/28 20:10:35 🔍 Validating account hierarchy...
+2025/11/28 20:10:35 ✅ Account hierarchy validated successfully - 62 accounts processed in 1.4389ms
+2025/11/28 20:10:35 ✅ Startup tasks completed successfully
+2025/11/28 20:10:35 ⚡ Starting database performance optimization...
+2025/11/28 20:10:35 🚀 Starting full database optimization...
+2025/11/28 20:10:35 🔧 Starting database index optimization...
+2025/11/28 20:10:35 ⚠️ Warning: Failed to create index idx_sales_status_customer on sales: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:35 ⚠️ Warning: Failed to create index idx_sales_outstanding on sales: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:35 ⚠️ Warning: Failed to create index idx_sales_date_status on sales: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:35 ⚠️ Warning: Failed to create index idx_payments_contact_date on payments: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_payments_status_method on payments: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_cash_banks_active on cash_banks: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_journal_source on ssot_journal_entries: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_journal_date_status on ssot_journal_entries: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_products_category_active on products: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_products_stock on products: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_accounts_code_parent on accounts: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_accounts_type_active on accounts: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_contacts_type_name on contacts: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:36 ⚠️ Warning: Failed to create index idx_purchases_vendor_status on purchases: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:37 ⚠️ Warning: Failed to create index idx_purchases_date_status on purchases: failed to check index existence: ERROR: relation "information_schema.statistics" does not exist (SQLSTATE 42P01)
+2025/11/28 20:10:37 🎯 Database optimization complete: 0/15 indexes created successfully
+2025/11/28 20:10:37 ⚙️ Applying database optimization settings...
+2025/11/28 20:10:37 ✅ Database connection pool optimized
+2025/11/28 20:10:37 ⚠️ Warning: Enable query cache for session failed: ERROR: unrecognized configuration parameter "query_cache_type" (SQLSTATE 42704)
+2025/11/28 20:10:37 ⚠️ Warning: Set query cache size to 64MB failed: ERROR: unrecognized configuration parameter "query_cache_size" (SQLSTATE 42704)
+2025/11/28 20:10:37 🔍 Analyzing database for slow query patterns...
+2025/11/28 20:10:37 📊 Largest tables by size:
+2025/11/28 20:10:37 ⚠️ Query failed: ERROR: syntax error at or near "'Size (MB)'" (SQLSTATE 42601)
+2025/11/28 20:10:37 📊 Tables with high row counts:
+2025/11/28 20:10:37 ⚠️ Query failed: ERROR: syntax error at or near "'Table Name'" (SQLSTATE 42601)
+2025/11/28 20:10:37 🎯 Full database optimization completed in 1.5911031s
+2025/11/28 20:10:37 ✅ Database optimization completed successfully!
+2025/11/28 20:10:37 Swagger docs not found at docs\swagger.json, skipping dynamic update
+2025/11/28 20:10:37 🎆 Setting up Enhanced Swagger with authentication support...
+2025/11/28 20:10:37 🚀 Setting up enhanced Swagger routes with authentication support...
+2025/11/28 20:10:37 🔍 Starting enhanced Swagger validation and fixing...
+2025/11/28 20:10:37 ⚠️ swagger.json not found at docs\swagger.json
+2025/11/28 20:10:37 ⚠️ Enhanced Swagger errors detected:
+2025/11/28 20:10:37   - swagger.json not found
+2025/11/28 20:10:37 ✅ Enhanced Dynamic Swagger UI available at: http://localhost:8080/enhanced-swagger/index.html
+2025/11/28 20:10:37 🔐 Authentication Helper built-in - login with admin@company.com / admin123
+2025/11/28 20:10:37 🔍 Swagger Debug Tool available at: http://localhost:8080/swagger-debug.html
+2025/11/28 20:10:37 🌟 Enhanced JSON endpoint: http://localhost:8080/openapi/enhanced-doc.json
+2025/11/28 20:10:37 ✅ Enhanced Swagger routes configured successfully!
+2025/11/28 20:10:37 📁 Serving static files from: C:\Users\jeremia.kaligis\Desktop\CMS New\backend\uploads
+2025/11/28 20:10:37 🖼️  Registering /uploads route handler...
+2025/11/28 20:10:37 ✅ /uploads route handler registered!
+2025/11/28 20:10:37 Audit logs table exists, checking for missing columns...
+2025/11/28 20:10:37 ✅ Audit logs table migration completed safely
+2025/11/28 20:10:37 ✅ Activity Logger initialized successfully
+2025/11/28 20:10:37 🔗 Setting up frontend compatibility routes...
+2025/11/28 20:10:37 ✅ Frontend compatibility routes configured successfully
+2025/11/28 20:10:37 ✅ Legacy payment routes disabled - using SalesJournalServiceV2 consistent flow only
+2025/11/28 20:10:37 ⚠️  Swagger spec not found: swagger spec not found (looked for docs/swagger.json and docs/swagger_comprehensive.json)
+2025/11/28 20:10:37 ℹ️  Serving minimal embedded spec so Swagger UI can still load. Run 'swag init' to generate full docs.
+2025/11/28 20:10:37 📄 Serving Swagger spec from: embedded-minimal
+2025/11/28 20:10:37 Server starting on port 8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2025/11/28 20:10:37 listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+exit status 1

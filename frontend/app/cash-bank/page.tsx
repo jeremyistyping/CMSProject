@@ -55,7 +55,7 @@ import TransactionHistoryModal from '@/components/cashbank/TransactionHistoryMod
 // Table columns for cash and bank accounts with COA standards
 const getAccountColumns = (
   t: any,
-  onEdit?: (account: CashBank) => void, 
+  onEdit?: (account: CashBank) => void,
   onView?: (account: CashBank) => void,
   onDeposit?: (account: CashBank) => void,
   onWithdraw?: (account: CashBank) => void,
@@ -65,319 +65,319 @@ const getAccountColumns = (
   textColor?: string,
   mutedTextColor?: string
 ) => [
-  {
-    header: t('cashBank.accountCode'),
-    accessor: ((row: CashBank) => (
-      <Box>
-        <Text fontFamily="mono" fontWeight="bold" fontSize="sm" color={textColor}>
-          {row.code}
-        </Text>
-        <Text fontSize="xs" color={mutedTextColor}>
-          {row.type} Account
-        </Text>
-      </Box>
-    )) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.accountName'),
-    accessor: ((row: CashBank) => (
-      <Box>
-        <Text fontWeight="medium" fontSize="sm" color={textColor}>
-          {row.name}
-        </Text>
-        <Text fontSize="xs" color={mutedTextColor}>
-          {row.description || 'No description'}
-        </Text>
-      </Box>
-    )) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.accountType'),
-    accessor: ((row: CashBank) => (
-      <Box textAlign="center">
-        <Flex alignItems="center" gap={2} justifyContent="center" mb={1}>
-          <Text fontSize="lg">{row.type === 'CASH' ? '💵' : '🏦'}</Text>
-          <Badge 
-            colorScheme={row.type === 'CASH' ? 'green' : 'blue'}
-            variant="solid"
-            size="sm"
-          >
-            {row.type}
-          </Badge>
-        </Flex>
-        <Text fontSize="xs" color={mutedTextColor}>
-          {row.type === 'CASH' ? 'Physical Money' : 'Bank Account'}
-        </Text>
-      </Box>
-    )) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.glAccount'),
-    accessor: ((row: CashBank) => {
-      if (row.account && row.account.code && row.account.name) {
+    {
+      header: t('cashBank.accountCode'),
+      accessor: ((row: CashBank) => (
+        <Box>
+          <Text fontFamily="mono" fontWeight="bold" fontSize="sm" color={textColor}>
+            {row.code}
+          </Text>
+          <Text fontSize="xs" color={mutedTextColor}>
+            {row.type} Account
+          </Text>
+        </Box>
+      )) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.accountName'),
+      accessor: ((row: CashBank) => (
+        <Box>
+          <Text fontWeight="medium" fontSize="sm" color={textColor}>
+            {row.name}
+          </Text>
+          <Text fontSize="xs" color={mutedTextColor}>
+            {row.description || 'No description'}
+          </Text>
+        </Box>
+      )) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.accountType'),
+      accessor: ((row: CashBank) => (
+        <Box textAlign="center">
+          <Flex alignItems="center" gap={2} justifyContent="center" mb={1}>
+            <Text fontSize="lg">{row.type === 'CASH' ? '💵' : '🏦'}</Text>
+            <Badge
+              colorScheme={row.type === 'CASH' ? 'green' : 'blue'}
+              variant="solid"
+              size="sm"
+            >
+              {row.type}
+            </Badge>
+          </Flex>
+          <Text fontSize="xs" color={mutedTextColor}>
+            {row.type === 'CASH' ? 'Physical Money' : 'Bank Account'}
+          </Text>
+        </Box>
+      )) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.glAccount'),
+      accessor: ((row: CashBank) => {
+        if (row.account && row.account.code && row.account.name) {
+          return (
+            <Box>
+              <Flex alignItems="center" gap={2} mb={1}>
+                <Badge size="sm" colorScheme="blue" variant="outline">
+                  {row.account.code}
+                </Badge>
+                <Text fontSize="sm" fontWeight="medium" color="blue.600" noOfLines={1}>
+                  {row.account.name}
+                </Text>
+              </Flex>
+              <Flex alignItems="center" gap={1}>
+                <Text fontSize="xs" color="green.600">
+                  ✅ {t('cashBank.integratedWithCOA')}
+                </Text>
+                <Badge size="xs" colorScheme="green" variant="subtle">
+                  {t('cashBank.asset')}
+                </Badge>
+              </Flex>
+            </Box>
+          );
+        }
         return (
           <Box>
             <Flex alignItems="center" gap={2} mb={1}>
-              <Badge size="sm" colorScheme="blue" variant="outline">
-                {row.account.code}
+              <Badge size="sm" colorScheme="orange" variant="solid">
+                UNLINKED
               </Badge>
-              <Text fontSize="sm" fontWeight="medium" color="blue.600" noOfLines={1}>
-                {row.account.name}
+              <Text fontSize="sm" color="orange.700" fontWeight="medium">
+                No COA Link
               </Text>
             </Flex>
             <Flex alignItems="center" gap={1}>
-              <Text fontSize="xs" color="green.600">
-                ✅ {t('cashBank.integratedWithCOA')}
+              <Text fontSize="xs" color="red.500">
+                ⚠️ Requires GL Account Setup
               </Text>
-              <Badge size="xs" colorScheme="green" variant="subtle">
-                {t('cashBank.asset')}
-              </Badge>
             </Flex>
           </Box>
         );
-      }
-      return (
-        <Box>
-          <Flex alignItems="center" gap={2} mb={1}>
-            <Badge size="sm" colorScheme="orange" variant="solid">
-              UNLINKED
-            </Badge>
-            <Text fontSize="sm" color="orange.700" fontWeight="medium">
-              No COA Link
-            </Text>
-          </Flex>
-          <Flex alignItems="center" gap={1}>
-            <Text fontSize="xs" color="red.500">
-              ⚠️ Requires GL Account Setup
-            </Text>
-          </Flex>
-        </Box>
-      );
-    }) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.bankDetails'),
-    accessor: ((row: CashBank) => {
-      if (row.type === 'BANK') {
+      }) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.bankDetails'),
+      accessor: ((row: CashBank) => {
+        if (row.type === 'BANK') {
+          return (
+            <Box>
+              <Text fontWeight="medium" fontSize="sm" color="blue.600" mb={1}>
+                {row.bank_name || 'Unknown Bank'}
+              </Text>
+              <Text fontSize="xs" color={textColor} fontFamily="mono">
+                Account: {row.account_no || 'N/A'}
+              </Text>
+              {row.account_holder_name && (
+                <Text fontSize="xs" color={mutedTextColor}>
+                  Atas Nama: {row.account_holder_name}
+                </Text>
+              )}
+              {row.branch && (
+                <Text fontSize="xs" color={mutedTextColor}>
+                  Cabang: {row.branch}
+                </Text>
+              )}
+              {!row.account_holder_name && !row.branch && (
+                <Text fontSize="xs" color={mutedTextColor}>
+                  Electronic Banking
+                </Text>
+              )}
+            </Box>
+          );
+        }
         return (
           <Box>
-            <Text fontWeight="medium" fontSize="sm" color="blue.600" mb={1}>
-              {row.bank_name || 'Unknown Bank'}
+            <Text fontSize="sm" color="green.600" fontWeight="medium" mb={1}>
+              Cash Storage
             </Text>
-            <Text fontSize="xs" color={textColor} fontFamily="mono">
-              Account: {row.account_no || 'N/A'}
+            <Text fontSize="xs" color={mutedTextColor}>
+              Physical cash management
             </Text>
-            {row.account_holder_name && (
-              <Text fontSize="xs" color={mutedTextColor}>
-                Atas Nama: {row.account_holder_name}
-              </Text>
-            )}
-            {row.branch && (
-              <Text fontSize="xs" color={mutedTextColor}>
-                Cabang: {row.branch}
-              </Text>
-            )}
-            {!row.account_holder_name && !row.branch && (
-              <Text fontSize="xs" color={mutedTextColor}>
-                Electronic Banking
-              </Text>
-            )}
+            <Text fontSize="xs" color={mutedTextColor}>
+              Manual transactions
+            </Text>
           </Box>
         );
-      }
-      return (
-        <Box>
-          <Text fontSize="sm" color="green.600" fontWeight="medium" mb={1}>
-            Cash Storage
-          </Text>
-          <Text fontSize="xs" color={mutedTextColor}>
-            Physical cash management
-          </Text>
-          <Text fontSize="xs" color={mutedTextColor}>
-            Manual transactions
-          </Text>
-        </Box>
-      );
-    }) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.currentBalance'),
-    accessor: ((row: CashBank) => {
-      const isNegative = row.balance < 0;
-      const balanceColor = isNegative ? 'red.500' : (row.balance > 0 ? 'green.600' : 'gray.500');
-      
-      return (
-        <Box textAlign="right">
-          <Text 
-            fontWeight="bold" 
-            color={balanceColor}
-            fontSize="sm"
-            fontFamily="mono"
-          >
-            {row.currency} {Math.abs(row.balance).toLocaleString('id-ID')}
-            {isNegative && ' (Dr)'}
-          </Text>
-          <Text fontSize="xs" color={mutedTextColor} mb={1}>
-            {isNegative ? '⚠️ Overdraft' : (row.balance > 0 ? '✅ Credit Balance' : '➜ Zero Balance')}
-          </Text>
-          <Badge 
-            size="xs" 
-            colorScheme={isNegative ? 'red' : (row.balance > 0 ? 'green' : 'gray')}
-            variant="subtle"
-          >
-            {isNegative ? 'OVERDRAFT' : (row.balance > 0 ? 'POSITIVE' : 'ZERO')}
-          </Badge>
-        </Box>
-      );
-    }) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.status'),
-    accessor: ((row: CashBank) => (
-      <Box textAlign="center">
-        <Badge 
-          colorScheme={row.is_active ? 'green' : 'red'} 
-          mb={2}
-          variant="solid"
-        >
-          {row.is_active ? 'ACTIVE' : 'INACTIVE'}
-        </Badge>
-        <Text fontSize="xs" color={row.is_active ? 'green.600' : 'red.500'}>
-          {row.is_active ? '🟢 Operational' : '🔴 Suspended'}
-        </Text>
-      </Box>
-    )) as (row: CashBank) => React.ReactNode
-  },
-  {
-    header: t('cashBank.actions'),
-    accessor: ((row: CashBank) => (
-      <Box>
-        <Menu>
-          <MenuButton
-            as={IconButton}
-            aria-label="Account actions"
-            icon={<FiMoreVertical />}
-            size="sm"
-            variant="ghost"
-            colorScheme="gray"
-          />
-          <MenuList>
-            <MenuItem 
-              icon={<FiEye />} 
-              onClick={() => onView?.(row)}
+      }) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.currentBalance'),
+      accessor: ((row: CashBank) => {
+        const isNegative = row.balance < 0;
+        const balanceColor = isNegative ? 'red.500' : (row.balance > 0 ? 'green.600' : 'gray.500');
+
+        return (
+          <Box textAlign="right">
+            <Text
+              fontWeight="bold"
+              color={balanceColor}
               fontSize="sm"
+              fontFamily="mono"
             >
-              View Details & Transactions
-            </MenuItem>
-            <MenuItem 
-              icon={<FiEdit2 />} 
-              onClick={() => onEdit?.(row)}
-              fontSize="sm"
-            >
-              Edit Account Info
-            </MenuItem>
-            <MenuDivider />
-            <MenuItem 
-              icon={<FiTrendingUp />} 
-              onClick={() => onDeposit?.(row)}
-              color="green.600"
-              fontSize="sm"
-              isDisabled={!row.is_active}
-            >
-              Make Deposit
-            </MenuItem>
-            <MenuItem 
-              icon={<FiTrendingDown />} 
-              onClick={() => onWithdraw?.(row)}
-              color="orange.600"
-              fontSize="sm"
-              isDisabled={!row.is_active || row.balance <= 0}
-            >
-              Make Withdrawal
-            </MenuItem>
-            <MenuItem 
-              icon={<FiArrowRight />} 
-              onClick={() => onTransfer?.(row)}
-              color="blue.600"
-              fontSize="sm"
-              isDisabled={!row.is_active || row.balance <= 0}
-            >
-              Transfer Funds
-            </MenuItem>
-            <MenuDivider />
-            <MenuItem 
-              icon={<FiTrash2 />} 
-              onClick={() => onDelete?.(row)}
-              color="red.600"
-              fontSize="sm"
-              isDisabled={row.balance !== 0}
-            >
-              Delete Account
-            </MenuItem>
-          </MenuList>
-        </Menu>
-        
-        {/* Quick Action Buttons */}
-        <HStack spacing={1} mt={2} justify="center">
-          <Tooltip label="View Details" fontSize="xs">
-            <IconButton
-              aria-label="View details"
-              icon={<FiEye />}
+              {row.currency} {Math.abs(row.balance).toLocaleString('id-ID')}
+              {isNegative && ' (Dr)'}
+            </Text>
+            <Text fontSize="xs" color={mutedTextColor} mb={1}>
+              {isNegative ? '⚠️ Overdraft' : (row.balance > 0 ? '✅ Credit Balance' : '➜ Zero Balance')}
+            </Text>
+            <Badge
               size="xs"
+              colorScheme={isNegative ? 'red' : (row.balance > 0 ? 'green' : 'gray')}
+              variant="subtle"
+            >
+              {isNegative ? 'OVERDRAFT' : (row.balance > 0 ? 'POSITIVE' : 'ZERO')}
+            </Badge>
+          </Box>
+        );
+      }) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.status'),
+      accessor: ((row: CashBank) => (
+        <Box textAlign="center">
+          <Badge
+            colorScheme={row.is_active ? 'green' : 'red'}
+            mb={2}
+            variant="solid"
+          >
+            {row.is_active ? 'ACTIVE' : 'INACTIVE'}
+          </Badge>
+          <Text fontSize="xs" color={row.is_active ? 'green.600' : 'red.500'}>
+            {row.is_active ? '🟢 Operational' : '🔴 Suspended'}
+          </Text>
+        </Box>
+      )) as (row: CashBank) => React.ReactNode
+    },
+    {
+      header: t('cashBank.actions'),
+      accessor: ((row: CashBank) => (
+        <Box>
+          <Menu>
+            <MenuButton
+              as={IconButton}
+              aria-label="Account actions"
+              icon={<FiMoreVertical />}
+              size="sm"
               variant="ghost"
               colorScheme="gray"
-              onClick={() => onView?.(row)}
             />
-          </Tooltip>
-          
-          <Tooltip label="Edit Account" fontSize="xs">
-            <IconButton
-              aria-label="Edit account"
-              icon={<FiEdit2 />}
-              size="xs"
-              variant="ghost"
-              colorScheme="blue"
-              onClick={() => onEdit?.(row)}
-            />
-          </Tooltip>
-          
-          {row.is_active && (
-            <Tooltip label="Deposit" fontSize="xs">
-              <IconButton
-                aria-label="Make deposit"
+            <MenuList>
+              <MenuItem
+                icon={<FiEye />}
+                onClick={() => onView?.(row)}
+                fontSize="sm"
+              >
+                View Details & Transactions
+              </MenuItem>
+              <MenuItem
+                icon={<FiEdit2 />}
+                onClick={() => onEdit?.(row)}
+                fontSize="sm"
+              >
+                Edit Account Info
+              </MenuItem>
+              <MenuDivider />
+              <MenuItem
                 icon={<FiTrendingUp />}
-                size="xs"
-                variant="ghost"
-                colorScheme="green"
                 onClick={() => onDeposit?.(row)}
-              />
-            </Tooltip>
-          )}
-          
-          {row.is_active && row.balance > 0 && (
-            <Tooltip label="Transfer" fontSize="xs">
-              <IconButton
-                aria-label="Transfer funds"
+                color="green.600"
+                fontSize="sm"
+                isDisabled={!row.is_active}
+              >
+                Make Deposit
+              </MenuItem>
+              <MenuItem
+                icon={<FiTrendingDown />}
+                onClick={() => onWithdraw?.(row)}
+                color="orange.600"
+                fontSize="sm"
+                isDisabled={!row.is_active || row.balance <= 0}
+              >
+                Make Withdrawal
+              </MenuItem>
+              <MenuItem
                 icon={<FiArrowRight />}
+                onClick={() => onTransfer?.(row)}
+                color="blue.600"
+                fontSize="sm"
+                isDisabled={!row.is_active || row.balance <= 0}
+              >
+                Transfer Funds
+              </MenuItem>
+              <MenuDivider />
+              <MenuItem
+                icon={<FiTrash2 />}
+                onClick={() => onDelete?.(row)}
+                color="red.600"
+                fontSize="sm"
+                isDisabled={row.balance !== 0}
+              >
+                Delete Account
+              </MenuItem>
+            </MenuList>
+          </Menu>
+
+          {/* Quick Action Buttons */}
+          <HStack spacing={1} mt={2} justify="center">
+            <Tooltip label="View Details" fontSize="xs">
+              <IconButton
+                aria-label="View details"
+                icon={<FiEye />}
                 size="xs"
                 variant="ghost"
-                colorScheme="orange"
-                onClick={() => onTransfer?.(row)}
+                colorScheme="gray"
+                onClick={() => onView?.(row)}
               />
             </Tooltip>
-          )}
-        </HStack>
-      </Box>
-    )) as (row: CashBank) => React.ReactNode
-  }
-];
+
+            <Tooltip label="Edit Account" fontSize="xs">
+              <IconButton
+                aria-label="Edit account"
+                icon={<FiEdit2 />}
+                size="xs"
+                variant="ghost"
+                colorScheme="blue"
+                onClick={() => onEdit?.(row)}
+              />
+            </Tooltip>
+
+            {row.is_active && (
+              <Tooltip label="Deposit" fontSize="xs">
+                <IconButton
+                  aria-label="Make deposit"
+                  icon={<FiTrendingUp />}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="green"
+                  onClick={() => onDeposit?.(row)}
+                />
+              </Tooltip>
+            )}
+
+            {row.is_active && row.balance > 0 && (
+              <Tooltip label="Transfer" fontSize="xs">
+                <IconButton
+                  aria-label="Transfer funds"
+                  icon={<FiArrowRight />}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="orange"
+                  onClick={() => onTransfer?.(row)}
+                />
+              </Tooltip>
+            )}
+          </HStack>
+        </Box>
+      )) as (row: CashBank) => React.ReactNode
+    }
+  ];
 
 const CashBankPage: React.FC = () => {
   const { token } = useAuth();
   const { t } = useTranslation();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  
+
   // Color mode values
   const bg = useColorModeValue('white', 'gray.800');
   const textColor = useColorModeValue('gray.800', 'white');
@@ -386,7 +386,7 @@ const CashBankPage: React.FC = () => {
   const modalFooterBg = useColorModeValue('gray.50', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const readOnlyBg = useColorModeValue('gray.50', 'gray.700');
-  
+
   // Tooltip descriptions for cash bank page
   const tooltips = {
     accountType: 'Tipe akun: Cash (kas tunai) untuk uang fisik, Bank (rekening bank) untuk rekening elektronik',
@@ -413,50 +413,50 @@ const CashBankPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<CashBank | null>(null);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  
+
   // Withdrawal form states (for withdrawal only)
   const [transactionAccount, setTransactionAccount] = useState<CashBank | null>(null);
   const [transactionMode, setTransactionMode] = useState<'withdrawal'>('withdrawal');
-  
+
   const {
     isOpen: isDetailModalOpen,
     onOpen: onDetailModalOpen,
     onClose: onDetailModalClose
   } = useDisclosure();
-  
+
   const {
     isOpen: isTransactionModalOpen,
     onOpen: onTransactionModalOpen,
     onClose: onTransactionModalClose
   } = useDisclosure();
-  
+
   const {
     isOpen: isTransferModalOpen,
     onOpen: onTransferModalOpen,
     onClose: onTransferModalClose
   } = useDisclosure();
-  
+
   const {
     isOpen: isTransactionHistoryModalOpen,
     onOpen: onTransactionHistoryModalOpen,
     onClose: onTransactionHistoryModalClose
   } = useDisclosure();
-  
+
   const {
     isOpen: isDepositModalOpen,
     onOpen: onDepositModalOpen,
     onClose: onDepositModalClose
   } = useDisclosure();
-  
+
   const {
     isOpen: isReconcileModalOpen,
     onOpen: onReconcileModalOpen,
     onClose: onReconcileModalClose
   } = useDisclosure();
-  
+
   // Deposit form states
   const [depositAccount, setDepositAccount] = useState<CashBank | null>(null);
-  
+
   // Reconciliation states
   const [reconcileAccount, setReconcileAccount] = useState<CashBank | null>(null);
   const [reconciling, setReconciling] = useState(false);
@@ -465,13 +465,13 @@ const CashBankPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [accountsData, summaryData, postedBalances] = await Promise.all([
         cashbankService.getCashBankAccounts(),
         cashbankService.getBalanceSummary(),
         accountService.getPostedCOABalances(token!)
       ]);
-      
+
       // Build map of COA posted-only raw balances by account_id
       const ssotMap = new Map<number, number>();
       postedBalances.forEach((row: any) => ssotMap.set(row.account_id, row.raw_balance));
@@ -558,42 +558,42 @@ const CashBankPage: React.FC = () => {
     setTransactionAccount(account);
     onTransferModalOpen();
   };
-  
+
   const handleReconcile = (account: CashBank) => {
     setReconcileAccount(account);
     onReconcileModalOpen();
   };
-  
+
   const handleGlobalReconcile = () => {
     setReconcileAccount(null); // Global reconciliation
     onReconcileModalOpen();
   };
-  
+
   const handleOpenReconciliationPage = () => {
     // Navigate to dedicated reconciliation page
     window.open('/cash-bank-reconciliation', '_blank');
     onReconcileModalClose();
   };
-  
+
   const handleCheckReconciliationStatus = async () => {
     try {
       setReconciling(true);
-      
+
       const response = await fetch('/api/v1/dashboard/finance', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) throw new Error('Failed to check reconciliation status');
-      
+
       const result = await response.json();
       const bankRecon = result.data.bank_reconciliation;
-      
+
       let statusMessage = '';
       let statusColor: 'success' | 'warning' | 'error' | 'info' = 'info';
-      
+
       switch (bankRecon.status) {
         case 'never_reconciled':
           statusMessage = 'Bank reconciliation has never been performed. Please run reconciliation to ensure data accuracy.';
@@ -615,7 +615,7 @@ const CashBankPage: React.FC = () => {
           statusMessage = 'Reconciliation status is unknown. Please check manually.';
           statusColor = 'info';
       }
-      
+
       toast({
         title: 'Reconciliation Status',
         description: statusMessage,
@@ -623,7 +623,7 @@ const CashBankPage: React.FC = () => {
         duration: 6000,
         isClosable: true,
       });
-      
+
     } catch (error: any) {
       toast({
         title: 'Status Check Failed',
@@ -684,7 +684,7 @@ const CashBankPage: React.FC = () => {
     try {
       setLoading(true);
       const result = await cashbankService.fixGLAccountLinks();
-      
+
       toast({
         title: 'GL Account Links Fixed',
         description: `Successfully fixed ${result.fixed_count} cash/bank accounts`,
@@ -692,7 +692,7 @@ const CashBankPage: React.FC = () => {
         duration: 5000,
         isClosable: true,
       });
-      
+
       // Refresh data to show updated GL links
       fetchData();
     } catch (error: any) {
@@ -712,15 +712,15 @@ const CashBankPage: React.FC = () => {
   const safeAccounts = Array.isArray(accounts) ? accounts : [];
   const cashAccounts = safeAccounts.filter(acc => acc.type === 'CASH' && acc.is_active);
   const bankAccounts = safeAccounts.filter(acc => acc.type === 'BANK' && acc.is_active);
-  
+
   // Get columns with handlers
   const accountColumns = getAccountColumns(
     t,
-    handleEditAccount, 
-    handleViewAccount, 
-    handleDeposit, 
-    handleWithdraw, 
-    handleTransfer, 
+    handleEditAccount,
+    handleViewAccount,
+    handleDeposit,
+    handleWithdraw,
+    handleTransfer,
     handleDelete,
     handleReconcile,
     textColor,
@@ -729,7 +729,7 @@ const CashBankPage: React.FC = () => {
 
   if (loading) {
     return (
-      <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'employee', 'inventory_manager']}>
+      <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'employee', 'inventory_manager', 'gm', 'manager', 'project_director', 'managing_director']}>
         <Box>
           <Text>{t('common.loading')}</Text>
         </Box>
@@ -738,7 +738,7 @@ const CashBankPage: React.FC = () => {
   }
 
   return (
-    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'employee', 'inventory_manager']}>
+    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'employee', 'inventory_manager', 'gm', 'manager', 'project_director', 'managing_director']}>
       <Box>
         <Flex justify="space-between" align="center" mb={6}>
           <Heading size="lg">{t('cashBank.title')}</Heading>
@@ -752,7 +752,7 @@ const CashBankPage: React.FC = () => {
             </Button>
           </HStack>
         </Flex>
-        
+
         {error && (
           <Alert status="error" mb={6}>
             <AlertIcon />
@@ -760,7 +760,7 @@ const CashBankPage: React.FC = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         {/* COA Integration Information */}
         <Alert status="info" mb={6} borderRadius="lg">
           <AlertIcon />
@@ -780,12 +780,12 @@ const CashBankPage: React.FC = () => {
                 <Text fontSize="xs" color="purple.600">
                   🔍 Full audit trail via journal entries
                 </Text>
-                <Button 
-                  as="a" 
-                  href="/accounts" 
+                <Button
+                  as="a"
+                  href="/accounts"
                   target="_blank"
-                  size="xs" 
-                  variant="outline" 
+                  size="xs"
+                  variant="outline"
                   colorScheme="blue"
                   leftIcon={<Text fontSize="xs">🔗</Text>}
                 >
@@ -795,7 +795,7 @@ const CashBankPage: React.FC = () => {
             </AlertDescription>
           </Box>
         </Alert>
-        
+
         {/* COA Integration Status */}
         {safeAccounts.length > 0 && (
           <Card mb={6} borderLeft="4px" borderLeftColor={safeAccounts.some(acc => !acc.account) ? 'orange.400' : 'green.400'}>
@@ -810,9 +810,9 @@ const CashBankPage: React.FC = () => {
                   </Text>
                 </Box>
                 {safeAccounts.some(acc => !acc.account) && (
-                  <Button 
-                    size="xs" 
-                    colorScheme="orange" 
+                  <Button
+                    size="xs"
+                    colorScheme="orange"
                     variant="outline"
                     onClick={handleFixGLLinks}
                     isLoading={loading}
@@ -824,7 +824,7 @@ const CashBankPage: React.FC = () => {
             </CardBody>
           </Card>
         )}
-        
+
         {/* Summary Cards */}
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} mb={8}>
           <Card>
@@ -838,7 +838,7 @@ const CashBankPage: React.FC = () => {
               </Stat>
             </CardBody>
           </Card>
-          
+
           <Card>
             <CardBody>
               <Stat>
@@ -850,7 +850,7 @@ const CashBankPage: React.FC = () => {
               </Stat>
             </CardBody>
           </Card>
-          
+
           <Card>
             <CardBody>
               <Stat>
@@ -868,9 +868,9 @@ const CashBankPage: React.FC = () => {
         <Box mb={8}>
           <Flex justify="space-between" align="center" mb={4}>
             <Heading size="md">Bank Accounts</Heading>
-            <Button 
-              size="sm" 
-              leftIcon={<FiCreditCard />} 
+            <Button
+              size="sm"
+              leftIcon={<FiCreditCard />}
               colorScheme="blue"
               onClick={handleAddAccount}
             >
@@ -903,9 +903,9 @@ const CashBankPage: React.FC = () => {
         <Box>
           <Flex justify="space-between" align="center" mb={4}>
             <Heading size="md">Cash Accounts</Heading>
-            <Button 
-              size="sm" 
-              leftIcon={<FiDollarSign />} 
+            <Button
+              size="sm"
+              leftIcon={<FiDollarSign />}
               colorScheme="green"
               onClick={handleAddAccount}
             >
@@ -964,8 +964,8 @@ const CashBankPage: React.FC = () => {
       {/* Account Details Modal */}
       <Modal isOpen={isDetailModalOpen} onClose={onDetailModalClose} size="4xl" scrollBehavior="inside">
         <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
-        <ModalContent 
-          maxH="90vh" 
+        <ModalContent
+          maxH="90vh"
           maxW={{ base: '95vw', md: '90vw', lg: '70vw' }}
           mx={4}
           bg={modalContentBg}
@@ -973,17 +973,17 @@ const CashBankPage: React.FC = () => {
           flexDirection="column"
         >
           {/* Payment Modal Style Header */}
-          <ModalHeader 
-            bg="blue.500" 
-            color="white" 
+          <ModalHeader
+            bg="blue.500"
+            color="white"
             borderTopRadius="md"
             py={4}
             px={6}
           >
             <Flex alignItems="center" gap={4}>
-              <Box 
-                p={3} 
-                bg="whiteAlpha.200" 
+              <Box
+                p={3}
+                bg="whiteAlpha.200"
                 borderRadius="full"
                 fontSize="2xl"
               >
@@ -994,7 +994,7 @@ const CashBankPage: React.FC = () => {
                   {selectedAccount?.name}
                 </Text>
                 <HStack spacing={3}>
-                  <Badge 
+                  <Badge
                     bg="whiteAlpha.200"
                     color="white"
                     px={2}
@@ -1008,7 +1008,7 @@ const CashBankPage: React.FC = () => {
                   <Text fontSize="sm" fontFamily="mono" opacity={0.9}>
                     {selectedAccount?.code}
                   </Text>
-                  <Badge 
+                  <Badge
                     bg={selectedAccount?.is_active ? 'green.500' : 'red.500'}
                     color="white"
                     px={2}
@@ -1023,21 +1023,21 @@ const CashBankPage: React.FC = () => {
             </Flex>
           </ModalHeader>
           <ModalCloseButton color="white" />
-          
+
           <ModalBody p={6} overflowY="auto" flex="1">
             {selectedAccount && (
               <VStack spacing={6} align="stretch">
                 {/* Balance Hero Section */}
-                <Card 
-                  bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" 
-                  color="white" 
-                  shadow="lg" 
+                <Card
+                  bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+                  color="white"
+                  shadow="lg"
                   borderRadius="xl"
                 >
                   <CardBody p={6} textAlign="center">
                     <VStack spacing={4}>
                       <Text fontSize="md" fontWeight="medium" opacity={0.9}>Current Balance</Text>
-                      <Text 
+                      <Text
                         fontSize="3xl"
                         fontWeight="bold"
                         fontFamily="mono"
@@ -1045,7 +1045,7 @@ const CashBankPage: React.FC = () => {
                       >
                         {selectedAccount.currency} {Math.abs(selectedAccount.balance).toLocaleString('id-ID')}
                       </Text>
-                      <Badge 
+                      <Badge
                         bg={selectedAccount.balance < 0 ? 'red.500' : selectedAccount.balance > 0 ? 'green.500' : 'gray.500'}
                         color="white"
                         px={3}
@@ -1053,8 +1053,8 @@ const CashBankPage: React.FC = () => {
                         borderRadius="full"
                         fontSize="sm"
                       >
-                        {selectedAccount.balance < 0 ? '⚠️ Overdraft' : 
-                         selectedAccount.balance > 0 ? '✅ Positive' : '➖ Zero Balance'}
+                        {selectedAccount.balance < 0 ? '⚠️ Overdraft' :
+                          selectedAccount.balance > 0 ? '✅ Positive' : '➖ Zero Balance'}
                       </Badge>
                     </VStack>
                   </CardBody>
@@ -1070,7 +1070,7 @@ const CashBankPage: React.FC = () => {
                         <Text fontSize="xl">📋</Text>
                         <Text fontWeight="bold" fontSize="lg">Account Information</Text>
                       </HStack>
-                      
+
                       <VStack spacing={3} align="stretch">
                         <Box>
                           <Text fontSize="xs" color={mutedTextColor} mb={1} textTransform="uppercase" letterSpacing="wide">Account Code</Text>
@@ -1097,7 +1097,7 @@ const CashBankPage: React.FC = () => {
                           <Text fontSize="xl">🏦</Text>
                           <Text fontWeight="bold" fontSize="lg">Bank Details</Text>
                         </HStack>
-                        
+
                         <VStack spacing={3} align="stretch">
                           <Box>
                             <Text fontSize="xs" color={mutedTextColor} mb={1} textTransform="uppercase" letterSpacing="wide">Bank Name</Text>
@@ -1136,7 +1136,7 @@ const CashBankPage: React.FC = () => {
                         <Text fontSize="xl">📊</Text>
                         <Text fontWeight="bold" fontSize="lg">Chart of Accounts</Text>
                       </HStack>
-                      
+
                       {selectedAccount.account ? (
                         <Box bg="green.50" p={4} borderRadius="lg" borderLeft="4px" borderLeftColor="green.400">
                           <HStack justify="space-between" align="center" mb={2}>
@@ -1173,7 +1173,7 @@ const CashBankPage: React.FC = () => {
                         <Text fontSize="xl">📅</Text>
                         <Text fontWeight="bold" fontSize="lg">Audit Information</Text>
                       </HStack>
-                      
+
                       <VStack spacing={3} align="stretch">
                         <Box>
                           <Text fontSize="xs" color={mutedTextColor} mb={1} textTransform="uppercase" letterSpacing="wide">Created</Text>
@@ -1212,7 +1212,7 @@ const CashBankPage: React.FC = () => {
                     <Text fontSize="xl">⚡</Text>
                     <Text fontWeight="bold" fontSize="lg">Quick Actions</Text>
                   </HStack>
-                  
+
                   <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
                     <Button
                       leftIcon={<FiEdit2 />}
@@ -1226,7 +1226,7 @@ const CashBankPage: React.FC = () => {
                     >
                       Edit
                     </Button>
-                    
+
                     <Button
                       leftIcon={<FiEye />}
                       colorScheme="purple"
@@ -1240,7 +1240,7 @@ const CashBankPage: React.FC = () => {
                     >
                       History
                     </Button>
-                    
+
                     {selectedAccount.is_active && (
                       <Button
                         leftIcon={<FiTrendingUp />}
@@ -1255,7 +1255,7 @@ const CashBankPage: React.FC = () => {
                         Deposit
                       </Button>
                     )}
-                    
+
                     {selectedAccount.is_active && selectedAccount.balance > 0 && (
                       <Button
                         leftIcon={<FiArrowRight />}
@@ -1277,8 +1277,8 @@ const CashBankPage: React.FC = () => {
           </ModalBody>
 
           {/* Modal Footer with Payment Modal Style */}
-          <ModalFooter 
-            bg={modalFooterBg} 
+          <ModalFooter
+            bg={modalFooterBg}
             borderBottomRadius="md"
             py={4}
             px={6}
@@ -1303,11 +1303,11 @@ const CashBankPage: React.FC = () => {
                   </HStack>
                 </Box>
               )}
-              
+
               {/* Action Buttons */}
               <HStack spacing={3}>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={onDetailModalClose}
                   size={{ base: 'sm', md: 'md' }}
                   minW="80px"
@@ -1331,7 +1331,7 @@ const CashBankPage: React.FC = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      
+
       {/* Deposit Modal - New Improved Form */}
       <DepositFormImproved
         isOpen={isDepositModalOpen}
@@ -1339,14 +1339,14 @@ const CashBankPage: React.FC = () => {
         onSuccess={handleTransactionSuccess}
         account={depositAccount}
       />
-      
+
       {/* Transaction History Modal */}
       <TransactionHistoryModal
         isOpen={isTransactionHistoryModalOpen}
         onClose={onTransactionHistoryModalClose}
         account={selectedAccount}
       />
-      
+
       {/* Reconciliation Modal */}
       <Modal isOpen={isReconcileModalOpen} onClose={onReconcileModalClose} size="lg">
         <ModalOverlay />
@@ -1355,7 +1355,7 @@ const CashBankPage: React.FC = () => {
             {reconcileAccount ? `Reconcile ${reconcileAccount.name}` : 'Bank Reconciliation Check'}
           </ModalHeader>
           <ModalCloseButton />
-          
+
           <ModalBody>
             <VStack spacing={4} align="stretch">
               <Alert status="info">
@@ -1367,7 +1367,7 @@ const CashBankPage: React.FC = () => {
                   </AlertDescription>
                 </Box>
               </Alert>
-              
+
               {reconcileAccount ? (
                 <Box p={4} bg="gray.50" borderRadius="md">
                   <Text fontWeight="bold" mb={2}>{reconcileAccount.name}</Text>
@@ -1385,7 +1385,7 @@ const CashBankPage: React.FC = () => {
                   </HStack>
                   <HStack justify="space-between">
                     <Text fontSize="sm">Status:</Text>
-                    <Badge 
+                    <Badge
                       colorScheme={reconcileAccount.is_active ? 'green' : 'red'}
                       variant="solid"
                       fontSize="xs"
@@ -1402,34 +1402,34 @@ const CashBankPage: React.FC = () => {
                   </Text>
                 </Box>
               )}
-              
+
               <Alert status="warning" size="sm">
                 <AlertIcon />
                 <AlertDescription fontSize="xs">
                   <Text fontWeight="bold" mb={1}>Action Required:</Text>
-                  To perform actual reconciliation, please use the dedicated 
-                  <Text as="span" fontWeight="bold" color="blue.600"> Cash & Bank Reconciliation </Text> 
+                  To perform actual reconciliation, please use the dedicated
+                  <Text as="span" fontWeight="bold" color="blue.600"> Cash & Bank Reconciliation </Text>
                   module which provides advanced reconciliation tools.
                 </AlertDescription>
               </Alert>
-              
+
               <Text fontSize="sm" color="gray.600">
                 Available actions:
               </Text>
-              
+
               <VStack spacing={2} align="stretch">
-                <Button 
+                <Button
                   leftIcon={<FiSettings />}
-                  variant="outline" 
+                  variant="outline"
                   colorScheme="purple"
                   onClick={handleOpenReconciliationPage}
                   size="sm"
                 >
                   Open Reconciliation Module
                 </Button>
-                <Button 
+                <Button
                   leftIcon={<FiRefreshCw />}
-                  variant="outline" 
+                  variant="outline"
                   onClick={handleCheckReconciliationStatus}
                   isLoading={reconciling}
                   size="sm"
@@ -1439,14 +1439,14 @@ const CashBankPage: React.FC = () => {
               </VStack>
             </VStack>
           </ModalBody>
-          
+
           <ModalFooter>
             <HStack spacing={3}>
               <Button variant="outline" onClick={onReconcileModalClose}>
                 Close
               </Button>
-              <Button 
-                colorScheme="purple" 
+              <Button
+                colorScheme="purple"
                 onClick={handleOpenReconciliationPage}
               >
                 Go to Reconciliation

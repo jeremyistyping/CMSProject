@@ -2,29 +2,30 @@ package models
 
 import (
 	"time"
+
 	"gorm.io/gorm"
 )
 
 type User struct {
-	ID           uint           `json:"id" gorm:"primaryKey"`
-	Username     string         `json:"username" gorm:"unique;not null;size:50"`
-	Email        string         `json:"email" gorm:"unique;not null;size:100"`
-	Password     string         `json:"-" gorm:"not null;size:255"`
-	Role         string         `json:"role" gorm:"not null;default:'employee';size:30"` // admin, director, finance, cost_control, employee, inventory_manager
-	FirstName    string         `json:"first_name" gorm:"size:50"`
-	LastName     string         `json:"last_name" gorm:"size:50"`
-	Phone        string         `json:"phone" gorm:"size:20"`
-	Address      string         `json:"address" gorm:"type:text"`
-	Department   string         `json:"department" gorm:"size:50"`
-	Position     string         `json:"position" gorm:"size:50"`
-	HireDate     *time.Time     `json:"hire_date"`
-	Salary       float64        `json:"-" gorm:"type:decimal(15,2)"`
-	IsActive     bool           `json:"is_active" gorm:"default:true"`
-	LastLoginAt  *time.Time     `json:"last_login_at"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
-	
+	ID          uint           `json:"id" gorm:"primaryKey"`
+	Username    string         `json:"username" gorm:"unique;not null;size:50"`
+	Email       string         `json:"email" gorm:"unique;not null;size:100"`
+	Password    string         `json:"-" gorm:"not null;size:255"`
+	Role        string         `json:"role" gorm:"not null;default:'employee';size:30"` // admin, director, finance, cost_control, employee, inventory_manager, gm
+	FirstName   string         `json:"first_name" gorm:"size:50"`
+	LastName    string         `json:"last_name" gorm:"size:50"`
+	Phone       string         `json:"phone" gorm:"size:20"`
+	Address     string         `json:"address" gorm:"type:text"`
+	Department  string         `json:"department" gorm:"size:50"`
+	Position    string         `json:"position" gorm:"size:50"`
+	HireDate    *time.Time     `json:"hire_date"`
+	Salary      float64        `json:"-" gorm:"type:decimal(15,2)"`
+	IsActive    bool           `json:"is_active" gorm:"default:true"`
+	LastLoginAt *time.Time     `json:"last_login_at"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+
 	// Relations
 	CreatedAuditLogs []AuditLog `json:"-" gorm:"foreignKey:UserID"`
 	Sales            []Sale     `json:"-" gorm:"foreignKey:UserID"`

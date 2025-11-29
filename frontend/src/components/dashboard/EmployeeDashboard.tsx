@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import { API_ENDPOINTS } from '@/config/api';
 import projectService from '@/services/projectService';
+import { Project } from '@/types/project';
+import ProjectSelectionModal from './ProjectSelectionModal';
 import {
   Box,
   Heading,
@@ -19,7 +21,9 @@ import {
   ListIcon,
   Badge,
   Flex,
-  Spinner
+  Spinner,
+  useDisclosure,
+  useToast
 } from '@chakra-ui/react';
 import {
   FiUser,
@@ -87,10 +91,16 @@ interface EmployeeDashboardData {
 
 export const EmployeeDashboard = () => {
   const router = useRouter();
+  const toast = useToast();
   const [employeeData, setEmployeeData] = useState<EmployeeDashboardData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Project selection modal state
+  const { isOpen: isProjectModalOpen, onOpen: onProjectModalOpen, onClose: onProjectModalClose } = useDisclosure();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
 
   useEffect(() => {
     const fetchEmployeeDashboard = async () => {
@@ -111,19 +121,43 @@ export const EmployeeDashboard = () => {
 
   const handleSendDailyReport = async () => {
     try {
-      setIsRedirecting(true);
-      const projects = await projectService.getActiveProjects();
-      if (projects && projects.length === 1) {
-        router.push(`/projects/${projects[0].id}?tab=daily_updates`);
-      } else {
-        router.push('/projects');
+      setLoadingProjects(true);
+      const activeProjects = await projectService.getActiveProjects();
+
+      // Filter only ongoing projects
+      const ongoingProjects = activeProjects.filter(
+        (project) => project.status?.toUpperCase() === 'ONGOING'
+      );
+
+      if (ongoingProjects.length === 0) {
+        toast({
+          title: 'Tidak ada proyek berlangsung',
+          description: 'Tidak ada proyek yang sedang berlangsung untuk daily report',
+          status: 'info',
+          duration: 4000,
+          isClosable: true,
+        });
+        return;
       }
+
+      setProjects(ongoingProjects);
+      onProjectModalOpen();
     } catch (error) {
       console.error('Error fetching projects:', error);
-      router.push('/projects');
+      toast({
+        title: 'Gagal memuat proyek',
+        description: 'Terjadi kesalahan saat memuat daftar proyek',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      });
     } finally {
-      setIsRedirecting(false);
+      setLoadingProjects(false);
     }
+  };
+
+  const handleProjectSelect = (project: Project) => {
+    router.push(`/projects/${project.id}?tab=daily_updates`);
   };
 
   return (
@@ -267,8 +301,8 @@ export const EmployeeDashboard = () => {
                   colorScheme="green"
                   variant="solid"
                   onClick={handleSendDailyReport}
-                  isLoading={isRedirecting}
-                  loadingText="Redirecting..."
+                  isLoading={loadingProjects}
+                  loadingText="Memuat proyek..."
                   size="md"
                 >
                   Kirim Daily Report
@@ -287,6 +321,15 @@ export const EmployeeDashboard = () => {
           </Card>
         </>
       )}
+
+      {/* Project Selection Modal */}
+      <ProjectSelectionModal
+        isOpen={isProjectModalOpen}
+        onClose={onProjectModalClose}
+        projects={projects}
+        loading={loadingProjects}
+        onSelectProject={handleProjectSelect}
+      />
     </Box>
   );
 };

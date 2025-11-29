@@ -243,7 +243,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 
 	// Purchase Request
 	prRepo := repositories.NewPurchaseRequestRepository(db)
-	prService := services.NewPurchaseRequestService(prRepo, db)
+	prService := services.NewPurchaseRequestService(prRepo, db, approvalService)
 	prController := controllers.NewPurchaseRequestController(prService)
 
 	// Initialize security middleware
