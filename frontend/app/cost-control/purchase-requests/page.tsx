@@ -19,6 +19,13 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
 import PRList from '@/components/cost-control/PRList';
@@ -30,7 +37,7 @@ import { PurchaseRequest } from '@/types/purchaseRequest';
 import { Project } from '@/types/project';
 
 const PurchaseRequestsPage: React.FC = () => {
-  const { canView, canCreate, canEdit, loading: permLoading } = useModulePermissions('purchases');
+  const { canView, canCreate, canEdit, canDelete, loading: permLoading } = useModulePermissions('purchases');
   const headingColor = useColorModeValue('gray.800', 'gray.100');
   const textColor = useColorModeValue('gray.600', 'gray.300');
   const boxBg = useColorModeValue('white', 'gray.800');
@@ -44,6 +51,11 @@ const PurchaseRequestsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPR, setSelectedPR] = useState<PurchaseRequest | null>(null);
+  const [prToEdit, setPrToEdit] = useState<PurchaseRequest | null>(null);
+  const [prToDelete, setPrToDelete] = useState<PurchaseRequest | null>(null);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const cancelRef = React.useRef(null);
+  const toast = useToast();
 
   // Modals
   const {
@@ -103,6 +115,49 @@ const PurchaseRequestsPage: React.FC = () => {
     onDetailOpen();
   };
 
+  const handleEditPR = (pr: PurchaseRequest) => {
+    setPrToEdit(pr);
+    onCreateOpen();
+  };
+
+  const handleDeletePR = (pr: PurchaseRequest) => {
+    setPrToDelete(pr);
+    setIsDeleteAlertOpen(true);
+  };
+
+  const confirmDeletePR = async () => {
+    if (!prToDelete) return;
+
+    try {
+      await purchaseRequestService.delete(prToDelete.id);
+      toast({
+        title: 'Success',
+        description: 'Purchase Request deleted successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchPRs();
+    } catch (error) {
+      console.error('Error deleting PR:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete Purchase Request',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsDeleteAlertOpen(false);
+      setPrToDelete(null);
+    }
+  };
+
+  const handleCreateClose = () => {
+    setPrToEdit(null);
+    onCreateClose();
+  };
+
   const filteredPRs = purchaseRequests.filter(pr =>
     pr.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     pr.project?.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -150,7 +205,7 @@ const PurchaseRequestsPage: React.FC = () => {
               </Text>
             </VStack>
             {canCreate && (
-              <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={onCreateOpen}>
+              <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={() => { setPrToEdit(null); onCreateOpen(); }}>
                 Create New PR
               </Button>
             )}
@@ -211,7 +266,8 @@ const PurchaseRequestsPage: React.FC = () => {
             <PRList
               purchaseRequests={filteredPRs}
               onView={handleViewPR}
-              onApprove={canEdit ? handleViewPR : undefined} // Open detail modal for approval
+              onEdit={canEdit ? handleEditPR : undefined}
+              onDelete={canDelete ? handleDeletePR : undefined}
             />
           )}
         </Box>
@@ -220,8 +276,9 @@ const PurchaseRequestsPage: React.FC = () => {
       {/* Modals */}
       <CreatePRModal
         isOpen={isCreateOpen}
-        onClose={onCreateClose}
+        onClose={handleCreateClose}
         onSuccess={fetchPRs}
+        prToEdit={prToEdit}
       />
 
       <PRDetailModal
@@ -230,6 +287,33 @@ const PurchaseRequestsPage: React.FC = () => {
         pr={selectedPR}
         onUpdate={fetchPRs}
       />
+
+      <AlertDialog
+        isOpen={isDeleteAlertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsDeleteAlertOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Purchase Request
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to delete this Purchase Request? This action cannot be undone.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsDeleteAlertOpen(false)}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={confirmDeletePR} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </SimpleLayout>
   );
 };

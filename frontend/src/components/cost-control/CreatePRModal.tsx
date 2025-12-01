@@ -41,9 +41,10 @@ interface CreatePRModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    prToEdit?: PurchaseRequest | null;
 }
 
-const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSuccess, prToEdit }) => {
     const toast = useToast();
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -63,8 +64,31 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
     useEffect(() => {
         if (isOpen) {
             fetchProjects();
+            if (prToEdit) {
+                // Populate form with PR data
+                reset({
+                    project_id: prToEdit.project_id,
+                    request_date: new Date(prToEdit.request_date).toISOString().split('T')[0],
+                    required_date: prToEdit.required_date ? new Date(prToEdit.required_date).toISOString().split('T')[0] : '',
+                    notes: prToEdit.notes || '',
+                    items: prToEdit.items?.map(item => ({
+                        item_name: item.item_name,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        estimated_price: item.estimated_price,
+                        total_price: item.total_price,
+                        notes: item.notes || ''
+                    })) || []
+                });
+            } else {
+                // Reset to default values
+                reset({
+                    request_date: new Date().toISOString().split('T')[0],
+                    items: [{ item_name: '', quantity: 1, unit: '', estimated_price: 0, total_price: 0, notes: '' }],
+                });
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, prToEdit, reset]);
 
     const fetchProjects = async () => {
         try {
@@ -92,23 +116,36 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
                 items: itemsWithTotal
             };
 
-            await purchaseRequestService.create(formattedData as CreatePRData);
+            if (prToEdit) {
+                // Update existing PR
+                await purchaseRequestService.update(prToEdit.id, formattedData);
+                toast({
+                    title: 'Success',
+                    description: 'Purchase Request updated successfully',
+                    status: 'success',
+                    duration: 3000,
+                    isClosable: true,
+                });
+            } else {
+                // Create new PR
+                await purchaseRequestService.create(formattedData as CreatePRData);
+                toast({
+                    title: 'Success',
+                    description: 'Purchase Request created successfully',
+                    status: 'success',
+                    duration: 3000,
+                    isClosable: true,
+                });
+            }
 
-            toast({
-                title: 'Success',
-                description: 'Purchase Request created successfully',
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-            });
             onSuccess();
             onClose();
             reset();
         } catch (error) {
-            console.error('Error creating PR:', error);
+            console.error('Error saving PR:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to create Purchase Request. Please check your input.',
+                description: `Failed to ${prToEdit ? 'update' : 'create'} Purchase Request. Please check your input.`,
                 status: 'error',
                 duration: 3000,
                 isClosable: true,
@@ -128,7 +165,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
         <Modal isOpen={isOpen} onClose={onClose} size="xl">
             <ModalOverlay />
             <ModalContent maxW="900px">
-                <ModalHeader>Create Purchase Request</ModalHeader>
+                <ModalHeader>{prToEdit ? 'Edit Purchase Request' : 'Create Purchase Request'}</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
                     <VStack spacing={4} align="stretch">
@@ -250,7 +287,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
                         Cancel
                     </Button>
                     <Button colorScheme="blue" onClick={handleSubmit(onSubmit)} isLoading={isLoading}>
-                        Create Request
+                        {prToEdit ? 'Update Request' : 'Create Request'}
                     </Button>
                 </ModalFooter>
             </ModalContent>

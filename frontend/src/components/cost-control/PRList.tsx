@@ -17,17 +17,19 @@ import {
     HStack,
     Tooltip,
 } from '@chakra-ui/react';
-import { FiMoreVertical, FiEye, FiCheck, FiX, FiEdit } from 'react-icons/fi';
+import { FiMoreVertical, FiEye, FiCheck, FiX, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { PurchaseRequest } from '../../types/purchaseRequest';
 
 interface PRListProps {
     purchaseRequests: PurchaseRequest[];
     onView: (pr: PurchaseRequest) => void;
+    onEdit?: (pr: PurchaseRequest) => void;
+    onDelete?: (pr: PurchaseRequest) => void;
     onApprove?: (pr: PurchaseRequest) => void;
     onReject?: (pr: PurchaseRequest) => void;
 }
 
-const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onApprove, onReject }) => {
+const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDelete, onApprove, onReject }) => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'APPROVED': return 'green';
@@ -62,7 +64,15 @@ const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onApprove, on
                                     <Text noOfLines={1} maxW="200px">{pr.project?.project_name}</Text>
                                 </Tooltip>
                             </Td>
-                            <Td>{pr.requester?.name || 'Unknown'}</Td>
+                            <Td>
+                                {pr.requester?.role ? (
+                                    <Badge colorScheme="purple" variant="outline" fontSize="sm" textTransform="uppercase">
+                                        {pr.requester.role.replace('_', ' ')}
+                                    </Badge>
+                                ) : (
+                                    <Text color="gray.400">Unknown</Text>
+                                )}
+                            </Td>
                             <Td isNumeric>
                                 {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(pr.total_amount)}
                             </Td>
@@ -90,6 +100,16 @@ const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onApprove, on
                                                 variant="ghost"
                                             />
                                             <MenuList>
+                                                {onEdit && (
+                                                    <MenuItem icon={<FiEdit />} onClick={() => onEdit(pr)}>
+                                                        Edit
+                                                    </MenuItem>
+                                                )}
+                                                {onDelete && (
+                                                    <MenuItem icon={<FiTrash2 />} onClick={() => onDelete(pr)} color="red.500">
+                                                        Delete
+                                                    </MenuItem>
+                                                )}
                                                 {onApprove && (
                                                     <MenuItem icon={<FiCheck />} onClick={() => onApprove(pr)}>
                                                         Approve

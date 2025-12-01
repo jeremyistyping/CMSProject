@@ -256,7 +256,13 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
                                             </VStack>
                                             <VStack align="start" spacing={1}>
                                                 <Text fontSize="sm" color="gray.500">Requester</Text>
-                                                <Text fontWeight="medium">{pr.requester?.name}</Text>
+                                                {pr.requester?.role ? (
+                                                    <Badge colorScheme="purple" variant="outline" fontSize="sm" textTransform="uppercase">
+                                                        {pr.requester.role.replace('_', ' ')}
+                                                    </Badge>
+                                                ) : (
+                                                    <Text fontWeight="medium" color="gray.400">Unknown</Text>
+                                                )}
                                             </VStack>
                                             <VStack align="start" spacing={1}>
                                                 <Text fontSize="sm" color="gray.500">Request Date</Text>
