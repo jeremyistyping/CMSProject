@@ -31,13 +31,31 @@ import { FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
 import PRList from '@/components/cost-control/PRList';
 import CreatePRModal from '@/components/cost-control/CreatePRModal';
 import PRDetailModal from '@/components/cost-control/PRDetailModal';
+import PRVerificationModal from '@/components/cost-control/PRVerificationModal';
 import purchaseRequestService from '@/services/purchaseRequestService';
 import projectService from '@/services/projectService';
+import cbsService from '@/services/cbsService';
 import { PurchaseRequest } from '@/types/purchaseRequest';
 import { Project } from '@/types/project';
+import { CBSNode } from '@/types/cbs';
 
 const PurchaseRequestsPage: React.FC = () => {
-  const { canView, canCreate, canEdit, canDelete, loading: permLoading } = useModulePermissions('purchases');
+  // Approve/Reject State
+  const [isApproveAlertOpen, setIsApproveAlertOpen] = useState(false);
+  const [isRejectAlertOpen, setIsRejectAlertOpen] = useState(false);
+  const [prToApprove, setPrToApprove] = useState<PurchaseRequest | null>(null);
+  const [prToReject, setPrToReject] = useState<PurchaseRequest | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Verification State
+  const [prToVerify, setPrToVerify] = useState<PurchaseRequest | null>(null);
+  const [cbsNodes, setCbsNodes] = useState<CBSNode[]>([]);
+
+  const { canView, canCreate, canEdit, canDelete, canApprove, loading: permLoading } = useModulePermissions('purchases');
+  // Check if user has cost control permissions for verification
+  const { canCreate: canVerify } = useModulePermissions('cbs');
+
   const headingColor = useColorModeValue('gray.800', 'gray.100');
   const textColor = useColorModeValue('gray.600', 'gray.300');
   const boxBg = useColorModeValue('white', 'gray.800');
@@ -68,6 +86,12 @@ const PurchaseRequestsPage: React.FC = () => {
     isOpen: isDetailOpen,
     onOpen: onDetailOpen,
     onClose: onDetailClose
+  } = useDisclosure();
+
+  const {
+    isOpen: isVerifyOpen,
+    onOpen: onVerifyOpen,
+    onClose: onVerifyClose
   } = useDisclosure();
 
   useEffect(() => {
@@ -153,6 +177,116 @@ const PurchaseRequestsPage: React.FC = () => {
     }
   };
 
+  const handleApprovePR = (pr: PurchaseRequest) => {
+    setPrToApprove(pr);
+    setIsApproveAlertOpen(true);
+  };
+
+  const handleRejectPR = (pr: PurchaseRequest) => {
+    setPrToReject(pr);
+    setRejectionReason('');
+    setIsRejectAlertOpen(true);
+  };
+
+  const handleVerifyPR = async (pr: PurchaseRequest) => {
+    if (!pr.project_id) {
+      toast({
+        title: 'Error',
+        description: 'PR does not have a project assigned',
+        status: 'error',
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      // Fetch CBS nodes for the project
+      const nodes = await cbsService.getCBSTree(pr.project_id);
+      setCbsNodes(nodes);
+      setPrToVerify(pr);
+      onVerifyOpen();
+    } catch (error) {
+      console.error('Error fetching CBS nodes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load CBS structure for verification',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const confirmApprovePR = async () => {
+    if (!prToApprove) return;
+
+    setIsProcessing(true);
+    try {
+      await purchaseRequestService.updateStatus(prToApprove.id, 'APPROVED');
+      toast({
+        title: 'Purchase Request Approved',
+        description: `PR ${prToApprove.code} has been approved successfully.`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchPRs();
+    } catch (error) {
+      console.error('Error approving PR:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to approve Purchase Request',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsProcessing(false);
+      setIsApproveAlertOpen(false);
+      setPrToApprove(null);
+    }
+  };
+
+  const confirmRejectPR = async () => {
+    if (!prToReject) return;
+    if (!rejectionReason.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a reason for rejection',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await purchaseRequestService.updateStatus(prToReject.id, 'REJECTED', rejectionReason);
+      toast({
+        title: 'Purchase Request Rejected',
+        description: `PR ${prToReject.code} has been rejected.`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchPRs();
+    } catch (error) {
+      console.error('Error rejecting PR:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reject Purchase Request',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsProcessing(false);
+      setIsRejectAlertOpen(false);
+      setPrToReject(null);
+      setRejectionReason('');
+    }
+  };
+
   const handleCreateClose = () => {
     setPrToEdit(null);
     onCreateClose();
@@ -161,7 +295,7 @@ const PurchaseRequestsPage: React.FC = () => {
   const filteredPRs = purchaseRequests.filter(pr =>
     pr.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     pr.project?.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    pr.requester?.name.toLowerCase().includes(searchQuery.toLowerCase())
+    `${pr.requester?.first_name || ''} ${pr.requester?.last_name || ''}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (permLoading) {
@@ -242,6 +376,8 @@ const PurchaseRequestsPage: React.FC = () => {
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
               <option value="PENDING">Pending</option>
+              <option value="PENDING_VERIFICATION">Pending Verification</option>
+              <option value="VERIFIED">Verified</option>
               <option value="APPROVED">Approved</option>
               <option value="REJECTED">Rejected</option>
               <option value="REVISION">Revision</option>
@@ -268,6 +404,9 @@ const PurchaseRequestsPage: React.FC = () => {
               onView={handleViewPR}
               onEdit={canEdit ? handleEditPR : undefined}
               onDelete={canDelete ? handleDeletePR : undefined}
+              onApprove={canApprove ? handleApprovePR : undefined}
+              onReject={canApprove ? handleRejectPR : undefined}
+              onVerify={canVerify ? handleVerifyPR : undefined}
             />
           )}
         </Box>
@@ -288,6 +427,15 @@ const PurchaseRequestsPage: React.FC = () => {
         onUpdate={fetchPRs}
       />
 
+      <PRVerificationModal
+        isOpen={isVerifyOpen}
+        onClose={onVerifyClose}
+        pr={prToVerify}
+        cbsNodes={cbsNodes}
+        onSuccess={fetchPRs}
+      />
+
+      {/* Delete Alert */}
       <AlertDialog
         isOpen={isDeleteAlertOpen}
         leastDestructiveRef={cancelRef}
@@ -314,9 +462,72 @@ const PurchaseRequestsPage: React.FC = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      {/* Approve Alert */}
+      <AlertDialog
+        isOpen={isApproveAlertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsApproveAlertOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Approve Purchase Request
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to approve Purchase Request <strong>{prToApprove?.code}</strong>?
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsApproveAlertOpen(false)}>
+                Cancel
+              </Button>
+              <Button colorScheme="green" onClick={confirmApprovePR} ml={3} isLoading={isProcessing}>
+                Approve
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      {/* Reject Alert */}
+      <AlertDialog
+        isOpen={isRejectAlertOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsRejectAlertOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Reject Purchase Request
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <VStack align="start" spacing={3}>
+                <Text>Are you sure you want to reject Purchase Request <strong>{prToReject?.code}</strong>?</Text>
+                <Text fontSize="sm" fontWeight="bold">Reason for Rejection:</Text>
+                <Input
+                  placeholder="Enter reason..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                />
+              </VStack>
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsRejectAlertOpen(false)}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={confirmRejectPR} ml={3} isLoading={isProcessing}>
+                Reject
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </SimpleLayout>
   );
 };
 
 export default PurchaseRequestsPage;
-

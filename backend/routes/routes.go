@@ -243,8 +243,13 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 
 	// Purchase Request
 	prRepo := repositories.NewPurchaseRequestRepository(db)
-	prService := services.NewPurchaseRequestService(prRepo, db, approvalService)
+	cbsRepo := repositories.NewCBSRepository(db)
+	prService := services.NewPurchaseRequestService(prRepo, cbsRepo, db, approvalService)
 	prController := controllers.NewPurchaseRequestController(prService)
+
+	// CBS (Cost Breakdown Structure)
+	cbsService := services.NewCBSService(cbsRepo)
+	cbsController := controllers.NewCBSController(cbsService)
 
 	// Initialize security middleware
 	middleware.InitAuditLogger(db)  // Initialize audit logging
@@ -1184,6 +1189,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 
 			// 🏗️  Project Management routes
 			SetupProjectRoutes(protected, db, permMiddleware)
+
+			// 📊 CBS (Cost Breakdown Structure) routes
+			SetupCBSRoutes(protected, cbsController, permMiddleware)
 
 			// 📦 Material Tracking routes
 			materialTrackingService := services.NewMaterialTrackingService(db)

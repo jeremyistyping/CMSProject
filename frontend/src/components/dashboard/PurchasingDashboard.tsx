@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Box,
     Heading,
@@ -13,34 +13,13 @@ import {
     HStack,
     Icon,
     SimpleGrid,
-    Spinner,
     Flex,
 } from '@chakra-ui/react';
 import { FiFileText, FiCheckSquare, FiArrowRight } from 'react-icons/fi';
-import projectService from '@/services/projectService';
 import { useRouter } from 'next/navigation';
 
 export const PurchasingDashboard = () => {
-    const [pendingCount, setPendingCount] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
     const router = useRouter();
-
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const data = await projectService.getPendingDailyUpdates();
-                setPendingCount(data ? data.length : 0);
-            } catch (error) {
-                console.error('Error fetching stats:', error);
-                setPendingCount(0);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
-    }, []);
 
     return (
         <Box>
@@ -49,28 +28,24 @@ export const PurchasingDashboard = () => {
             </Heading>
 
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                {/* Daily Report Approval Card */}
+                {/* Purchase Request Management Card */}
                 <Card>
                     <CardHeader pb={0}>
                         <HStack justify="space-between">
                             <Heading size="md" display="flex" alignItems="center">
-                                <Icon as={FiFileText} mr={2} color="blue.500" />
-                                Daily Reports
+                                <Icon as={FiCheckSquare} mr={2} color="blue.500" />
+                                Purchase Requests
                             </Heading>
-                            <Icon as={FiCheckSquare} color="gray.400" boxSize={6} />
+                            <Icon as={FiFileText} color="gray.400" boxSize={6} />
                         </HStack>
                     </CardHeader>
                     <CardBody>
                         <VStack align="start" spacing={4}>
                             <Box>
-                                <Text fontSize="sm" color="gray.500">Pending Approvals</Text>
-                                {loading ? (
-                                    <Spinner size="sm" color="blue.500" mt={1} />
-                                ) : (
-                                    <Text fontSize="3xl" fontWeight="bold" color={pendingCount && pendingCount > 0 ? "orange.500" : "green.500"}>
-                                        {pendingCount}
-                                    </Text>
-                                )}
+                                <Text fontSize="sm" color="gray.500">Manage Requests</Text>
+                                <Text fontSize="md" color="gray.600" mt={1}>
+                                    View, edit, and manage purchase requests.
+                                </Text>
                             </Box>
 
                             <Button
@@ -79,9 +54,9 @@ export const PurchasingDashboard = () => {
                                 variant="outline"
                                 size="sm"
                                 width="full"
-                                onClick={() => router.push('/daily-report-approval')}
+                                onClick={() => router.push('/cost-control/purchase-requests')}
                             >
-                                Go to Approvals
+                                Go to PR Management
                             </Button>
                         </VStack>
                     </CardBody>

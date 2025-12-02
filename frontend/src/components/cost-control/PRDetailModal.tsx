@@ -34,6 +34,8 @@ import {
 import { PurchaseRequest } from '../../types/purchaseRequest';
 import purchaseRequestService from '../../services/purchaseRequestService';
 import approvalService, { ApprovalRequest, ApprovalAction } from '../../services/approvalService';
+import cbsService from '../../services/cbsService';
+import { PRCBSMapping } from '../../types/cbs';
 import MaterialImpactCard from './MaterialImpactCard';
 import ApprovalTimeline from './ApprovalTimeline';
 
@@ -50,6 +52,10 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
     const [comments, setComments] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
 
+    // CBS State
+    const [cbsMappings, setCbsMappings] = useState<PRCBSMapping[]>([]);
+    const [loadingCBS, setLoadingCBS] = useState(false);
+
     // Approval state
     const [approvalRequest, setApprovalRequest] = useState<ApprovalRequest | null>(null);
     const [loadingApproval, setLoadingApproval] = useState(false);
@@ -58,6 +64,7 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
     useEffect(() => {
         if (pr && isOpen) {
             fetchApprovalStatus();
+            fetchCBSMappings();
             // Get current user role from localStorage or auth context
             const userData = localStorage.getItem('user');
             if (userData) {
@@ -66,6 +73,19 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
             }
         }
     }, [pr, isOpen]);
+
+    const fetchCBSMappings = async () => {
+        if (!pr) return;
+        try {
+            setLoadingCBS(true);
+            const mappings = await cbsService.getPRCBSMappings(pr.id);
+            setCbsMappings(mappings);
+        } catch (error) {
+            console.error('Error fetching CBS mappings:', error);
+        } finally {
+            setLoadingCBS(false);
+        }
+    };
 
     const fetchApprovalStatus = async () => {
         if (!pr) return;
@@ -213,6 +233,8 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
             case 'REJECTED': return 'red';
             case 'REVISION': return 'orange';
             case 'PO_CREATED': return 'blue';
+            case 'VERIFIED': return 'cyan';
+            case 'PENDING_VERIFICATION': return 'purple';
             default: return 'yellow';
         }
     };
@@ -239,6 +261,7 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
                     <Tabs variant="enclosed" colorScheme="blue">
                         <TabList>
                             <Tab>Details</Tab>
+                            <Tab>CBS Breakdown</Tab>
                             <Tab>Approval Timeline</Tab>
                             <Tab>Material Impact</Tab>
                         </TabList>
@@ -280,14 +303,18 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
                                     {/* Notes */}
                                     {pr.notes && (
                                         <Box>
-                                            <Text fontWeight="bold" mb={2}>Notes</Text>
-                                            <Text fontSize="sm" color="gray.700">{pr.notes}</Text>
+                                            <Text fontSize="sm" color="gray.500" mb={1}>Notes</Text>
+                                            <Text fontSize="sm" p={3} bg="gray.50" borderRadius="md" whiteSpace="pre-wrap">
+                                                {pr.notes}
+                                            </Text>
                                         </Box>
                                     )}
 
+                                    <Divider />
+
                                     {/* Items Table */}
                                     <Box>
-                                        <Text fontWeight="bold" mb={2}>Items</Text>
+                                        <Text fontWeight="bold" mb={3}>Items</Text>
                                         <Table size="sm" variant="simple">
                                             <Thead>
                                                 <Tr>
@@ -299,37 +326,82 @@ const PRDetailModal: React.FC<PRDetailModalProps> = ({ isOpen, onClose, pr, onUp
                                                 </Tr>
                                             </Thead>
                                             <Tbody>
-                                                {pr.items?.map((item) => (
+                                                {pr.items.map((item) => (
                                                     <Tr key={item.id}>
-                                                        <Td>{item.item_name}</Td>
+                                                        <Td>
+                                                            <Text fontWeight="medium">{item.item_name}</Text>
+                                                            {item.notes && <Text fontSize="xs" color="gray.500">{item.notes}</Text>}
+                                                        </Td>
                                                         <Td isNumeric>{item.quantity}</Td>
                                                         <Td>{item.unit}</Td>
                                                         <Td isNumeric>
                                                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.estimated_price)}
                                                         </Td>
-                                                        <Td isNumeric>
+                                                        <Td isNumeric fontWeight="bold">
                                                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.total_price)}
                                                         </Td>
                                                     </Tr>
                                                 ))}
-                                                <Tr fontWeight="bold" bg="gray.50">
-                                                    <Td colSpan={4} textAlign="right">Total Estimated Amount</Td>
-                                                    <Td isNumeric>
+                                                <Tr bg="gray.50">
+                                                    <Td colSpan={4} fontWeight="bold" textAlign="right">Total Amount</Td>
+                                                    <Td isNumeric fontWeight="bold" fontSize="md">
                                                         {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(pr.total_amount)}
                                                     </Td>
                                                 </Tr>
                                             </Tbody>
                                         </Table>
                                     </Box>
-
-                                    {/* Rejection Info */}
-                                    {pr.status === 'REJECTED' && pr.rejection_reason && (
-                                        <Box p={4} bg="red.50" borderRadius="md" borderColor="red.200" borderWidth="1px">
-                                            <Text fontWeight="bold" color="red.800" mb={1}>Rejection Reason:</Text>
-                                            <Text fontSize="sm" color="red.800">{pr.rejection_reason}</Text>
-                                        </Box>
-                                    )}
                                 </VStack>
+                            </TabPanel>
+
+                            {/* CBS Breakdown Tab */}
+                            <TabPanel>
+                                {loadingCBS ? (
+                                    <Box textAlign="center" py={8}>
+                                        <Spinner />
+                                        <Text mt={2} fontSize="sm" color="gray.500">Loading CBS data...</Text>
+                                    </Box>
+                                ) : cbsMappings.length > 0 ? (
+                                    <VStack align="stretch" spacing={4}>
+                                        <Box p={4} bg="purple.50" borderRadius="md" borderWidth="1px" borderColor="purple.200">
+                                            <HStack>
+                                                <Badge colorScheme="purple">VERIFIED</Badge>
+                                                <Text fontSize="sm" color="purple.800">
+                                                    This PR has been verified and mapped to the Cost Breakdown Structure.
+                                                </Text>
+                                            </HStack>
+                                        </Box>
+                                        <Table size="sm" variant="simple">
+                                            <Thead>
+                                                <Tr>
+                                                    <Th>Item</Th>
+                                                    <Th>CBS Code</Th>
+                                                    <Th>CBS Name</Th>
+                                                    <Th isNumeric>Allocated Amount</Th>
+                                                </Tr>
+                                            </Thead>
+                                            <Tbody>
+                                                {cbsMappings.map((mapping) => (
+                                                    <Tr key={mapping.id}>
+                                                        <Td>{pr?.items.find(i => i.id === mapping.pr_item_id)?.item_name || 'Unknown Item'}</Td>
+                                                        <Td><Badge>{mapping.cbs_node?.code}</Badge></Td>
+                                                        <Td>{mapping.cbs_node?.name}</Td>
+                                                        <Td isNumeric>
+                                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(mapping.allocated_amount)}
+                                                        </Td>
+                                                    </Tr>
+                                                ))}
+                                            </Tbody>
+                                        </Table>
+                                    </VStack>
+                                ) : (
+                                    <Box textAlign="center" py={8} color="gray.500">
+                                        <Text>No CBS mappings found.</Text>
+                                        {pr?.status === 'PENDING_VERIFICATION' && (
+                                            <Text fontSize="sm" mt={2}>This PR is pending verification by Cost Control.</Text>
+                                        )}
+                                    </Box>
+                                )}
                             </TabPanel>
 
                             {/* Approval Timeline Tab */}

@@ -22,6 +22,11 @@ type PurchaseRequest struct {
 	ApprovedAt      *time.Time `json:"approved_at"`
 	RejectionReason string     `json:"rejection_reason" gorm:"type:text"`
 
+	// CBS Verification fields
+	VerifiedBy        *uint      `json:"verified_by" gorm:"index"`
+	VerifiedAt        *time.Time `json:"verified_at"`
+	VerificationNotes *string    `json:"verification_notes" gorm:"type:text"`
+
 	CreatedBy uint           `json:"created_by" gorm:"not null;index"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -32,6 +37,7 @@ type PurchaseRequest struct {
 	Vendor    *Contact              `json:"vendor,omitempty" gorm:"foreignKey:VendorID"`
 	Requester User                  `json:"requester" gorm:"foreignKey:CreatedBy"`
 	Approver  *User                 `json:"approver,omitempty" gorm:"foreignKey:ApprovedBy"`
+	Verifier  *User                 `json:"verifier,omitempty" gorm:"foreignKey:VerifiedBy"`
 	Items     []PurchaseRequestItem `json:"items" gorm:"foreignKey:PurchaseRequestID"`
 }
 

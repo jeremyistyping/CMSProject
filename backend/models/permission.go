@@ -49,7 +49,7 @@ type ModulePermission struct {
 // GetDefaultPermissions returns default permissions based on role
 func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	permissions := make(map[string]*ModulePermission)
-	modules := []string{"accounts", "products", "contacts", "assets", "sales", "purchases", "payments", "cash_bank", "cost_control", "reports", "settings", "projects", "daily_updates"}
+	modules := []string{"accounts", "products", "contacts", "assets", "sales", "purchases", "payments", "cash_bank", "cost_control", "reports", "settings", "projects", "daily_updates", "cbs"}
 
 	switch role {
 	case "admin", "director":
@@ -146,6 +146,17 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  false,
 					CanMenu:    false,
 				}
+			} else if module == "cbs" {
+				// View CBS for budget oversight
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
 			} else {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
@@ -238,6 +249,17 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  false,
 					CanMenu:    true,
 				}
+			} else if module == "cbs" {
+				// View CBS for PR verification context
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
 			} else {
 				permissions[module] = &ModulePermission{
 					CanView:    false,
@@ -294,11 +316,20 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanEdit:    false,
 					CanDelete:  false,
 					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else if module == "cbs" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  true,
+					CanApprove: true,
 					CanExport:  true,
-					CanMenu:    false, // No direct menu access
+					CanMenu:    true,
 				}
 			} else {
-				// No access to other modules
 				permissions[module] = &ModulePermission{
 					CanView:    false,
 					CanCreate:  false,
@@ -311,8 +342,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 			}
 		}
 	case "inventory_manager":
-		// Inventory manager has comprehensive access to inventory and related operations
-		coreInventoryModules := []string{"products", "purchases", "sales"}
+		coreInventoryModules := []string{"products", "inventory", "stock_adjustments", "transfers"}
 		supportingModules := []string{"contacts", "assets", "reports"}
 		financialSupportModules := []string{"accounts", "payments", "cash_bank"}
 

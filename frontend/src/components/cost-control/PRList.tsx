@@ -27,15 +27,18 @@ interface PRListProps {
     onDelete?: (pr: PurchaseRequest) => void;
     onApprove?: (pr: PurchaseRequest) => void;
     onReject?: (pr: PurchaseRequest) => void;
+    onVerify?: (pr: PurchaseRequest) => void;
 }
 
-const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDelete, onApprove, onReject }) => {
+const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDelete, onApprove, onReject, onVerify }) => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'APPROVED': return 'green';
             case 'REJECTED': return 'red';
             case 'REVISION': return 'orange';
             case 'PO_CREATED': return 'blue';
+            case 'VERIFIED': return 'cyan';
+            case 'PENDING_VERIFICATION': return 'purple';
             default: return 'yellow';
         }
     };
@@ -90,39 +93,42 @@ const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDel
                                         variant="ghost"
                                         onClick={() => onView(pr)}
                                     />
-                                    {pr.status === 'PENDING' && (
-                                        <Menu>
-                                            <MenuButton
-                                                as={IconButton}
-                                                aria-label="Options"
-                                                icon={<FiMoreVertical />}
-                                                size="sm"
-                                                variant="ghost"
-                                            />
-                                            <MenuList>
-                                                {onEdit && (
-                                                    <MenuItem icon={<FiEdit />} onClick={() => onEdit(pr)}>
-                                                        Edit
-                                                    </MenuItem>
-                                                )}
-                                                {onDelete && (
-                                                    <MenuItem icon={<FiTrash2 />} onClick={() => onDelete(pr)} color="red.500">
-                                                        Delete
-                                                    </MenuItem>
-                                                )}
-                                                {onApprove && (
-                                                    <MenuItem icon={<FiCheck />} onClick={() => onApprove(pr)}>
-                                                        Approve
-                                                    </MenuItem>
-                                                )}
-                                                {onReject && (
-                                                    <MenuItem icon={<FiX />} onClick={() => onReject(pr)} color="red.500">
-                                                        Reject
-                                                    </MenuItem>
-                                                )}
-                                            </MenuList>
-                                        </Menu>
-                                    )}
+                                    <Menu>
+                                        <MenuButton
+                                            as={IconButton}
+                                            aria-label="Options"
+                                            icon={<FiMoreVertical />}
+                                            size="sm"
+                                            variant="ghost"
+                                        />
+                                        <MenuList>
+                                            {onVerify && pr.status === 'PENDING_VERIFICATION' && (
+                                                <MenuItem icon={<FiCheck />} onClick={() => onVerify(pr)} color="purple.500">
+                                                    Verify & Map CBS
+                                                </MenuItem>
+                                            )}
+                                            {onApprove && pr.status === 'VERIFIED' && (
+                                                <MenuItem icon={<FiCheck />} onClick={() => onApprove(pr)} color="green.500">
+                                                    Approve
+                                                </MenuItem>
+                                            )}
+                                            {onReject && (pr.status === 'PENDING' || pr.status === 'PENDING_VERIFICATION' || pr.status === 'VERIFIED') && (
+                                                <MenuItem icon={<FiX />} onClick={() => onReject(pr)} color="red.500">
+                                                    Reject
+                                                </MenuItem>
+                                            )}
+                                            {onEdit && pr.status === 'PENDING' && (
+                                                <MenuItem icon={<FiEdit />} onClick={() => onEdit(pr)}>
+                                                    Edit
+                                                </MenuItem>
+                                            )}
+                                            {onDelete && pr.status === 'PENDING' && (
+                                                <MenuItem icon={<FiTrash2 />} onClick={() => onDelete(pr)} color="red.500">
+                                                    Delete
+                                                </MenuItem>
+                                            )}
+                                        </MenuList>
+                                    </Menu>
                                 </HStack>
                             </Td>
                         </Tr>

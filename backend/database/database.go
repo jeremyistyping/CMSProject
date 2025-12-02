@@ -743,6 +743,8 @@ func AutoMigrate(db *gorm.DB) {
 		// Purchase Requests
 		&models.PurchaseRequest{},
 		&models.PurchaseRequestItem{},
+		&models.CBSNode{},
+		&models.PRCBSMapping{},
 	)
 
 	if err != nil {

@@ -7,7 +7,7 @@ import { Box } from '@chakra-ui/react';
 
 export default function DailyReportApprovalPage() {
     return (
-        <SimpleLayout allowedRoles={['purchasing', 'admin', 'director']}>
+        <SimpleLayout allowedRoles={['gm', 'admin', 'director']}>
             <Box p={6}>
                 <DailyReportApprovalList />
             </Box>

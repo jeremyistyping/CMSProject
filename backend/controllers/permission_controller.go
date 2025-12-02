@@ -1,9 +1,10 @@
 package controllers
 
 import (
+	"app-sistem-akuntansi/models"
 	"net/http"
 	"strconv"
-	"app-sistem-akuntansi/models"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -19,27 +20,27 @@ func NewPermissionController(db *gorm.DB) *PermissionController {
 // GetUserPermissions retrieves permissions for a specific user
 func (pc *PermissionController) GetUserPermissions(c *gin.Context) {
 	userID := c.Param("userId")
-	
+
 	id, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	
+
 	// Get user details
 	var user models.User
 	if err := pc.db.First(&user, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	
+
 	// Get user permissions
 	var permissions []models.ModulePermissionRecord
 	if err := pc.db.Where("user_id = ?", id).Find(&permissions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch permissions"})
 		return
 	}
-	
+
 	// Build permission map
 	permMap := make(map[string]*models.ModulePermission)
 	for _, perm := range permissions {
@@ -53,12 +54,12 @@ func (pc *PermissionController) GetUserPermissions(c *gin.Context) {
 			CanMenu:    perm.CanMenu,
 		}
 	}
-	
+
 	// If no permissions exist, return default permissions based on role
 	if len(permissions) == 0 {
 		permMap = models.GetDefaultPermissions(user.Role)
 	}
-	
+
 	response := models.UserPermission{
 		UserID:      uint(id),
 		Username:    user.Username,
@@ -66,47 +67,47 @@ func (pc *PermissionController) GetUserPermissions(c *gin.Context) {
 		Role:        user.Role,
 		Permissions: permMap,
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
 // UpdateUserPermissions updates permissions for a specific user
 func (pc *PermissionController) UpdateUserPermissions(c *gin.Context) {
 	userID := c.Param("userId")
-	
+
 	id, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	
+
 	// Parse request body
 	var request struct {
 		Permissions map[string]*models.ModulePermission `json:"permissions"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Verify user exists
 	var user models.User
 	if err := pc.db.First(&user, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	
+
 	// Start transaction
 	tx := pc.db.Begin()
-	
+
 	// Delete existing permissions
 	if err := tx.Where("user_id = ?", id).Delete(&models.ModulePermissionRecord{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update permissions"})
 		return
 	}
-	
+
 	// Create new permissions
 	for module, perm := range request.Permissions {
 		permission := models.ModulePermissionRecord{
@@ -120,20 +121,20 @@ func (pc *PermissionController) UpdateUserPermissions(c *gin.Context) {
 			CanExport:  perm.CanExport,
 			CanMenu:    perm.CanMenu,
 		}
-		
+
 		if err := tx.Create(&permission).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create permissions"})
 			return
 		}
 	}
-	
+
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save permissions"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "Permissions updated successfully"})
 }
 
@@ -145,14 +146,14 @@ func (pc *PermissionController) GetAllUsersPermissions(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}
-	
+
 	var response []models.UserPermission
-	
+
 	for _, user := range users {
 		// Get user permissions
 		var permissions []models.ModulePermissionRecord
 		pc.db.Where("user_id = ?", user.ID).Find(&permissions)
-		
+
 		// Build permission map
 		permMap := make(map[string]*models.ModulePermission)
 		for _, perm := range permissions {
@@ -166,12 +167,12 @@ func (pc *PermissionController) GetAllUsersPermissions(c *gin.Context) {
 				CanMenu:    perm.CanMenu,
 			}
 		}
-		
+
 		// If no permissions exist, use default permissions based on role
 		if len(permissions) == 0 {
 			permMap = models.GetDefaultPermissions(user.Role)
 		}
-		
+
 		userPerm := models.UserPermission{
 			UserID:      user.ID,
 			Username:    user.Username,
@@ -179,43 +180,43 @@ func (pc *PermissionController) GetAllUsersPermissions(c *gin.Context) {
 			Role:        user.Role,
 			Permissions: permMap,
 		}
-		
+
 		response = append(response, userPerm)
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
 // ResetToDefaultPermissions resets user permissions to default based on their role
 func (pc *PermissionController) ResetToDefaultPermissions(c *gin.Context) {
 	userID := c.Param("userId")
-	
+
 	id, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	
+
 	// Get user details
 	var user models.User
 	if err := pc.db.First(&user, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	
+
 	// Get default permissions based on role
 	defaultPerms := models.GetDefaultPermissions(user.Role)
-	
+
 	// Start transaction
 	tx := pc.db.Begin()
-	
+
 	// Delete existing permissions
 	if err := tx.Where("user_id = ?", id).Delete(&models.ModulePermissionRecord{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset permissions"})
 		return
 	}
-	
+
 	// Create default permissions
 	for module, perm := range defaultPerms {
 		permission := models.ModulePermissionRecord{
@@ -229,20 +230,20 @@ func (pc *PermissionController) ResetToDefaultPermissions(c *gin.Context) {
 			CanExport:  perm.CanExport,
 			CanMenu:    perm.CanMenu,
 		}
-		
+
 		if err := tx.Create(&permission).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create default permissions"})
 			return
 		}
 	}
-	
+
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save permissions"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "Permissions reset to default successfully"})
 }
 
@@ -284,7 +285,7 @@ func (pc *PermissionController) GetMyPermissions(c *gin.Context) {
 		return
 	}
 
-	// Build permission map
+	// Build permission map from database
 	permMap := make(map[string]*models.ModulePermission)
 	for _, perm := range permissions {
 		permMap[perm.Module] = &models.ModulePermission{
@@ -298,9 +299,19 @@ func (pc *PermissionController) GetMyPermissions(c *gin.Context) {
 		}
 	}
 
-	// If no permissions exist, return default permissions based on role
+	// Get default permissions for the role
+	defaultPerms := models.GetDefaultPermissions(user.Role)
+
+	// If no permissions exist in DB, use all defaults
 	if len(permissions) == 0 {
-		permMap = models.GetDefaultPermissions(user.Role)
+		permMap = defaultPerms
+	} else {
+		// Merge: Add any missing modules from defaults that aren't in the database
+		for module, defaultPerm := range defaultPerms {
+			if _, exists := permMap[module]; !exists {
+				permMap[module] = defaultPerm
+			}
+		}
 	}
 
 	response := models.UserPermission{
@@ -321,19 +332,19 @@ func (pc *PermissionController) CheckUserPermission(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
-	
+
 	module := c.Query("module")
 	action := c.Query("action") // view, create, edit, delete, approve, export
-	
+
 	if module == "" || action == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Module and action are required"})
 		return
 	}
-	
+
 	// Get permission
 	var permission models.ModulePermissionRecord
 	err := pc.db.Where("user_id = ? AND module = ?", userID, module).First(&permission).Error
-	
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			// No permission record, check default based on role
@@ -342,7 +353,7 @@ func (pc *PermissionController) CheckUserPermission(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
 				return
 			}
-			
+
 			defaultPerms := models.GetDefaultPermissions(user.Role)
 			if modPerm, ok := defaultPerms[module]; ok {
 				permission = models.ModulePermissionRecord{
@@ -364,7 +375,7 @@ func (pc *PermissionController) CheckUserPermission(c *gin.Context) {
 			return
 		}
 	}
-	
+
 	// Check specific action
 	hasPermission := false
 	switch action {
@@ -383,10 +394,10 @@ func (pc *PermissionController) CheckUserPermission(c *gin.Context) {
 	case "menu":
 		hasPermission = permission.CanMenu
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"has_permission": hasPermission,
-		"module":        module,
-		"action":        action,
+		"module":         module,
+		"action":         action,
 	})
 }

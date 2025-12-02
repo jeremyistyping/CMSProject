@@ -17,16 +17,20 @@ type PurchaseRequestService interface {
 	GetAllPRs(filter map[string]interface{}) ([]models.PurchaseRequest, error)
 	UpdateStatus(id uint, status string, approverID uint, reason string) error
 	GetEstimatedMaterialImpact(prID uint) ([]models.MaterialImpact, error)
+	VerifyPR(prID uint, mappings []models.PRCBSMapping, verifierID uint, notes string) error
+	GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error)
+	ValidateCBSAllocation(prID uint, mappings []models.PRCBSMapping) error
 }
 
 type purchaseRequestService struct {
 	repo            repositories.PurchaseRequestRepository
+	cbsRepo         repositories.CBSRepository
 	db              *gorm.DB
 	approvalService *ApprovalService
 }
 
-func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository, db *gorm.DB, approvalService *ApprovalService) PurchaseRequestService {
-	return &purchaseRequestService{repo, db, approvalService}
+func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository, cbsRepo repositories.CBSRepository, db *gorm.DB, approvalService *ApprovalService) PurchaseRequestService {
+	return &purchaseRequestService{repo, cbsRepo, db, approvalService}
 }
 
 func (s *purchaseRequestService) CreatePR(pr *models.PurchaseRequest) error {
@@ -189,4 +193,72 @@ func (s *purchaseRequestService) GetEstimatedMaterialImpact(prID uint) ([]models
 	}
 
 	return impacts, nil
+}
+
+// VerifyPR verifies a PR and maps it to CBS nodes
+func (s *purchaseRequestService) VerifyPR(prID uint, mappings []models.PRCBSMapping, verifierID uint, notes string) error {
+	// Get PR
+	pr, err := s.repo.FindByID(prID)
+	if err != nil {
+		return err
+	}
+
+	// Only allow verification of PENDING PRs
+	if pr.Status != models.PRStatusPending {
+		return fmt.Errorf("can only verify PRs with PENDING status")
+	}
+
+	// Validate CBS allocation matches PR total
+	if err := s.ValidateCBSAllocation(prID, mappings); err != nil {
+		return err
+	}
+
+	// Delete existing mappings if any
+	s.cbsRepo.DeletePRCBSMappings(prID)
+
+	// Create new mappings
+	for _, mapping := range mappings {
+		mapping.PurchaseRequestID = prID
+		mapping.CreatedBy = &verifierID
+		if err := s.cbsRepo.CreatePRCBSMapping(&mapping); err != nil {
+			return err
+		}
+	}
+
+	// Update PR verification status
+	now := time.Now()
+	pr.VerifiedBy = &verifierID
+	pr.VerifiedAt = &now
+	pr.VerificationNotes = &notes
+	pr.Status = "VERIFIED"
+
+	return s.db.Save(pr).Error
+}
+
+// GetPRCBSMappings retrieves CBS mappings for a PR
+func (s *purchaseRequestService) GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error) {
+	return s.cbsRepo.GetPRCBSMappings(prID)
+}
+
+// ValidateCBSAllocation ensures mappings total matches PR total
+func (s *purchaseRequestService) ValidateCBSAllocation(prID uint, mappings []models.PRCBSMapping) error {
+	pr, err := s.repo.FindByID(prID)
+	if err != nil {
+		return err
+	}
+
+	// Calculate total allocated
+	var totalAllocated int64
+	for _, mapping := range mappings {
+		totalAllocated += mapping.AllocatedAmount
+	}
+
+	// Convert PR total to cents (assuming TotalAmount is in currency units)
+	prTotalCents := int64(pr.TotalAmount * 100)
+
+	if totalAllocated != prTotalCents {
+		return fmt.Errorf("CBS allocation (%d) does not match PR total (%d)", totalAllocated, prTotalCents)
+	}
+
+	return nil
 }
