@@ -66,20 +66,28 @@ const getMenuGroups = (t) => [
   {
     title: 'Cost Control',
     items: [
-      // Untuk saat ini, menu Cost Control ditampilkan berdasarkan role saja,
-      // tidak bergantung pada permission module. Halaman di dalamnya tetap
-      // melakukan pengecekan permission cost_control.
-      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      // Main Cost Control Dashboard
+      { name: 'Cost Control', icon: FiDollarSign, href: '/cost-control', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      // Sub-modules
+      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+    ]
+  },
+  {
+    title: 'Purchasing',
+    items: [
+      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Products', icon: FiPackage, href: '/products', module: 'products', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING', 'INVENTORY_MANAGER'] },
+      { name: 'Purchases', icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING'] },
+      { name: 'Projects', icon: FiFolder, href: '/projects', module: 'projects', permission: 'view', roles: ['ADMIN', 'PURCHASING', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
   {
     title: 'Master Data',
     items: [
       { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
-      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
   {
