@@ -3,6 +3,7 @@ package repositories
 import (
 	"app-sistem-akuntansi/models"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +19,7 @@ type CBSRepository interface {
 	GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error)
 	CreatePRCBSMapping(mapping *models.PRCBSMapping) error
 	DeletePRCBSMappings(prID uint) error
+	UpdatePRVerificationStatus(prID uint, userID uint, notes string) error
 }
 
 type cbsRepository struct {
@@ -196,4 +198,17 @@ func (r *cbsRepository) CreatePRCBSMapping(mapping *models.PRCBSMapping) error {
 func (r *cbsRepository) DeletePRCBSMappings(prID uint) error {
 	return r.db.Where("purchase_request_id = ?", prID).
 		Delete(&models.PRCBSMapping{}).Error
+}
+
+// UpdatePRVerificationStatus updates the PR status to VERIFIED
+func (r *cbsRepository) UpdatePRVerificationStatus(prID uint, userID uint, notes string) error {
+	now := time.Now()
+	return r.db.Model(&models.PurchaseRequest{}).
+		Where("id = ?", prID).
+		Updates(map[string]interface{}{
+			"status":             "VERIFIED",
+			"verified_by":        userID,
+			"verified_at":        now,
+			"verification_notes": notes,
+		}).Error
 }

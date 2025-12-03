@@ -22,4 +22,11 @@ func SetupCBSRoutes(router *gin.RouterGroup, cbsController *controllers.CBSContr
 	{
 		projects.GET("/:id/cbs", permMiddleware.CanView("cbs"), cbsController.GetProjectCBSTree)
 	}
+
+	// Purchase Request CBS Mappings Routes
+	purchaseRequests := router.Group("/purchase-requests")
+	{
+		purchaseRequests.GET("/:id/cbs-mappings", permMiddleware.CanView("cbs"), cbsController.GetPRCBSMappings)
+		purchaseRequests.POST("/:id/verify", permMiddleware.CanCreate("cbs"), cbsController.VerifyPurchaseRequest)
+	}
 }

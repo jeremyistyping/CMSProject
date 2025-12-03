@@ -102,7 +102,7 @@ const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDel
                                             variant="ghost"
                                         />
                                         <MenuList>
-                                            {onVerify && pr.status === 'PENDING_VERIFICATION' && (
+                                            {onVerify && (pr.status === 'PENDING' || pr.status === 'PENDING_VERIFICATION') && (
                                                 <MenuItem icon={<FiCheck />} onClick={() => onVerify(pr)} color="purple.500">
                                                     Verify & Map CBS
                                                 </MenuItem>

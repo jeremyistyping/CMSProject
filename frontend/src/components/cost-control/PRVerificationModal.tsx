@@ -28,7 +28,10 @@ import {
     Badge,
     Alert,
     AlertIcon,
+    IconButton,
+    Divider,
 } from '@chakra-ui/react';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import { PurchaseRequest } from '../../types/purchaseRequest';
 import { CBSNode, PRCBSMapping } from '../../types/cbs';
 import cbsService from '../../services/cbsService';
@@ -41,6 +44,16 @@ interface PRVerificationModalProps {
     onSuccess: () => void;
 }
 
+interface ItemAllocation {
+    id: string; // Unique ID for React key
+    cbs_node_id: number;
+    allocated_amount: number;
+}
+
+interface ItemAllocations {
+    [itemId: number]: ItemAllocation[];
+}
+
 const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
     isOpen,
     onClose,
@@ -50,13 +63,14 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
 }) => {
     const toast = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [mappings, setMappings] = useState<Partial<PRCBSMapping>[]>([]);
+    const [itemAllocations, setItemAllocations] = useState<ItemAllocations>({});
     const [notes, setNotes] = useState('');
     const [flattenedNodes, setFlattenedNodes] = useState<CBSNode[]>([]);
 
     // Flatten CBS tree for select dropdown
     useEffect(() => {
         const flatten = (nodes: CBSNode[], level = 0): CBSNode[] => {
+            if (!nodes) return [];
             let result: CBSNode[] = [];
             nodes.forEach(node => {
                 result.push({ ...node, level });
@@ -69,28 +83,68 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
         setFlattenedNodes(flatten(cbsNodes));
     }, [cbsNodes]);
 
-    // Initialize mappings when PR changes
+    // Initialize allocations when PR changes
     useEffect(() => {
         if (pr && isOpen) {
-            // Default: one mapping per item, initially unassigned
-            const initialMappings = pr.items.map(item => ({
-                pr_item_id: item.id,
-                cbs_node_id: 0, // 0 means unassigned
-                allocated_amount: item.total_price,
-            }));
-            setMappings(initialMappings);
+            const initialAllocations: ItemAllocations = {};
+            pr.items.forEach(item => {
+                initialAllocations[item.id] = [
+                    {
+                        id: `${item.id}-0`,
+                        cbs_node_id: 0,
+                        allocated_amount: item.total_price,
+                    }
+                ];
+            });
+            setItemAllocations(initialAllocations);
             setNotes('');
         }
     }, [pr, isOpen]);
 
-    const handleMappingChange = (index: number, field: keyof PRCBSMapping, value: any) => {
-        const newMappings = [...mappings];
-        newMappings[index] = { ...newMappings[index], [field]: value };
-        setMappings(newMappings);
+    const addAllocation = (itemId: number) => {
+        setItemAllocations(prev => ({
+            ...prev,
+            [itemId]: [
+                ...prev[itemId],
+                {
+                    id: `${itemId}-${Date.now()}`,
+                    cbs_node_id: 0,
+                    allocated_amount: 0,
+                }
+            ]
+        }));
     };
 
-    const calculateTotalAllocated = () => {
-        return mappings.reduce((sum, m) => sum + (m.allocated_amount || 0), 0);
+    const removeAllocation = (itemId: number, allocationId: string) => {
+        setItemAllocations(prev => ({
+            ...prev,
+            [itemId]: prev[itemId].filter(a => a.id !== allocationId)
+        }));
+    };
+
+    const updateAllocation = (itemId: number, allocationId: string, field: 'cbs_node_id' | 'allocated_amount', value: number) => {
+        setItemAllocations(prev => ({
+            ...prev,
+            [itemId]: prev[itemId].map(a =>
+                a.id === allocationId ? { ...a, [field]: value } : a
+            )
+        }));
+    };
+
+    const getItemTotal = (itemId: number): number => {
+        return itemAllocations[itemId]?.reduce((sum, a) => sum + (a.allocated_amount || 0), 0) || 0;
+    };
+
+    const getItemExpected = (itemId: number): number => {
+        return pr?.items.find(i => i.id === itemId)?.total_price || 0;
+    };
+
+    const isItemValid = (itemId: number): boolean => {
+        const allocations = itemAllocations[itemId] || [];
+        const total = getItemTotal(itemId);
+        const expected = getItemExpected(itemId);
+        const allAssigned = allocations.every(a => a.cbs_node_id !== 0);
+        return Math.abs(total - expected) <= 100 && allAssigned;
     };
 
     const formatCurrency = (amount: number) => {
@@ -105,15 +159,12 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
     const handleSubmit = async () => {
         if (!pr) return;
 
-        // Validation
-        const totalAllocated = calculateTotalAllocated();
-        const prTotal = pr.total_amount;
-
-        // Allow small floating point difference
-        if (Math.abs(totalAllocated - prTotal) > 100) {
+        // Validate all items
+        const allValid = pr.items.every(item => isItemValid(item.id));
+        if (!allValid) {
             toast({
                 title: 'Validation Error',
-                description: `Total allocated (${formatCurrency(totalAllocated)}) must match PR total (${formatCurrency(prTotal)})`,
+                description: 'All items must be fully allocated and CBS nodes must be selected',
                 status: 'error',
                 duration: 5000,
                 isClosable: true,
@@ -121,21 +172,22 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
             return;
         }
 
-        const unassigned = mappings.some(m => !m.cbs_node_id || m.cbs_node_id === 0);
-        if (unassigned) {
-            toast({
-                title: 'Validation Error',
-                description: 'All items must be assigned to a CBS node',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
+        // Flatten all allocations into single array
+        const allMappings: Partial<PRCBSMapping>[] = [];
+        pr.items.forEach(item => {
+            const allocations = itemAllocations[item.id] || [];
+            allocations.forEach(allocation => {
+                allMappings.push({
+                    pr_item_id: item.id,
+                    cbs_node_id: allocation.cbs_node_id,
+                    allocated_amount: allocation.allocated_amount,
+                });
             });
-            return;
-        }
+        });
 
         setIsSubmitting(true);
         try {
-            await cbsService.verifyPR(pr.id, mappings, notes);
+            await cbsService.verifyPR(pr.id, allMappings, notes);
             toast({
                 title: 'Success',
                 description: 'Purchase Request verified successfully',
@@ -162,7 +214,7 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
     if (!pr) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="4xl">
+        <Modal isOpen={isOpen} onClose={onClose} size="6xl">
             <ModalOverlay />
             <ModalContent>
                 <ModalHeader>Verify Purchase Request: {pr.code}</ModalHeader>
@@ -179,60 +231,114 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
                             <Text fontSize="sm" color="gray.600" mt={2}>{pr.notes}</Text>
                         </Box>
 
-                        {/* CBS Mapping Table */}
+                        {/* Cost Allocation by Item */}
                         <Box>
                             <Text fontWeight="bold" mb={3}>Cost Allocation</Text>
-                            <Table size="sm">
-                                <Thead>
-                                    <Tr>
-                                        <Th>Item</Th>
-                                        <Th isNumeric>Amount</Th>
-                                        <Th>CBS Node</Th>
-                                        <Th>Allocation</Th>
-                                    </Tr>
-                                </Thead>
-                                <Tbody>
-                                    {pr.items.map((item, index) => (
-                                        <Tr key={item.id}>
-                                            <Td>
-                                                <Text fontWeight="medium">{item.item_name}</Text>
-                                                <Text fontSize="xs" color="gray.500">{item.quantity} {item.unit}</Text>
-                                            </Td>
-                                            <Td isNumeric>{formatCurrency(item.total_price)}</Td>
-                                            <Td>
-                                                <Select
-                                                    size="sm"
-                                                    placeholder="Select CBS Node"
-                                                    value={mappings[index]?.cbs_node_id || ''}
-                                                    onChange={(e) => handleMappingChange(index, 'cbs_node_id', Number(e.target.value))}
-                                                >
-                                                    {flattenedNodes.map(node => (
-                                                        <option key={node.id} value={node.id}>
-                                                            {'\u00A0'.repeat((node.level || 0) * 4)} {node.code} - {node.name}
-                                                        </option>
+                            <VStack spacing={4} align="stretch">
+                                {pr.items.map((item) => {
+                                    const allocations = itemAllocations[item.id] || [];
+                                    const itemTotal = getItemTotal(item.id);
+                                    const itemExpected = getItemExpected(item.id);
+                                    const variance = itemTotal - itemExpected;
+                                    const isValid = isItemValid(item.id);
+
+                                    return (
+                                        <Box key={item.id} p={4} borderWidth="1px" borderRadius="md" borderColor={isValid ? 'green.200' : 'red.200'}>
+                                            {/* Item Header */}
+                                            <HStack justify="space-between" mb={3}>
+                                                <Box>
+                                                    <Text fontWeight="bold">{item.item_name}</Text>
+                                                    <Text fontSize="sm" color="gray.600">
+                                                        {item.quantity} {item.unit} × {formatCurrency(item.estimated_price)} = {formatCurrency(item.total_price)}
+                                                    </Text>
+                                                </Box>
+                                                <VStack align="end" spacing={0}>
+                                                    <Text fontSize="sm" fontWeight="bold">
+                                                        Allocated: {formatCurrency(itemTotal)}
+                                                    </Text>
+                                                    {Math.abs(variance) > 100 && (
+                                                        <Text fontSize="xs" color={variance > 0 ? 'red.500' : 'orange.500'}>
+                                                            {variance > 0 ? '+' : ''}{formatCurrency(variance)}
+                                                        </Text>
+                                                    )}
+                                                </VStack>
+                                            </HStack>
+
+                                            {/* Allocations Table */}
+                                            <Table size="sm" variant="simple">
+                                                <Thead>
+                                                    <Tr>
+                                                        <Th>CBS Node</Th>
+                                                        <Th isNumeric>Amount</Th>
+                                                        <Th width="60px"></Th>
+                                                    </Tr>
+                                                </Thead>
+                                                <Tbody>
+                                                    {allocations.map((allocation) => (
+                                                        <Tr key={allocation.id}>
+                                                            <Td>
+                                                                <Select
+                                                                    size="sm"
+                                                                    placeholder="Select CBS Node"
+                                                                    value={allocation.cbs_node_id || ''}
+                                                                    onChange={(e) => updateAllocation(item.id, allocation.id, 'cbs_node_id', Number(e.target.value))}
+                                                                >
+                                                                    {flattenedNodes.map(node => (
+                                                                        <option key={node.id} value={node.id}>
+                                                                            {'\u00A0'.repeat((node.level || 0) * 4)} {node.code} - {node.name}
+                                                                        </option>
+                                                                    ))}
+                                                                </Select>
+                                                            </Td>
+                                                            <Td isNumeric>
+                                                                <NumberInput
+                                                                    size="sm"
+                                                                    value={allocation.allocated_amount}
+                                                                    onChange={(val) => updateAllocation(item.id, allocation.id, 'allocated_amount', Number(val))}
+                                                                    min={0}
+                                                                >
+                                                                    <NumberInputField textAlign="right" />
+                                                                </NumberInput>
+                                                            </Td>
+                                                            <Td>
+                                                                {allocations.length > 1 && (
+                                                                    <IconButton
+                                                                        aria-label="Remove allocation"
+                                                                        icon={<FiTrash2 />}
+                                                                        size="sm"
+                                                                        colorScheme="red"
+                                                                        variant="ghost"
+                                                                        onClick={() => removeAllocation(item.id, allocation.id)}
+                                                                    />
+                                                                )}
+                                                            </Td>
+                                                        </Tr>
                                                     ))}
-                                                </Select>
-                                            </Td>
-                                            <Td>
-                                                <NumberInput
-                                                    size="sm"
-                                                    value={mappings[index]?.allocated_amount}
-                                                    onChange={(val) => handleMappingChange(index, 'allocated_amount', Number(val))}
-                                                >
-                                                    <NumberInputField />
-                                                </NumberInput>
-                                            </Td>
-                                        </Tr>
-                                    ))}
-                                </Tbody>
-                            </Table>
+                                                </Tbody>
+                                            </Table>
+
+                                            {/* Add Allocation Button */}
+                                            <Button
+                                                size="sm"
+                                                leftIcon={<FiPlus />}
+                                                variant="ghost"
+                                                colorScheme="blue"
+                                                mt={2}
+                                                onClick={() => addAllocation(item.id)}
+                                            >
+                                                Add CBS Allocation
+                                            </Button>
+                                        </Box>
+                                    );
+                                })}
+                            </VStack>
                         </Box>
 
-                        {/* Validation Alert */}
-                        {Math.abs(calculateTotalAllocated() - pr.total_amount) > 100 && (
+                        {/* Overall Validation Alert */}
+                        {pr.items.some(item => !isItemValid(item.id)) && (
                             <Alert status="warning" borderRadius="md">
                                 <AlertIcon />
-                                Allocation mismatch: {formatCurrency(calculateTotalAllocated())} vs {formatCurrency(pr.total_amount)}
+                                Some items have allocation mismatches or unassigned CBS nodes
                             </Alert>
                         )}
 
@@ -256,7 +362,7 @@ const PRVerificationModal: React.FC<PRVerificationModalProps> = ({
                         colorScheme="green"
                         onClick={handleSubmit}
                         isLoading={isSubmitting}
-                        isDisabled={Math.abs(calculateTotalAllocated() - pr.total_amount) > 100}
+                        isDisabled={pr.items.some(item => !isItemValid(item.id))}
                     >
                         Verify & Submit
                     </Button>

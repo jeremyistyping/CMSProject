@@ -109,3 +109,56 @@ func (c *CBSController) GetNodeSummary(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, summary)
 }
+
+// GetPRCBSMappings retrieves CBS mappings for a purchase request
+// GET /api/v1/purchase-requests/:id/cbs-mappings
+func (c *CBSController) GetPRCBSMappings(ctx *gin.Context) {
+	prID, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid purchase request ID"})
+		return
+	}
+
+	mappings, err := c.service.GetPRCBSMappings(uint(prID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, mappings)
+}
+
+type VerifyPRRequest struct {
+	Mappings []models.PRCBSMapping `json:"mappings"`
+	Notes    string                `json:"notes"`
+}
+
+// VerifyPurchaseRequest verifies a PR and saves CBS mappings
+// POST /api/v1/purchase-requests/:id/verify
+func (c *CBSController) VerifyPurchaseRequest(ctx *gin.Context) {
+	prID, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid purchase request ID"})
+		return
+	}
+
+	var req VerifyPRRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	if err := c.service.VerifyPurchaseRequest(uint(prID), uint(userID.(float64)), req.Mappings, req.Notes); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Purchase request verified successfully"})
+}

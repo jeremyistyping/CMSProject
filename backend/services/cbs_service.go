@@ -15,6 +15,8 @@ type CBSService interface {
 	DeleteCBSNode(id uint) error
 	GetNodeCostSummary(nodeID uint) (*models.CBSNodeSummary, error)
 	ValidateCBSBudget(nodeID uint, amount int64) error
+	GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error)
+	VerifyPurchaseRequest(prID uint, userID uint, mappings []models.PRCBSMapping, notes string) error
 }
 
 type cbsService struct {
@@ -143,4 +145,36 @@ func (s *cbsService) ValidateCBSBudget(nodeID uint, amount int64) error {
 	}
 
 	return nil
+}
+
+// GetPRCBSMappings retrieves CBS mappings for a purchase request
+func (s *cbsService) GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error) {
+	return s.repo.GetPRCBSMappings(prID)
+}
+
+// VerifyPurchaseRequest verifies a PR and saves CBS mappings
+func (s *cbsService) VerifyPurchaseRequest(prID uint, userID uint, mappings []models.PRCBSMapping, notes string) error {
+	// 1. Delete existing mappings (if any)
+	if err := s.repo.DeletePRCBSMappings(prID); err != nil {
+		return err
+	}
+
+	// 2. Create new mappings
+	for _, mapping := range mappings {
+		mapping.PurchaseRequestID = prID
+		mapping.CreatedBy = &userID
+		now := time.Now()
+		mapping.CreatedAt = now
+		mapping.UpdatedAt = now
+
+		if err := s.repo.CreatePRCBSMapping(&mapping); err != nil {
+			return err
+		}
+	}
+
+	// 3. Update PR status to VERIFIED
+	// We need to access PurchaseRequest repository here, but we don't have it injected.
+	// For now, let's assume we can update it via DB directly or we need to inject PR repo.
+	// Since we only have CBSRepository, let's add a method to CBSRepository to update PR status.
+	return s.repo.UpdatePRVerificationStatus(prID, userID, notes)
 }
