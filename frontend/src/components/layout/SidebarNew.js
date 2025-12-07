@@ -75,33 +75,34 @@ const getMenuGroups = (t) => [
       { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
-  {
-    title: 'Purchasing',
-    items: [
-      { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Products', icon: FiPackage, href: '/products', module: 'products', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING', 'INVENTORY_MANAGER'] },
-      { name: 'Purchases', icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING'] },
-      { name: 'Projects', icon: FiFolder, href: '/projects', module: 'projects', permission: 'view', roles: ['ADMIN', 'PURCHASING', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-    ]
-  },
-  {
-    title: 'Master Data',
-    items: [
-      { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
-    ]
-  },
-  {
-    title: 'Financial',
-    items: [
-      { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-    ]
-  },
-  {
-    title: t('navigation.reports'),
-    items: [
-      { name: t('navigation.reports'), icon: FiBarChart, href: '/reports', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-    ]
-  },
+  // === MENU PURCHASING DISEMBUNYIKAN ===
+  // {
+  //   title: 'Purchasing',
+  //   items: [
+  //     { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+  //     { name: 'Purchases', icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING'] },
+  //   ]
+  // },
+  // === MENU AKUNTANSI DISEMBUNYIKAN ===
+  // {
+  //   title: 'Master Data',
+  //   items: [
+  //     { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
+  //   ]
+  // },
+  // {
+  //   title: 'Financial',
+  //   items: [
+  //     { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+  //   ]
+  // },
+  // {
+  //   title: t('navigation.reports'),
+  //   items: [
+  //     { name: t('navigation.reports'), icon: FiBarChart, href: '/reports', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+  //   ]
+  // },
+  // === END MENU AKUNTANSI ===
   {
     title: 'System',
     items: [

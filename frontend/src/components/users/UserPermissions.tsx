@@ -67,15 +67,14 @@ interface UserPermissionsProps {
 }
 
 const modules = [
-  { key: 'accounts', label: 'Accounts', description: 'Chart of Accounts & Accounting' },
-  { key: 'products', label: 'Products', description: 'Product & Inventory Management' },
-  { key: 'contacts', label: 'Contacts', description: 'Customer, Vendor & Employee' },
-  { key: 'assets', label: 'Assets', description: 'Fixed Assets Management' },
-  { key: 'sales', label: 'Sales', description: 'Sales & Invoicing' },
-  { key: 'purchases', label: 'Purchases', description: 'Purchase Orders & Receipts' },
-  { key: 'payments', label: 'Payments', description: 'Payment Processing' },
-  { key: 'cash_bank', label: 'Cash & Bank', description: 'Cash & Bank Management' },
-  { key: 'settings', label: 'Settings', description: 'System Settings & Invoice Types Management' },
+  // Cost Control Modules
+  { key: 'projects', label: 'Projects', description: 'Project Management & Daily Reports' },
+  { key: 'cost_control', label: 'Cost Control', description: 'Budget vs Actual & Cost Analysis' },
+  { key: 'material_tracking', label: 'Material Tracking', description: 'Material Usage & Inventory Tracking' },
+  { key: 'cbs', label: 'Cost Breakdown Structure', description: 'CBS Management & Verification' },
+  { key: 'purchase_requests', label: 'Purchase Requests', description: 'Purchase Request Management & Approval' },
+  { key: 'daily_reports', label: 'Daily Reports', description: 'Daily Update Reports & Approval' },
+  { key: 'settings', label: 'Settings', description: 'System Settings Management' },
 ];
 
 const UserPermissions: React.FC<UserPermissionsProps> = ({ isOpen, onClose, user, token }) => {

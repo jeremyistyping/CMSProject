@@ -47,13 +47,26 @@ type ModulePermission struct {
 }
 
 // GetDefaultPermissions returns default permissions based on role
+// Modules: projects, cost_control, material_tracking, cbs, purchase_requests, daily_reports, settings
+// Role Responsibilities:
+// - admin: Full system access
+// - managing_director: Final approval authority, view all
+// - director: High-level oversight, approve purchase requests
+// - project_director: Project management, approve daily reports & purchase requests
+// - gm: Approve daily reports, view cost control
+// - finance: Cost control & purchase request management
+// - cost_control: CBS, material tracking, budget analysis
+// - purchasing: Create & manage purchase requests
+// - inventory_manager: Material tracking & inventory
+// - employee: Daily reports input only
 func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	permissions := make(map[string]*ModulePermission)
-	modules := []string{"accounts", "products", "contacts", "assets", "sales", "purchases", "payments", "cash_bank", "cost_control", "reports", "settings", "projects", "daily_updates", "cbs"}
+	// Cost Control focused modules
+	modules := []string{"projects", "cost_control", "material_tracking", "cbs", "purchase_requests", "daily_reports", "settings"}
 
 	switch role {
-	case "admin", "director":
-		// Admin and Director have full access to everything
+	case "admin":
+		// Admin: Full access to all modules
 		for _, module := range modules {
 			permissions[module] = &ModulePermission{
 				CanView:    true,
@@ -65,78 +78,11 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				CanMenu:    true,
 			}
 		}
-	case "finance", "finance_manager":
-		// Finance and Finance Manager have full access to financial modules
-		financialModules := []string{"accounts", "payments", "cash_bank", "sales", "purchases", "cost_control", "reports"}
+
+	case "managing_director":
+		// Managing Director (Direktur Utama): Final approval authority, view all, approve all
 		for _, module := range modules {
-			if contains(financialModules, module) {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,
-					CanEdit:    true,
-					CanDelete:  false,
-					CanApprove: true,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "settings" {
-				// Finance roles need settings access for invoice types and financial configuration
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,  // Can create invoice types
-					CanEdit:    true,  // Can edit invoice types
-					CanDelete:  false, // Cannot delete settings for safety
-					CanApprove: true,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "projects" || module == "daily_updates" {
-				// Finance needs to view projects for cost tracking
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false, // No menu access for non-financial modules
-				}
-			}
-		}
-	case "gm", "project_director":
-		// GM and Project Director have full access to projects (including creation)
-		for _, module := range modules {
-			if module == "projects" || module == "daily_updates" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true, // Allowed to create projects
-					CanEdit:    true,
-					CanDelete:  true, // Allowed to delete projects
-					CanApprove: true,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "purchases" || module == "sales" || module == "payments" || module == "cash_bank" || module == "reports" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: true,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "settings" {
+			if module == "settings" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -146,44 +92,23 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  false,
 					CanMenu:    false,
 				}
-			} else if module == "cbs" {
-				// View CBS for budget oversight
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  true,
-					CanMenu:    true,
-				}
 			} else {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
 					CanEdit:    false,
 					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
 				}
 			}
 		}
 
-	case "manager", "managing_director":
-		// Manager and Managing Director can VIEW projects but NOT create them
+	case "director":
+		// Director: High-level oversight, approve purchase requests, view all cost control
 		for _, module := range modules {
-			if module == "projects" || module == "daily_updates" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false, // NOT allowed to create projects
-					CanEdit:    true,
-					CanDelete:  false,
-					CanApprove: true,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "purchases" || module == "sales" || module == "payments" || module == "cash_bank" || module == "reports" {
+			if module == "purchase_requests" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -193,72 +118,15 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if module == "settings" {
+			} else if module == "projects" || module == "cost_control" || module == "material_tracking" || module == "cbs" || module == "daily_reports" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
 					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false,
-				}
-			} else {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false,
-				}
-			}
-		}
-	case "purchasing":
-		// Purchasing role: access to purchases, products, contacts
-		for _, module := range modules {
-			if module == "contacts" || module == "products" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,
-					CanEdit:    true,
 					CanDelete:  false,
 					CanApprove: false,
 					CanExport:  true,
 					CanMenu:    true,
-				}
-			} else if module == "purchases" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,
-					CanEdit:    true,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "projects" {
-				// View projects to link purchases
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    true,
-				}
-			} else if module == "cbs" {
-				// View CBS for PR verification context
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false,
 				}
 			} else {
 				permissions[module] = &ModulePermission{
@@ -272,54 +140,11 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				}
 			}
 		}
-	case "cost_control":
-		// Cost Control has full access to purchases (approve), cost_control module, and view access to projects/reports
+
+	case "project_director":
+		// Project Director (Direktur Proyek): Manage projects, approve daily reports & purchase requests
 		for _, module := range modules {
-			if module == "purchases" {
-				// Full access to purchases - primary responsibility
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false, // Cannot create purchases (usually)
-					CanEdit:    false, // Cannot edit purchases
-					CanDelete:  false,
-					CanApprove: true, // KEY: Can approve purchases
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "cost_control" {
-				// Full access to cost control dashboard
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,
-					CanEdit:    true,
-					CanDelete:  false,
-					CanApprove: true,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "projects" || module == "daily_updates" || module == "reports" {
-				// View access for monitoring
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  true,
-					CanMenu:    true,
-				}
-			} else if module == "accounts" || module == "contacts" || module == "products" {
-				// View access to master data for reference
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    true,
-				}
-			} else if module == "cbs" {
+			if module == "projects" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  true,
@@ -329,6 +154,36 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  true,
 					CanMenu:    true,
 				}
+			} else if module == "daily_reports" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "purchase_requests" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "cost_control" || module == "material_tracking" || module == "cbs" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
 			} else {
 				permissions[module] = &ModulePermission{
 					CanView:    false,
@@ -341,94 +196,31 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				}
 			}
 		}
-	case "inventory_manager":
-		coreInventoryModules := []string{"products", "inventory", "stock_adjustments", "transfers"}
-		supportingModules := []string{"contacts", "assets", "reports"}
-		financialSupportModules := []string{"accounts", "payments", "cash_bank"}
 
+	case "gm":
+		// GM (General Manager): Approve daily reports, view all cost control modules
 		for _, module := range modules {
-			if contains(coreInventoryModules, module) {
-				// Full access to core inventory modules
+			if module == "daily_reports" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
-					CanCreate:  true,
-					CanEdit:    true,
-					CanDelete:  false, // Safety: no delete permission
-					CanApprove: false, // Purchase approvals handled by finance/director
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: true,
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if contains(supportingModules, module) {
-				// Good access to supporting modules (contacts for vendors/customers, assets for inventory items, reports for analytics)
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,
-					CanEdit:    true,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  true, // Can export reports and asset lists
-					CanMenu:    true,
-				}
-			} else if contains(financialSupportModules, module) {
-				// Limited financial access - can create entries for inventory operations but cannot approve
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,  // Can create expense accounts, payments for purchases
-					CanEdit:    false, // Cannot edit financial records (safety)
-					CanDelete:  false,
-					CanApprove: false, // Financial approvals remain with finance team
-					CanExport:  true,  // Can export for reporting
-					CanMenu:    false, // No menu access to financial modules
-				}
-			} else {
-				// View-only access to other modules
+			} else if module == "projects" || module == "cost_control" || module == "material_tracking" || module == "cbs" || module == "purchase_requests" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
 					CanEdit:    false,
 					CanDelete:  false,
 					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false,
-				}
-			}
-		}
-	case "field_officer", "site_manager":
-		// Field Team: Input data proyek (Daily Updates), View Projects. No Financial Access.
-		for _, module := range modules {
-			if module == "projects" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false, // Only admin/manager creates projects
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    true,
-				}
-			} else if module == "daily_updates" {
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true, // Main task: input daily updates
-					CanEdit:    true, // Can edit their own updates
-					CanDelete:  false,
-					CanApprove: false,
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if module == "products" || module == "assets" {
-				// View access for material/equipment usage in daily updates
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false,
-				}
 			} else {
-				// Block everything else (Financials, Settings, etc.)
 				permissions[module] = &ModulePermission{
 					CanView:    false,
 					CanCreate:  false,
@@ -440,22 +232,215 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 				}
 			}
 		}
-	case "employee":
-		// Employee has limited access
+
+	case "finance", "finance_manager":
+		// Finance: Manage cost control, approve purchase requests, view all reports
 		for _, module := range modules {
-			if module == "contacts" {
-				// Employee needs view access to contacts for vendor/customer data loading
-				// but should NOT have menu access to browse contacts directly
+			if module == "cost_control" {
 				permissions[module] = &ModulePermission{
-					CanView:    true, // Essential for loading vendor/customer lists in purchases
-					CanCreate:  true, // Can create vendors/customers when needed
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "purchase_requests" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "projects" || module == "material_tracking" || module == "cbs" || module == "daily_reports" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else {
+				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
 					CanEdit:    false,
 					CanDelete:  false,
 					CanApprove: false,
 					CanExport:  false,
-					CanMenu:    false, // KEY: No menu access to prevent browsing other employees
+					CanMenu:    false,
 				}
-			} else if module == "products" {
+			}
+		}
+
+	case "cost_control":
+		// Cost Control: Full access to CBS, material tracking, budget analysis
+		for _, module := range modules {
+			if module == "cbs" || module == "material_tracking" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  true,
+					CanApprove: true,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "cost_control" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "purchase_requests" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "projects" || module == "daily_reports" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else {
+				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			}
+		}
+
+	case "purchasing":
+		// Purchasing: Create & manage purchase requests
+		for _, module := range modules {
+			if module == "purchase_requests" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  true,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "projects" || module == "cost_control" || module == "material_tracking" || module == "cbs" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else {
+				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			}
+		}
+
+	case "inventory_manager":
+		// Inventory Manager: Material tracking & inventory management
+		for _, module := range modules {
+			if module == "material_tracking" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  true,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "purchase_requests" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "projects" || module == "cost_control" || module == "cbs" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else {
+				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			}
+		}
+
+	case "field_officer", "site_manager":
+		// Field Team: Input daily reports, view projects, record material usage
+		for _, module := range modules {
+			if module == "daily_reports" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else if module == "projects" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else if module == "material_tracking" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  true,
@@ -463,44 +448,59 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanDelete:  false,
 					CanApprove: false,
 					CanExport:  false,
-					CanMenu:    true, // Can access products menu
-				}
-			} else if module == "accounts" {
-				// Employee needs view access to accounts for purchase form dropdowns
-				permissions[module] = &ModulePermission{
-					CanView:    true, // Essential for purchase forms
-					CanCreate:  false,
-					CanEdit:    false,
-					CanDelete:  false,
-					CanApprove: false,
-					CanExport:  false,
-					CanMenu:    false, // No menu access to accounts
-				}
-			} else if module == "purchases" {
-				// Employee should be able to create purchases
-				permissions[module] = &ModulePermission{
-					CanView:    true,
-					CanCreate:  true,  // Employees can create purchase requests
-					CanEdit:    true,  // Can edit their own purchases
-					CanDelete:  false, // Cannot delete purchases
-					CanApprove: false, // Cannot approve purchases
-					CanExport:  false,
-					CanMenu:    true, // Can access purchases menu
+					CanMenu:    true,
 				}
 			} else {
 				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
+				}
+			}
+		}
+
+	case "employee":
+		// Employee: View projects, create daily reports
+		for _, module := range modules {
+			if module == "daily_reports" {
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    true,
+				}
+			} else if module == "projects" {
+				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
 					CanEdit:    false,
 					CanDelete:  false,
 					CanApprove: false,
 					CanExport:  false,
-					CanMenu:    false, // No menu access to other modules
+					CanMenu:    true,
+				}
+			} else {
+				permissions[module] = &ModulePermission{
+					CanView:    false,
+					CanCreate:  false,
+					CanEdit:    false,
+					CanDelete:  false,
+					CanApprove: false,
+					CanExport:  false,
+					CanMenu:    false,
 				}
 			}
 		}
+
 	default:
-		// Default no permissions
+		// Default: No permissions
 		for _, module := range modules {
 			permissions[module] = &ModulePermission{
 				CanView:    false,

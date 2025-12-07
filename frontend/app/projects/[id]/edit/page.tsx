@@ -60,6 +60,9 @@ export default function EditProjectPage() {
     equipment_progress: 0,
   });
 
+  // State untuk display budget dengan format Rupiah
+  const [budgetDisplay, setBudgetDisplay] = useState('');
+
   // Fetch project data on mount
   useEffect(() => {
     if (projectId) {
@@ -92,6 +95,11 @@ export default function EditProjectPage() {
         interior_progress: data.interior_progress || 0,
         equipment_progress: data.equipment_progress || 0,
       });
+
+      // Set budget display dengan format Rupiah
+      if (data.budget && data.budget > 0) {
+        setBudgetDisplay('Rp ' + new Intl.NumberFormat('id-ID').format(data.budget));
+      }
     } catch (error) {
       console.error('Error fetching project:', error);
       toast({
@@ -114,8 +122,29 @@ export default function EditProjectPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name.includes('progress') || name === 'budget' ? Number(value) : value,
+      [name]: name.includes('progress') ? Number(value) : value,
     }));
+  };
+
+  // Handler khusus untuk budget dengan format Rupiah
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Hapus semua karakter non-digit
+    const numericValue = value.replace(/[^\d]/g, '');
+    const numberValue = parseInt(numericValue, 10) || 0;
+    
+    // Update formData dengan nilai numerik
+    setFormData((prev) => ({
+      ...prev,
+      budget: numberValue,
+    }));
+    
+    // Update display dengan format Rupiah
+    if (numericValue === '') {
+      setBudgetDisplay('');
+    } else {
+      setBudgetDisplay('Rp ' + new Intl.NumberFormat('id-ID').format(numberValue));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -350,17 +379,17 @@ export default function EditProjectPage() {
                       <FormLabel color={textColor}>Budget (IDR)</FormLabel>
                       <Input
                         name="budget"
-                        type="number"
-                        placeholder="e.g. 500000000"
-                        value={formData.budget || ''}
-                        onChange={handleInputChange}
+                        type="text"
+                        placeholder="Rp 500.000.000"
+                        value={budgetDisplay}
+                        onChange={handleBudgetChange}
                         bg={inputBgColor}
                         borderColor={borderColor}
                         isDisabled={submitting}
                       />
                       {formData.budget > 0 && (
                         <Text fontSize="xs" color={subtextColor} mt={1}>
-                          Rp {formatBudget(formData.budget)} ({formatToMillion(formData.budget)} juta)
+                          {formatToMillion(formData.budget)} juta rupiah
                         </Text>
                       )}
                     </FormControl>

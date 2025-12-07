@@ -67,7 +67,7 @@ func (s *projectService) GetProjectCostSummary(id uint) (*models.ProjectCostSumm
 
 	// Aggregate actual costs from unified_journal_ledger by account category
 	// This mirrors the logic used in ProjectReportService but without date filtering.
-	var materialCost, laborCost, equipmentCost, overheadCost int64
+	var materialCost, laborCost, equipmentCost, overheadCost float64
 
 	// Material
 	s.db.Raw(`
@@ -125,8 +125,8 @@ func (s *projectService) GetProjectCostSummary(id uint) (*models.ProjectCostSumm
 	summary.ActualCost = materialCost + laborCost + equipmentCost + overheadCost
 	summary.Variance = summary.Budget - summary.ActualCost
 	if summary.Budget > 0 {
-		summary.VariancePercent = (float64(summary.Variance) / float64(summary.Budget)) * 100
-		summary.BudgetUtilization = (float64(summary.ActualCost) / float64(summary.Budget)) * 100
+		summary.VariancePercent = (summary.Variance / summary.Budget) * 100
+		summary.BudgetUtilization = (summary.ActualCost / summary.Budget) * 100
 	}
 	summary.RemainingBudget = summary.Budget - summary.ActualCost
 	summary.IsOverBudget = summary.ActualCost > summary.Budget

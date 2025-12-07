@@ -9,7 +9,7 @@ CREATE TABLE cbs_nodes (
     code VARCHAR(50) NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    coa_account_id INTEGER REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+    coa_account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
     budget_amount BIGINT DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
