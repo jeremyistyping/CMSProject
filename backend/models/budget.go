@@ -29,22 +29,21 @@ type Budget struct {
 }
 
 type BudgetItem struct {
-	ID            uint           `json:"id" gorm:"primaryKey"`
-	BudgetID      uint           `json:"budget_id" gorm:"not null;index"`
-	AccountID     uint           `json:"account_id" gorm:"not null;index"`
-	Month         int            `json:"month" gorm:"not null"` // 1-12
-	BudgetAmount  float64        `json:"budget_amount" gorm:"type:decimal(20,2);default:0"`
-	ActualAmount  float64        `json:"actual_amount" gorm:"type:decimal(20,2);default:0"`
-	Variance      float64        `json:"variance" gorm:"type:decimal(20,2);default:0"`
-	VariancePercent float64      `json:"variance_percent" gorm:"type:decimal(5,2);default:0"`
-	Notes         string         `json:"notes" gorm:"type:text"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
+	ID              uint           `json:"id" gorm:"primaryKey"`
+	BudgetID        uint           `json:"budget_id" gorm:"not null;index"`
+	AccountCode     string         `json:"account_code" gorm:"size:20;index"`
+	Month           int            `json:"month" gorm:"not null"` // 1-12
+	BudgetAmount    float64        `json:"budget_amount" gorm:"type:decimal(20,2);default:0"`
+	ActualAmount    float64        `json:"actual_amount" gorm:"type:decimal(20,2);default:0"`
+	Variance        float64        `json:"variance" gorm:"type:decimal(20,2);default:0"`
+	VariancePercent float64        `json:"variance_percent" gorm:"type:decimal(5,2);default:0"`
+	Notes           string         `json:"notes" gorm:"type:text"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relations
-	Budget  Budget  `json:"budget" gorm:"foreignKey:BudgetID"`
-	Account Account `json:"account" gorm:"foreignKey:AccountID"`
+	Budget Budget `json:"budget" gorm:"foreignKey:BudgetID"`
 }
 
 type BudgetComparison struct {

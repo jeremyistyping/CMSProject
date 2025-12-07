@@ -10,8 +10,9 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"app-sistem-akuntansi/config"
+
 	"app-sistem-akuntansi/models"
+
 	"gorm.io/gorm"
 )
 
@@ -185,37 +186,29 @@ func (s *SettingsService) validateSettings(updates map[string]interface{}) error
 
 // createDefaultSettings creates default system settings
 func (s *SettingsService) createDefaultSettings() models.Settings {
-	// Load unified config for defaults
-	cfg := config.GetAccountingConfig()
-	journalPrefix := "JE"
-	requireApproval := false
-	if cfg != nil {
-		if cfg.JournalSettings.CodePrefix != "" { journalPrefix = cfg.JournalSettings.CodePrefix }
-		requireApproval = cfg.JournalSettings.RequireApproval
-	}
 	return models.Settings{
-		CompanyName:        "PT. Sistem Akuntansi Indonesia",
-		CompanyAddress:     "Jl. Sudirman Kav. 45-46, Jakarta Pusat 10210, Indonesia",
-		CompanyPhone:       "+62-21-5551234",
-		CompanyEmail:       "info@sistemakuntansi.co.id",
-		Currency:           ifThen(cfg != nil && cfg.CurrencySettings.BaseCurrency != "", cfg.CurrencySettings.BaseCurrency, "IDR"),
-		DateFormat:         "DD/MM/YYYY",
-		FiscalYearStart:    "January 1",
-		Language:           "id",
-		Timezone:           "Asia/Jakarta",
-		ThousandSeparator:  ".",
-		DecimalSeparator:   ",",
-		DecimalPlaces:      ifThenInt(cfg != nil && cfg.CurrencySettings.DecimalPlaces != 0, cfg.CurrencySettings.DecimalPlaces, 2),
-		DefaultTaxRate:     ifThenFloat(cfg != nil && cfg.TaxRates.DefaultPPN != 0, cfg.TaxRates.DefaultPPN, 11.0),
-		InvoicePrefix:      "INV",
-		SalesPrefix:        "SOA",
-		QuotePrefix:        "QT",
-		PurchasePrefix:     "PO",
+		CompanyName:            "PT. Unipro Project Management",
+		CompanyAddress:         "Jakarta, Indonesia",
+		CompanyPhone:           "+62-21-5551234",
+		CompanyEmail:           "info@unipro.co.id",
+		Currency:               "IDR",
+		DateFormat:             "DD/MM/YYYY",
+		FiscalYearStart:        "January 1",
+		Language:               "id",
+		Timezone:               "Asia/Jakarta",
+		ThousandSeparator:      ".",
+		DecimalSeparator:       ",",
+		DecimalPlaces:          2,
+		DefaultTaxRate:         11.0,
+		InvoicePrefix:          "INV",
+		SalesPrefix:            "SOA",
+		QuotePrefix:            "QT",
+		PurchasePrefix:         "PR",
 		PaymentReceivablePrefix: "RCV",
 		PaymentPayablePrefix:    "PAY",
-		JournalPrefix:          journalPrefix,
+		JournalPrefix:          "JE",
 		JournalNextNumber:      1,
-		RequireJournalApproval: requireApproval,
+		RequireJournalApproval: false,
 	}
 }
 

@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/json"
-	"time"
 
 	"app-sistem-akuntansi/models"
 	"app-sistem-akuntansi/repositories"
@@ -60,7 +59,6 @@ func (s *NotificationService) DeleteNotification(notificationID, userID uint) er
 
 // CreateApprovalNotification creates approval-related notifications
 func (s *NotificationService) CreateApprovalNotification(userID uint, notificationType, title, message string, data interface{}) error {
-	// Convert data to JSON string
 	var dataString string
 	if data != nil {
 		dataBytes, err := json.Marshal(data)
@@ -81,24 +79,21 @@ func (s *NotificationService) CreateApprovalNotification(userID uint, notificati
 	return s.CreateNotification(notification)
 }
 
-// CreatePurchaseSubmissionNotification notifies when purchase is submitted for approval
-func (s *NotificationService) CreatePurchaseSubmissionNotification(purchase *models.Purchase) error {
-	// Use smart notification service for intelligent routing
-	return s.smartService.CreatePurchaseNotification(purchase, "SUBMITTED", nil)
+// CreatePurchaseRequestSubmissionNotification notifies when purchase request is submitted
+func (s *NotificationService) CreatePurchaseRequestSubmissionNotification(pr *models.PurchaseRequest) error {
+	return s.smartService.CreatePurchaseRequestNotification(pr, "SUBMITTED", nil)
 }
 
-// CreatePurchaseApprovedNotification notifies when purchase is approved
-func (s *NotificationService) CreatePurchaseApprovedNotification(purchase *models.Purchase, approverID uint) error {
-	// Use smart notification service
-	return s.smartService.CreatePurchaseNotification(purchase, "APPROVED", map[string]interface{}{
+// CreatePurchaseRequestApprovedNotification notifies when purchase request is approved
+func (s *NotificationService) CreatePurchaseRequestApprovedNotification(pr *models.PurchaseRequest, approverID uint) error {
+	return s.smartService.CreatePurchaseRequestNotification(pr, "APPROVED", map[string]interface{}{
 		"approver_id": approverID,
 	})
 }
 
-// CreatePurchaseRejectedNotification notifies when purchase is rejected
-func (s *NotificationService) CreatePurchaseRejectedNotification(purchase *models.Purchase, approverID uint, reason string) error {
-	// Use smart notification service
-	return s.smartService.CreatePurchaseNotification(purchase, "REJECTED", map[string]interface{}{
+// CreatePurchaseRequestRejectedNotification notifies when purchase request is rejected
+func (s *NotificationService) CreatePurchaseRequestRejectedNotification(pr *models.PurchaseRequest, approverID uint, reason string) error {
+	return s.smartService.CreatePurchaseRequestNotification(pr, "REJECTED", map[string]interface{}{
 		"approver_id": approverID,
 		"reason":      reason,
 	})
@@ -115,8 +110,6 @@ func (s *NotificationService) SendBulkNotification(userIDs []uint, notificationT
 	return nil
 }
 
-// Private helper methods
-
 func (s *NotificationService) getNotificationPriority(notificationType string) string {
 	switch notificationType {
 	case models.NotificationTypeApprovalPending:
@@ -128,87 +121,4 @@ func (s *NotificationService) getNotificationPriority(notificationType string) s
 	default:
 		return models.NotificationPriorityNormal
 	}
-}
-
-// DEPRECATED: Use smart notification service instead
-// getApproversForPurchase is now handled by SmartNotificationService
-func (s *NotificationService) getApproversForPurchase(purchase *models.Purchase) []uint {
-	// This method is deprecated - use SmartNotificationService.getEligibleUsers instead
-	// Keeping for backward compatibility
-	var users []models.User
-	
-	if purchase.TotalAmount <= 25000000 {
-		// Get finance users from database
-		s.db.Where("LOWER(role) = LOWER(?) AND is_active = ?", "finance", true).Find(&users)
-	} else {
-		// Get director users from database
-		s.db.Where("LOWER(role) = LOWER(?) AND is_active = ?", "director", true).Find(&users)
-	}
-	
-	var approvers []uint
-	for _, user := range users {
-		approvers = append(approvers, user.ID)
-	}
-	
-	return approvers
-}
-
-// DEPRECATED: Use database queries instead
-func (s *NotificationService) getFinanceUserIDs() []uint {
-	var users []models.User
-	s.db.Where("LOWER(role) = LOWER(?) AND is_active = ?", "finance", true).Find(&users)
-	
-	var ids []uint
-	for _, user := range users {
-		ids = append(ids, user.ID)
-	}
-	return ids
-}
-
-// DEPRECATED: Use database queries instead
-func (s *NotificationService) getDirectorUserIDs() []uint {
-	var users []models.User
-	s.db.Where("LOWER(role) = LOWER(?) AND is_active = ?", "director", true).Find(&users)
-	
-	var ids []uint
-	for _, user := range users {
-		ids = append(ids, user.ID)
-	}
-	return ids
-}
-
-// CleanupOldNotifications removes old notifications
-func (s *NotificationService) CleanupOldNotifications(daysOld int) error {
-	cutoffDate := time.Now().AddDate(0, 0, -daysOld)
-	return s.notificationRepo.DeleteOlderThan(cutoffDate)
-}
-
-// GetNotificationStats gets notification statistics
-func (s *NotificationService) GetNotificationStats(userID uint) (map[string]interface{}, error) {
-	stats := make(map[string]interface{})
-	
-	// Get total notifications
-	total, err := s.notificationRepo.GetTotalCount(userID)
-	if err != nil {
-		return nil, err
-	}
-	stats["total_notifications"] = total
-	
-	// Get unread count
-	unread, err := s.GetUnreadCount(userID)
-	if err != nil {
-		return nil, err
-	}
-	stats["unread_notifications"] = unread
-	
-	// Get count by type
-	approvalPending, _ := s.notificationRepo.GetCountByType(userID, models.NotificationTypeApprovalPending)
-	approvalApproved, _ := s.notificationRepo.GetCountByType(userID, models.NotificationTypeApprovalApproved)
-	approvalRejected, _ := s.notificationRepo.GetCountByType(userID, models.NotificationTypeApprovalRejected)
-	
-	stats["approval_pending"] = approvalPending
-	stats["approval_approved"] = approvalApproved
-	stats["approval_rejected"] = approvalRejected
-	
-	return stats, nil
 }

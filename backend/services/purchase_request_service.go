@@ -151,34 +151,30 @@ func (s *purchaseRequestService) GetEstimatedMaterialImpact(prID uint) ([]models
 	var impacts []models.MaterialImpact
 
 	for _, item := range pr.Items {
-		// Get current stock for this product in this project
+		// Get current stock for this item in this project (if tracking exists)
 		var currentStock float64
-		err := s.db.Table("inventories").
-			Select("COALESCE(SUM(CASE WHEN type = 'IN' THEN quantity ELSE -quantity END), 0)").
-			Where("project_id = ?", pr.ProjectID).
-			Where("product_id = ?", item.ProductID).
-			Where("deleted_at IS NULL").
-			Scan(&currentStock).Error
+		if item.ProductID != nil {
+			err := s.db.Table("inventories").
+				Select("COALESCE(SUM(CASE WHEN type = 'IN' THEN quantity ELSE -quantity END), 0)").
+				Where("project_id = ?", pr.ProjectID).
+				Where("product_id = ?", *item.ProductID).
+				Where("deleted_at IS NULL").
+				Scan(&currentStock).Error
 
-		if err != nil {
-			// Log error but continue with 0 stock
-			fmt.Printf("Error getting stock for product %d: %v\n", item.ProductID, err)
-		}
-
-		// Get product details
-		var product models.Product
-		if err := s.db.First(&product, item.ProductID).Error; err != nil {
-			continue
+			if err != nil {
+				// Log error but continue with 0 stock
+				fmt.Printf("Error getting stock for product %d: %v\n", *item.ProductID, err)
+			}
 		}
 
 		impact := models.MaterialImpact{
 			ProductID:      item.ProductID,
-			ProductName:    product.Name,
-			ProductCode:    product.Code,
-			Unit:           product.Unit,
-			RequestedQty:   float64(item.Quantity),
+			ProductName:    item.ItemName,
+			ProductCode:    "", // No product code since Product model is removed
+			Unit:           item.Unit,
+			RequestedQty:   item.Quantity,
 			CurrentStock:   currentStock,
-			ProjectedStock: currentStock + float64(item.Quantity),
+			ProjectedStock: currentStock + item.Quantity,
 			Status:         "OK",
 		}
 

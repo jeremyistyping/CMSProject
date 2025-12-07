@@ -2,8 +2,9 @@ package services
 
 import (
 	"fmt"
-	"time"
+
 	"app-sistem-akuntansi/models"
+
 	"gorm.io/gorm"
 )
 
@@ -15,25 +16,21 @@ func NewDashboardService(db *gorm.DB) *DashboardService {
 	return &DashboardService{DB: db}
 }
 
-// AnalyticsData represents the complete analytics data with growth calculations
+// AnalyticsData represents the complete analytics data for project management
 type AnalyticsData struct {
-	TotalSales           float64 `json:"totalSales"`
-	TotalPurchases       float64 `json:"totalPurchases"`
-	AccountsReceivable   float64 `json:"accountsReceivable"`
-	AccountsPayable      float64 `json:"accountsPayable"`
-	
-	// Growth percentages
-	SalesGrowth          float64 `json:"salesGrowth"`
-	PurchasesGrowth      float64 `json:"purchasesGrowth"`
-	ReceivablesGrowth    float64 `json:"receivablesGrowth"`
-	PayablesGrowth       float64 `json:"payablesGrowth"`
+	TotalProjects        int64   `json:"totalProjects"`
+	ActiveProjects       int64   `json:"activeProjects"`
+	CompletedProjects    int64   `json:"completedProjects"`
+	TotalPurchaseRequests int64  `json:"totalPurchaseRequests"`
+	PendingApprovals     int64   `json:"pendingApprovals"`
+	TotalBudget          float64 `json:"totalBudget"`
+	TotalSpent           float64 `json:"totalSpent"`
 	
 	// Monthly data
-	MonthlySales         []MonthlyData `json:"monthlySales"`
-	MonthlyPurchases     []MonthlyData `json:"monthlyPurchases"`
-	CashFlow             []DashboardCashFlowData `json:"cashFlow"`
-	TopAccounts          []AccountData `json:"topAccounts"`
-	RecentTransactions   []TransactionData `json:"recentTransactions"`
+	MonthlyProjects      []MonthlyData           `json:"monthlyProjects"`
+	MonthlyPRs           []MonthlyData           `json:"monthlyPRs"`
+	RecentProjects       []ProjectSummary        `json:"recentProjects"`
+	RecentPurchaseRequests []PurchaseRequestSummary `json:"recentPurchaseRequests"`
 }
 
 type MonthlyData struct {
@@ -66,7 +63,25 @@ type TransactionData struct {
 	Status        string  `json:"status"`
 }
 
-// GetDashboardAnalytics returns comprehensive dashboard analytics with real growth calculations
+type ProjectSummary struct {
+	ID        uint    `json:"id"`
+	Name      string  `json:"name"`
+	Status    string  `json:"status"`
+	Progress  float64 `json:"progress"`
+	Budget    float64 `json:"budget"`
+	CreatedAt string  `json:"created_at"`
+}
+
+type PurchaseRequestSummary struct {
+	ID          uint    `json:"id"`
+	PRNumber    string  `json:"pr_number"`
+	ProjectName string  `json:"project_name"`
+	TotalAmount float64 `json:"total_amount"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+// GetDashboardAnalytics returns comprehensive dashboard analytics
 func (ds *DashboardService) GetDashboardAnalytics() (*AnalyticsData, error) {
 	return ds.GetDashboardAnalyticsForRole("")
 }
@@ -75,135 +90,60 @@ func (ds *DashboardService) GetDashboardAnalytics() (*AnalyticsData, error) {
 func (ds *DashboardService) GetDashboardAnalyticsForRole(role string) (*AnalyticsData, error) {
 	analytics := &AnalyticsData{}
 	
-	// Get current period data (this month)
-	now := time.Now()
-	currentStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
-	currentEnd := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location()).AddDate(0, 0, -1).Format("2006-01-02")
+	// Total projects
+	ds.DB.Model(&models.Project{}).Count(&analytics.TotalProjects)
 	
-	// Get previous period data (last month)
-	lastMonth := now.AddDate(0, -1, 0)
-	previousStart := time.Date(lastMonth.Year(), lastMonth.Month(), 1, 0, 0, 0, 0, lastMonth.Location()).Format("2006-01-02")
-	previousEnd := time.Date(lastMonth.Year(), lastMonth.Month()+1, 1, 0, 0, 0, 0, lastMonth.Location()).AddDate(0, 0, -1).Format("2006-01-02")
+	// Active projects
+	ds.DB.Model(&models.Project{}).Where("status IN ?", []string{"ACTIVE", "IN_PROGRESS", "ONGOING"}).Count(&analytics.ActiveProjects)
 	
-	// Calculate current totals
-	currentTotals, err := ds.getCurrentPeriodTotals(currentStart, currentEnd)
+	// Completed projects
+	ds.DB.Model(&models.Project{}).Where("status = ?", "COMPLETED").Count(&analytics.CompletedProjects)
+	
+	// Total purchase requests
+	ds.DB.Model(&models.PurchaseRequest{}).Count(&analytics.TotalPurchaseRequests)
+	
+	// Pending approvals
+	ds.DB.Model(&models.ApprovalRequest{}).Where("status = ?", "PENDING").Count(&analytics.PendingApprovals)
+	
+	// Total budget from projects
+	ds.DB.Model(&models.Project{}).Select("COALESCE(SUM(budget), 0)").Scan(&analytics.TotalBudget)
+	
+	// Total spent from approved purchase requests
+	ds.DB.Model(&models.PurchaseRequest{}).
+		Where("status = ?", "APPROVED").
+		Select("COALESCE(SUM(total_amount), 0)").
+		Scan(&analytics.TotalSpent)
+	
+	// Get monthly projects data
+	var err error
+	analytics.MonthlyProjects, err = ds.getMonthlyProjectsData()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current period totals: %v", err)
+		return nil, fmt.Errorf("failed to get monthly projects data: %v", err)
 	}
 	
-	// Calculate previous totals for growth comparison
-	previousTotals, err := ds.getCurrentPeriodTotals(previousStart, previousEnd)
+	// Get monthly purchase requests data
+	analytics.MonthlyPRs, err = ds.getMonthlyPRsData()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get previous period totals: %v", err)
+		return nil, fmt.Errorf("failed to get monthly PRs data: %v", err)
 	}
 	
-	// Set current values
-	analytics.TotalSales = currentTotals["sales"]
-	analytics.TotalPurchases = currentTotals["purchases"]
-	analytics.AccountsReceivable = currentTotals["receivables"]
-	analytics.AccountsPayable = currentTotals["payables"]
-	
-	// Calculate growth percentages
-	analytics.SalesGrowth = ds.calculateGrowthPercentage(previousTotals["sales"], currentTotals["sales"])
-	analytics.PurchasesGrowth = ds.calculateGrowthPercentage(previousTotals["purchases"], currentTotals["purchases"])
-	analytics.ReceivablesGrowth = ds.calculateGrowthPercentage(previousTotals["receivables"], currentTotals["receivables"])
-	analytics.PayablesGrowth = ds.calculateGrowthPercentage(previousTotals["payables"], currentTotals["payables"])
-	
-	// Get monthly data for charts
-	analytics.MonthlySales, err = ds.getMonthlySalesData()
+	// Get recent projects
+	analytics.RecentProjects, err = ds.getRecentProjects()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get monthly sales data: %v", err)
+		return nil, fmt.Errorf("failed to get recent projects: %v", err)
 	}
 	
-	analytics.MonthlyPurchases, err = ds.getMonthlyPurchasesData()
+	// Get recent purchase requests
+	analytics.RecentPurchaseRequests, err = ds.getRecentPurchaseRequests()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get monthly purchases data: %v", err)
-	}
-	
-	// Calculate cash flow
-	analytics.CashFlow = ds.calculateCashFlow(analytics.MonthlySales, analytics.MonthlyPurchases)
-	
-	// Get top accounts
-	analytics.TopAccounts, err = ds.getTopAccounts()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get top accounts: %v", err)
-	}
-	
-	// Get recent transactions
-	analytics.RecentTransactions, err = ds.getRecentTransactions()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get recent transactions: %v", err)
+		return nil, fmt.Errorf("failed to get recent purchase requests: %v", err)
 	}
 	
 	return analytics, nil
 }
 
-// getCurrentPeriodTotals calculates totals for a given period
-func (ds *DashboardService) getCurrentPeriodTotals(startDate, endDate string) (map[string]float64, error) {
-	totals := make(map[string]float64)
-	
-	// Total sales for the period
-	var totalSales float64
-	err := ds.DB.Model(&models.Sale{}).
-		Where("date >= ? AND date <= ? AND deleted_at IS NULL", startDate, endDate).
-		Select("COALESCE(SUM(total_amount), 0)").
-		Scan(&totalSales).Error
-	if err != nil {
-		return nil, err
-	}
-	totals["sales"] = totalSales
-	
-	// Total purchases for the period (only approved)
-	var totalPurchases float64
-	err = ds.DB.Model(&models.Purchase{}).
-		Where("date >= ? AND date <= ? AND deleted_at IS NULL AND status IN (?)", 
-			startDate, endDate, []string{"APPROVED", "COMPLETED"}).
-		Select("COALESCE(SUM(total_amount), 0)").
-		Scan(&totalPurchases).Error
-	if err != nil {
-		return nil, err
-	}
-	totals["purchases"] = totalPurchases
-	
-	// Accounts receivable (outstanding amounts from sales)
-	var accountsReceivable float64
-	err = ds.DB.Model(&models.Sale{}).
-		Where("status IN (?) AND deleted_at IS NULL", []string{"INVOICED", "PENDING", "OVERDUE"}).
-		Select("COALESCE(SUM(outstanding_amount), 0)").
-		Scan(&accountsReceivable).Error
-	if err != nil {
-		return nil, err
-	}
-	totals["receivables"] = accountsReceivable
-	
-	// Accounts payable (outstanding amounts from purchases)
-	var accountsPayable float64
-	err = ds.DB.Model(&models.Purchase{}).
-		Where("status IN (?) AND deleted_at IS NULL", []string{"APPROVED", "COMPLETED", "PENDING"}).
-		Select("COALESCE(SUM(outstanding_amount), 0)").
-		Scan(&accountsPayable).Error
-	if err != nil {
-		return nil, err
-	}
-	totals["payables"] = accountsPayable
-	
-	return totals, nil
-}
-
-// calculateGrowthPercentage calculates percentage growth between two periods
-func (ds *DashboardService) calculateGrowthPercentage(previous, current float64) float64 {
-	if previous == 0 {
-		if current > 0 {
-			return 100.0 // If previous was 0 and current > 0, it's 100% growth
-		}
-		return 0.0 // Both are 0, no growth
-	}
-	
-	return ((current - previous) / previous) * 100
-}
-
-// getMonthlySalesData gets sales data for the last 7 months
-func (ds *DashboardService) getMonthlySalesData() ([]MonthlyData, error) {
+// getMonthlyProjectsData gets project creation data for the last 7 months
+func (ds *DashboardService) getMonthlyProjectsData() ([]MonthlyData, error) {
 	type QueryResult struct {
 		Month string  `json:"month"`
 		Value float64 `json:"value"`
@@ -213,8 +153,8 @@ func (ds *DashboardService) getMonthlySalesData() ([]MonthlyData, error) {
 	err := ds.DB.Raw(`
 		SELECT 
 			TO_CHAR(created_at, 'Mon') as month,
-			COALESCE(SUM(total_amount), 0) as value
-		FROM sales 
+			COUNT(*) as value
+		FROM projects 
 		WHERE created_at >= CURRENT_DATE - INTERVAL '7 months'
 			AND deleted_at IS NULL
 		GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at), TO_CHAR(created_at, 'Mon')
@@ -236,8 +176,8 @@ func (ds *DashboardService) getMonthlySalesData() ([]MonthlyData, error) {
 	return data, nil
 }
 
-// getMonthlyPurchasesData gets purchase data for the last 7 months
-func (ds *DashboardService) getMonthlyPurchasesData() ([]MonthlyData, error) {
+// getMonthlyPRsData gets purchase request data for the last 7 months
+func (ds *DashboardService) getMonthlyPRsData() ([]MonthlyData, error) {
 	type QueryResult struct {
 		Month string  `json:"month"`
 		Value float64 `json:"value"`
@@ -248,10 +188,9 @@ func (ds *DashboardService) getMonthlyPurchasesData() ([]MonthlyData, error) {
 		SELECT 
 			TO_CHAR(created_at, 'Mon') as month,
 			COALESCE(SUM(total_amount), 0) as value
-		FROM purchases 
+		FROM purchase_requests 
 		WHERE created_at >= CURRENT_DATE - INTERVAL '7 months'
 			AND deleted_at IS NULL
-			AND status IN ('APPROVED', 'COMPLETED')
 		GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at), TO_CHAR(created_at, 'Mon')
 		ORDER BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
 	`).Scan(&results).Error
@@ -271,203 +210,86 @@ func (ds *DashboardService) getMonthlyPurchasesData() ([]MonthlyData, error) {
 	return data, nil
 }
 
-// calculateCashFlow calculates cash flow from sales and purchases data
-func (ds *DashboardService) calculateCashFlow(sales, purchases []MonthlyData) []DashboardCashFlowData {
-	var cashFlow []DashboardCashFlowData
-	
-	maxLen := len(sales)
-	if len(purchases) > maxLen {
-		maxLen = len(purchases)
+// getRecentProjects gets recent projects
+func (ds *DashboardService) getRecentProjects() ([]ProjectSummary, error) {
+	var projects []models.Project
+	err := ds.DB.Order("created_at DESC").Limit(5).Find(&projects).Error
+	if err != nil {
+		return nil, err
 	}
 	
-	for i := 0; i < maxLen; i++ {
-		var month string
-		var salesValue, purchasesValue float64
-		
-		if i < len(sales) {
-			month = sales[i].Month
-			salesValue = sales[i].Value
-		}
-		
-		if i < len(purchases) {
-			if month == "" {
-				month = purchases[i].Month
-			}
-			purchasesValue = purchases[i].Value
-		}
-		
-		balance := salesValue - purchasesValue
-		
-		cashFlow = append(cashFlow, DashboardCashFlowData{
-			Month:   month,
-			Inflow:  salesValue,
-			Outflow: purchasesValue,
-			Balance: balance,
+	var summaries []ProjectSummary
+	for _, p := range projects {
+		summaries = append(summaries, ProjectSummary{
+			ID:        p.ID,
+			Name:      p.ProjectName,
+			Status:    p.Status,
+			Progress:  p.OverallProgress,
+			Budget:    p.Budget,
+			CreatedAt: p.CreatedAt.Format("2006-01-02"),
 		})
 	}
 	
-	return cashFlow
+	return summaries, nil
 }
 
-// getTopAccounts gets the top 5 accounts by balance
-func (ds *DashboardService) getTopAccounts() ([]AccountData, error) {
-	type QueryResult struct {
-		Name    string  `json:"name"`
-		Balance float64 `json:"balance"`
-		Type    string  `json:"type"`
-	}
-	
-	var results []QueryResult
-	err := ds.DB.Raw(`
-		SELECT 
-			name,
-			ABS(balance) as balance,
-			type
-		FROM accounts 
-		WHERE deleted_at IS NULL 
-			AND is_active = true
-			AND balance != 0
-			AND is_header = false
-		ORDER BY ABS(balance) DESC
-		LIMIT 5
-	`).Scan(&results).Error
-	
+// getRecentPurchaseRequests gets recent purchase requests
+func (ds *DashboardService) getRecentPurchaseRequests() ([]PurchaseRequestSummary, error) {
+	var prs []models.PurchaseRequest
+	err := ds.DB.Preload("Project").Order("created_at DESC").Limit(5).Find(&prs).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	var data []AccountData
-	for _, result := range results {
-		data = append(data, AccountData{
-			Name:    result.Name,
-			Balance: result.Balance,
-			Type:    result.Type,
+	var summaries []PurchaseRequestSummary
+	for _, pr := range prs {
+		projectName := ""
+		if pr.Project.ID > 0 {
+			projectName = pr.Project.ProjectName
+		}
+		summaries = append(summaries, PurchaseRequestSummary{
+			ID:          pr.ID,
+			PRNumber:    pr.Code,
+			ProjectName: projectName,
+			TotalAmount: pr.TotalAmount,
+			Status:      pr.Status,
+			CreatedAt:   pr.CreatedAt.Format("2006-01-02"),
 		})
 	}
 	
-	return data, nil
-}
-
-// getRecentTransactions gets recent transactions
-func (ds *DashboardService) getRecentTransactions() ([]TransactionData, error) {
-	var data []TransactionData
-	
-	// Get recent sales data
-	var salesResults []TransactionData
-	err := ds.DB.Raw(`
-		SELECT 
-			s.id,
-			s.code as transaction_id,
-			COALESCE(s.notes, 'Sales Transaction') as description,
-			s.total_amount as amount,
-			TO_CHAR(s.date, 'YYYY-MM-DD') as date,
-			'SALE' as type,
-			'Sales Transaction' as account_name,
-			c.name as contact_name,
-			s.status
-		FROM sales s 
-		LEFT JOIN contacts c ON s.customer_id = c.id
-		WHERE s.deleted_at IS NULL
-		ORDER BY s.created_at DESC
-		LIMIT 5
-	`).Scan(&salesResults).Error
-	
-	if err != nil {
-		return nil, err
-	}
-	
-	// Get recent purchases data
-	var purchaseResults []TransactionData
-	err = ds.DB.Raw(`
-		SELECT 
-			p.id,
-			p.code as transaction_id,
-			COALESCE(p.notes, 'Purchase Transaction') as description,
-			p.total_amount as amount,
-			TO_CHAR(p.date, 'YYYY-MM-DD') as date,
-			'PURCHASE' as type,
-			'Purchase Transaction' as account_name,
-			c.name as contact_name,
-			p.status
-		FROM purchases p 
-		LEFT JOIN contacts c ON p.vendor_id = c.id
-		WHERE p.deleted_at IS NULL
-		ORDER BY p.created_at DESC
-		LIMIT 5
-	`).Scan(&purchaseResults).Error
-	
-	if err != nil {
-		return nil, err
-	}
-	
-	// Combine both sales and purchases
-	data = append(data, salesResults...)
-	data = append(data, purchaseResults...)
-	
-	return data, nil
+	return summaries, nil
 }
 
 // GetQuickStats returns quick statistics for dashboard widgets
 func (ds *DashboardService) GetQuickStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 	
-	// Total products
-	var totalProducts int64
-	err := ds.DB.Model(&models.Product{}).Where("is_active = ?", true).Count(&totalProducts).Error
-	if err != nil {
-		return nil, err
-	}
-	stats["total_products"] = totalProducts
+	// Total projects
+	var totalProjects int64
+	ds.DB.Model(&models.Project{}).Count(&totalProjects)
+	stats["total_projects"] = totalProjects
 	
-	// Low stock products
-	var lowStockCount int64
-	err = ds.DB.Model(&models.Product{}).
-		Where("stock <= min_stock AND min_stock > 0 AND is_active = ?", true).
-		Count(&lowStockCount).Error
-	if err != nil {
-		return nil, err
-	}
-	stats["low_stock_count"] = lowStockCount
+	// Active projects
+	var activeProjects int64
+	ds.DB.Model(&models.Project{}).Where("status IN ?", []string{"ACTIVE", "IN_PROGRESS", "ONGOING"}).Count(&activeProjects)
+	stats["active_projects"] = activeProjects
 	
-	// Out of stock products
-	var outOfStockCount int64
-	err = ds.DB.Model(&models.Product{}).
-		Where("stock = 0 AND is_active = ?", true).
-		Count(&outOfStockCount).Error
-	if err != nil {
-		return nil, err
-	}
-	stats["out_of_stock_count"] = outOfStockCount
+	// Pending purchase requests
+	var pendingPRs int64
+	ds.DB.Model(&models.PurchaseRequest{}).Where("status = ?", "PENDING").Count(&pendingPRs)
+	stats["pending_purchase_requests"] = pendingPRs
 	
-	// Total categories
-	var totalCategories int64
-	err = ds.DB.Model(&models.ProductCategory{}).Where("is_active = ?", true).Count(&totalCategories).Error
-	if err != nil {
-		return nil, err
-	}
-	stats["total_categories"] = totalCategories
+	// Pending approvals
+	var pendingApprovals int64
+	ds.DB.Model(&models.ApprovalRequest{}).Where("status = ?", "PENDING").Count(&pendingApprovals)
+	stats["pending_approvals"] = pendingApprovals
 	
-	// Today's sales
-	var todaySales float64
-	err = ds.DB.Model(&models.Sale{}).
+	// Today's daily updates
+	var todayUpdates int64
+	ds.DB.Model(&models.DailyUpdate{}).
 		Where("DATE(created_at) = CURRENT_DATE").
-		Select("COALESCE(SUM(total_amount), 0)").
-		Scan(&todaySales).Error
-	if err != nil {
-		return nil, err
-	}
-	stats["today_sales"] = todaySales
-	
-	// Today's purchases (only approved)
-	var todayPurchases float64
-	err = ds.DB.Model(&models.Purchase{}).
-		Where("DATE(created_at) = CURRENT_DATE AND status IN (?)", []string{"APPROVED", "COMPLETED"}).
-		Select("COALESCE(SUM(total_amount), 0)").
-		Scan(&todayPurchases).Error
-	if err != nil {
-		return nil, err
-	}
-	stats["today_purchases"] = todayPurchases
+		Count(&todayUpdates)
+	stats["today_daily_updates"] = todayUpdates
 	
 	return stats, nil
 }

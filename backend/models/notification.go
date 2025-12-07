@@ -24,19 +24,16 @@ type Notification struct {
 }
 
 type StockAlert struct {
-	ID          uint           `json:"id" gorm:"primaryKey"`
-	ProductID   uint           `json:"product_id" gorm:"not null;index"`
-	AlertType   string         `json:"alert_type" gorm:"not null;size:50"` // LOW_STOCK, OUT_OF_STOCK, OVERSTOCK
-	CurrentStock int           `json:"current_stock"`
-	ThresholdStock int         `json:"threshold_stock"`
-	Status      string         `json:"status" gorm:"size:20;default:'ACTIVE'"` // ACTIVE, RESOLVED, DISMISSED
-	LastAlertAt time.Time      `json:"last_alert_at"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
-
-	// Relations
-	Product Product `json:"product" gorm:"foreignKey:ProductID"`
+	ID             uint           `json:"id" gorm:"primaryKey"`
+	ProductID      uint           `json:"product_id" gorm:"not null;index"`
+	AlertType      string         `json:"alert_type" gorm:"not null;size:50"` // LOW_STOCK, OUT_OF_STOCK, OVERSTOCK
+	CurrentStock   int            `json:"current_stock"`
+	ThresholdStock int            `json:"threshold_stock"`
+	Status         string         `json:"status" gorm:"size:20;default:'ACTIVE'"` // ACTIVE, RESOLVED, DISMISSED
+	LastAlertAt    time.Time      `json:"last_alert_at"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // Notification Types Constants
@@ -49,6 +46,7 @@ const (
 	NotificationTypeApprovalPending   = "APPROVAL_PENDING"
 	NotificationTypeApprovalApproved  = "APPROVAL_APPROVED"
 	NotificationTypeApprovalRejected  = "APPROVAL_REJECTED"
+	NotificationTypeSystemAlert       = "SYSTEM_ALERT"
 )
 
 // Notification Priority Constants

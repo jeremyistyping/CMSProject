@@ -19,7 +19,6 @@ type ProjectBudget struct {
 
 	// Relations (optional, useful for joins)
 	Project *Project `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
-	Account *Account `json:"account,omitempty" gorm:"foreignKey:AccountID"`
 }
 
 // TableName overrides the default table name

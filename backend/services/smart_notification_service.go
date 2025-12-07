@@ -391,15 +391,15 @@ func (s *SmartNotificationService) isDuplicateNotification(userID uint, notifica
 	return count > 0
 }
 
-// getPurchaseDisplayAmount gets the correct amount to display for purchase notifications
-func (s *SmartNotificationService) getPurchaseDisplayAmount(purchaseID uint) float64 {
-	var purchase models.Purchase
-	if err := s.db.First(&purchase, purchaseID).Error; err != nil {
-		// If we can't get the purchase, return 0 to avoid showing wrong amounts
+// getPurchaseRequestDisplayAmount gets the correct amount to display for purchase request notifications
+func (s *SmartNotificationService) getPurchaseRequestDisplayAmount(prID uint) float64 {
+	var pr models.PurchaseRequest
+	if err := s.db.First(&pr, prID).Error; err != nil {
+		// If we can't get the purchase request, return 0 to avoid showing wrong amounts
 		return 0
 	}
 	// Always use TotalAmount for notifications to ensure consistency
-	return purchase.TotalAmount
+	return pr.TotalAmount
 }
 
 // getNotificationPriority determines priority based on type
@@ -420,49 +420,47 @@ func (s *SmartNotificationService) getNotificationPriority(notificationType stri
 	}
 }
 
-// CreatePurchaseNotification creates smart notifications for purchase events
-func (s *SmartNotificationService) CreatePurchaseNotification(
-	purchase *models.Purchase,
+// CreatePurchaseRequestNotification creates smart notifications for purchase request events
+func (s *SmartNotificationService) CreatePurchaseRequestNotification(
+	pr *models.PurchaseRequest,
 	eventType string,
 	additionalData map[string]interface{},
 ) error {
 	switch eventType {
 	case "SUBMITTED":
 		// Notify appropriate approvers based on amount
-		if purchase.TotalAmount <= 25000000 {
+		if pr.TotalAmount <= 25000000 {
 			// Finance approval needed
 			return s.CreateSmartNotification(
 				models.NotificationTypeApprovalPending,
-				"Purchase Approval Required",
-				fmt.Sprintf("Purchase %s requires approval (Amount: %s)", 
-					purchase.Code, utils.FormatRupiahWithoutDecimals(purchase.TotalAmount)),
+				"Purchase Request Approval Required",
+				fmt.Sprintf("Purchase Request %s requires approval (Amount: %s)", 
+					pr.Code, utils.FormatRupiahWithoutDecimals(pr.TotalAmount)),
 				map[string]interface{}{
-					"purchase_id":   purchase.ID,
-					"purchase_code": purchase.Code,
-					"vendor_name":   purchase.Vendor.Name,
-					"total_amount":  purchase.TotalAmount,
-					"action_type":   "approval_required",
+					"purchase_request_id": pr.ID,
+					"pr_number":           pr.Code,
+					"total_amount":        pr.TotalAmount,
+					"action_type":         "approval_required",
 				},
-				purchase.TotalAmount,
+				pr.TotalAmount,
 				"finance",
 				0,
-				purchase.User.Department,
+				"",
 			)
 		} else {
 			// Director approval needed - first notify finance for initial review
 			s.CreateSmartNotification(
 				models.NotificationTypeHighValuePurchase,
-				"High-Value Purchase for Review",
-				fmt.Sprintf("High-value purchase %s needs review before director approval (Amount: %s)", 
-					purchase.Code, utils.FormatRupiahWithoutDecimals(purchase.TotalAmount)),
+				"High-Value Purchase Request for Review",
+				fmt.Sprintf("High-value purchase request %s needs review before director approval (Amount: %s)", 
+					pr.Code, utils.FormatRupiahWithoutDecimals(pr.TotalAmount)),
 				map[string]interface{}{
-					"purchase_id":   purchase.ID,
-					"purchase_code": purchase.Code,
-					"vendor_name":   purchase.Vendor.Name,
-					"total_amount":  purchase.TotalAmount,
-					"action_type":   "review_required",
+					"purchase_request_id": pr.ID,
+					"pr_number":           pr.Code,
+					"total_amount":        pr.TotalAmount,
+					"action_type":         "review_required",
 				},
-				purchase.TotalAmount,
+				pr.TotalAmount,
 				"finance",
 				0,
 				"",
@@ -471,17 +469,16 @@ func (s *SmartNotificationService) CreatePurchaseNotification(
 			// Also notify director
 			return s.CreateSmartNotification(
 				models.NotificationTypeApprovalPending,
-				"High-Value Purchase Approval Required",
-				fmt.Sprintf("High-value purchase %s requires your approval (Amount: %s)", 
-					purchase.Code, utils.FormatRupiahWithoutDecimals(purchase.TotalAmount)),
+				"High-Value Purchase Request Approval Required",
+				fmt.Sprintf("High-value purchase request %s requires your approval (Amount: %s)", 
+					pr.Code, utils.FormatRupiahWithoutDecimals(pr.TotalAmount)),
 				map[string]interface{}{
-					"purchase_id":   purchase.ID,
-					"purchase_code": purchase.Code,
-					"vendor_name":   purchase.Vendor.Name,
-					"total_amount":  purchase.TotalAmount,
-					"action_type":   "approval_required",
+					"purchase_request_id": pr.ID,
+					"pr_number":           pr.Code,
+					"total_amount":        pr.TotalAmount,
+					"action_type":         "approval_required",
 				},
-				purchase.TotalAmount,
+				pr.TotalAmount,
 				"director",
 				0,
 				"",
@@ -489,49 +486,49 @@ func (s *SmartNotificationService) CreatePurchaseNotification(
 		}
 
 	case "APPROVED":
-		// Notify the purchase creator
+		// Notify the purchase request creator
 		return s.CreateSmartNotification(
 			models.NotificationTypeApprovalApproved,
-			"Purchase Approved",
-			fmt.Sprintf("Your purchase request %s has been approved", purchase.Code),
+			"Purchase Request Approved",
+			fmt.Sprintf("Your purchase request %s has been approved", pr.Code),
 			map[string]interface{}{
-				"purchase_id":   purchase.ID,
-				"purchase_code": purchase.Code,
-				"approved_at":   purchase.ApprovedAt,
-				"action_type":   "approved",
+				"purchase_request_id": pr.ID,
+				"pr_number":           pr.Code,
+				"approved_at":         time.Now(),
+				"action_type":         "approved",
 			},
-			purchase.TotalAmount,
+			pr.TotalAmount,
 			"employee",
-			purchase.UserID,
+			pr.CreatedBy,
 			"",
 		)
 
 	case "REJECTED":
-		// Notify the purchase creator
+		// Notify the purchase request creator
 		reason := ""
 		if data, ok := additionalData["reason"].(string); ok {
 			reason = data
 		}
 		
-		message := fmt.Sprintf("Your purchase request %s has been rejected", purchase.Code)
+		message := fmt.Sprintf("Your purchase request %s has been rejected", pr.Code)
 		if reason != "" {
 			message += fmt.Sprintf(". Reason: %s", reason)
 		}
 		
 		return s.CreateSmartNotification(
 			models.NotificationTypeApprovalRejected,
-			"Purchase Rejected",
+			"Purchase Request Rejected",
 			message,
 			map[string]interface{}{
-				"purchase_id":   purchase.ID,
-				"purchase_code": purchase.Code,
-				"rejected_at":   time.Now(),
-				"reason":        reason,
-				"action_type":   "rejected",
+				"purchase_request_id": pr.ID,
+				"pr_number":           pr.Code,
+				"rejected_at":         time.Now(),
+				"reason":              reason,
+				"action_type":         "rejected",
 			},
-			purchase.TotalAmount,
+			pr.TotalAmount,
 			"employee",
-			purchase.UserID,
+			pr.CreatedBy,
 			"",
 		)
 
@@ -544,18 +541,17 @@ func (s *SmartNotificationService) CreatePurchaseNotification(
 		
 		return s.CreateSmartNotification(
 			models.NotificationTypeApprovalEscalated,
-			"URGENT: Purchase Escalated for Approval",
-			fmt.Sprintf("Purchase %s has been escalated: %s (Amount: %s)", 
-				purchase.Code, escalationReason, utils.FormatRupiahWithoutDecimals(purchase.TotalAmount)),
+			"URGENT: Purchase Request Escalated for Approval",
+			fmt.Sprintf("Purchase Request %s has been escalated: %s (Amount: %s)", 
+				pr.Code, escalationReason, utils.FormatRupiahWithoutDecimals(pr.TotalAmount)),
 			map[string]interface{}{
-				"purchase_id":   purchase.ID,
-				"purchase_code": purchase.Code,
-				"vendor_name":   purchase.Vendor.Name,
-				"total_amount":  purchase.TotalAmount,
-				"escalation_reason": escalationReason,
-				"action_type":   "escalated",
+				"purchase_request_id":  pr.ID,
+				"pr_number":            pr.Code,
+				"total_amount":         pr.TotalAmount,
+				"escalation_reason":    escalationReason,
+				"action_type":          "escalated",
 			},
-			purchase.TotalAmount,
+			pr.TotalAmount,
 			"director",
 			0,
 			"",

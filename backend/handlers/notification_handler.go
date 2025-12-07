@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"app-sistem-akuntansi/models"
 	"app-sistem-akuntansi/services"
@@ -13,14 +12,12 @@ import (
 )
 
 type NotificationHandler struct {
-	notificationService   *services.NotificationService
-	stockMonitoringService *services.StockMonitoringService
+	notificationService *services.NotificationService
 }
 
-func NewNotificationHandler(notificationService *services.NotificationService, stockMonitoringService *services.StockMonitoringService) *NotificationHandler {
+func NewNotificationHandler(notificationService *services.NotificationService, _ interface{}) *NotificationHandler {
 	return &NotificationHandler{
-		notificationService:    notificationService,
-		stockMonitoringService: stockMonitoringService,
+		notificationService: notificationService,
 	}
 }
 
@@ -208,20 +205,10 @@ func (h *NotificationHandler) GetNotificationsByType(c *gin.Context) {
 	})
 }
 
-// runAutoStockCheck checks min stock and resolves alerts so notifications appear without manual triggers
+// runAutoStockCheck is a placeholder for stock monitoring (disabled in project management mode)
 func (h *NotificationHandler) runAutoStockCheck(c *gin.Context) {
-	// Only run for roles that should see stock alerts
-	role, err := utils.GetUserRoleFromToken(c)
-	if err != nil {
-		return
-	}
-	switch strings.ToLower(role) {
-	case "admin", "inventory_manager", "director":
-		if h.stockMonitoringService != nil {
-			_ = h.stockMonitoringService.CheckMinimumStock()
-			_ = h.stockMonitoringService.ResolveStockAlerts()
-		}
-	}
+	// Stock monitoring is disabled in project management mode
+	// This function is kept for API compatibility
 }
 
 // CreateNotification creates a new notification (admin only)

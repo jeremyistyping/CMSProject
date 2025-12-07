@@ -46,8 +46,6 @@ type Project struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
-	// Relations
-	Purchases []Purchase `json:"purchases,omitempty" gorm:"foreignKey:ProjectID"`
 }
 
 // TableName specifies the table name for Project model

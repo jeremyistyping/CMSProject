@@ -559,3 +559,123 @@ func (sc *SecurityController) CleanupSecurityLogs(c *gin.Context) {
 		"message": "Security logs cleanup completed successfully",
 	})
 }
+
+// GetSecurityDashboard godoc
+// @Summary Get security dashboard
+// @Description Retrieve security dashboard with overview of incidents, alerts, and metrics
+// @Tags Security
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/admin/security/dashboard [get]
+// @Security BearerAuth
+func (sc *SecurityController) GetSecurityDashboard(c *gin.Context) {
+	// Get unresolved incidents count
+	var unresolvedIncidents int64
+	sc.db.Model(&models.SecurityIncident{}).Where("resolved = ?", false).Count(&unresolvedIncidents)
+
+	// Get unacknowledged alerts count
+	var unacknowledgedAlerts int64
+	sc.db.Model(&models.SystemAlert{}).Where("acknowledged = ?", false).Count(&unacknowledgedAlerts)
+
+	// Get recent incidents (last 7 days)
+	var recentIncidents []models.SecurityIncident
+	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
+	sc.db.Where("created_at >= ?", sevenDaysAgo).Order("created_at DESC").Limit(10).Find(&recentIncidents)
+
+	// Get incidents by severity
+	type SeverityCount struct {
+		Severity string `json:"severity"`
+		Count    int64  `json:"count"`
+	}
+	var severityCounts []SeverityCount
+	sc.db.Model(&models.SecurityIncident{}).
+		Select("severity, count(*) as count").
+		Where("resolved = ?", false).
+		Group("severity").
+		Scan(&severityCounts)
+
+	// Get today's metrics
+	today := time.Now().Format("2006-01-02")
+	var todayMetrics models.SecurityMetrics
+	sc.db.Where("date = ?", today).First(&todayMetrics)
+
+	c.JSON(http.StatusOK, gin.H{
+		"unresolved_incidents":   unresolvedIncidents,
+		"unacknowledged_alerts":  unacknowledgedAlerts,
+		"recent_incidents":       recentIncidents,
+		"incidents_by_severity":  severityCounts,
+		"today_metrics":          todayMetrics,
+	})
+}
+
+// GetThreatAnalysis godoc
+// @Summary Get threat analysis
+// @Description Retrieve threat analysis with patterns and recommendations
+// @Tags Security
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/admin/security/threats [get]
+// @Security BearerAuth
+func (sc *SecurityController) GetThreatAnalysis(c *gin.Context) {
+	// Get incident types distribution
+	type IncidentTypeCount struct {
+		IncidentType string `json:"incident_type"`
+		Count        int64  `json:"count"`
+	}
+	var incidentTypes []IncidentTypeCount
+	sc.db.Model(&models.SecurityIncident{}).
+		Select("incident_type, count(*) as count").
+		Group("incident_type").
+		Order("count DESC").
+		Scan(&incidentTypes)
+
+	// Get top IP addresses with incidents
+	type IPCount struct {
+		IPAddress string `json:"ip_address"`
+		Count     int64  `json:"count"`
+	}
+	var topIPs []IPCount
+	sc.db.Model(&models.SecurityIncident{}).
+		Select("ip_address, count(*) as count").
+		Where("ip_address IS NOT NULL AND ip_address != ''").
+		Group("ip_address").
+		Order("count DESC").
+		Limit(10).
+		Scan(&topIPs)
+
+	// Get critical and high severity incidents trend (last 30 days)
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+	type DailyCount struct {
+		Date  string `json:"date"`
+		Count int64  `json:"count"`
+	}
+	var dailyTrend []DailyCount
+	sc.db.Model(&models.SecurityIncident{}).
+		Select("DATE(created_at) as date, count(*) as count").
+		Where("created_at >= ? AND severity IN ('critical', 'high')", thirtyDaysAgo).
+		Group("DATE(created_at)").
+		Order("date ASC").
+		Scan(&dailyTrend)
+
+	// Generate recommendations based on data
+	recommendations := []string{}
+	if len(topIPs) > 0 {
+		recommendations = append(recommendations, "Consider blocking or monitoring frequently flagged IP addresses")
+	}
+	for _, it := range incidentTypes {
+		if it.Count > 10 {
+			recommendations = append(recommendations, "High frequency of "+it.IncidentType+" incidents detected - review security policies")
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"incident_types":    incidentTypes,
+		"top_ip_addresses":  topIPs,
+		"daily_trend":       dailyTrend,
+		"recommendations":   recommendations,
+	})
+}

@@ -34,7 +34,6 @@ type PurchaseRequest struct {
 
 	// Relations
 	Project   Project               `json:"project" gorm:"foreignKey:ProjectID"`
-	Vendor    *Contact              `json:"vendor,omitempty" gorm:"foreignKey:VendorID"`
 	Requester User                  `json:"requester" gorm:"foreignKey:CreatedBy"`
 	Approver  *User                 `json:"approver,omitempty" gorm:"foreignKey:ApprovedBy"`
 	Verifier  *User                 `json:"verifier,omitempty" gorm:"foreignKey:VerifiedBy"`
@@ -58,7 +57,6 @@ type PurchaseRequestItem struct {
 
 	// Relations
 	PurchaseRequest PurchaseRequest `json:"purchase_request" gorm:"foreignKey:PurchaseRequestID"`
-	Product         *Product        `json:"product,omitempty" gorm:"foreignKey:ProductID"`
 }
 
 // Purchase Request Status Constants

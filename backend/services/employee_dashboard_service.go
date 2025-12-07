@@ -310,8 +310,8 @@ func (eds *EmployeeDashboardService) getEmployeeQuickStats(userID uint, userRole
 	if userRoleNorm == "employee" {
 		// Get the employee's purchase requests count
 		var purchaseCount int64
-		err = eds.DB.Model(&models.Purchase{}).
-			Where("user_id = ? AND deleted_at IS NULL", userID).
+		err = eds.DB.Model(&models.PurchaseRequest{}).
+			Where("created_by = ? AND deleted_at IS NULL", userID).
 			Count(&purchaseCount).Error
 		if err != nil {
 			return nil, err
@@ -320,8 +320,8 @@ func (eds *EmployeeDashboardService) getEmployeeQuickStats(userID uint, userRole
 		
 		// Get the employee's approved purchase requests count
 		var approvedCount int64
-		err = eds.DB.Model(&models.Purchase{}).
-			Where("user_id = ? AND status = 'APPROVED' AND deleted_at IS NULL", userID).
+		err = eds.DB.Model(&models.PurchaseRequest{}).
+			Where("created_by = ? AND status = 'APPROVED' AND deleted_at IS NULL", userID).
 			Count(&approvedCount).Error
 		if err != nil {
 			return nil, err
@@ -330,8 +330,8 @@ func (eds *EmployeeDashboardService) getEmployeeQuickStats(userID uint, userRole
 		
 		// Get the employee's rejected purchase requests count
 		var rejectedCount int64
-		err = eds.DB.Model(&models.Purchase{}).
-			Where("user_id = ? AND approval_status = 'REJECTED' AND deleted_at IS NULL", userID).
+		err = eds.DB.Model(&models.PurchaseRequest{}).
+			Where("created_by = ? AND status = 'REJECTED' AND deleted_at IS NULL", userID).
 			Count(&rejectedCount).Error
 		if err != nil {
 			return nil, err

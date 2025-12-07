@@ -28,8 +28,6 @@ type User struct {
 
 	// Relations
 	CreatedAuditLogs []AuditLog `json:"-" gorm:"foreignKey:UserID"`
-	Sales            []Sale     `json:"-" gorm:"foreignKey:UserID"`
-	Purchases        []Purchase `json:"-" gorm:"foreignKey:UserID"`
 }
 
 // GetDisplayName returns a formatted display name for the user

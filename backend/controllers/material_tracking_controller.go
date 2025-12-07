@@ -91,9 +91,9 @@ func (c *MaterialTrackingController) RecordUsage(ctx *gin.Context) {
 	}
 
 	var request struct {
-		ProductID uint   `json:"product_id" binding:"required"`
-		Quantity  int    `json:"quantity" binding:"required,gt=0"`
-		Notes     string `json:"notes"`
+		ItemName string  `json:"item_name" binding:"required"`
+		Quantity float64 `json:"quantity" binding:"required,gt=0"`
+		Notes    string  `json:"notes"`
 	}
 
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -108,7 +108,7 @@ func (c *MaterialTrackingController) RecordUsage(ctx *gin.Context) {
 		return
 	}
 
-	err = c.service.RecordMaterialUsage(uint(projectID), request.ProductID, request.Quantity, request.Notes, userID.(uint))
+	err = c.service.RecordMaterialUsage(uint(projectID), request.ItemName, request.Quantity, request.Notes, userID.(uint))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

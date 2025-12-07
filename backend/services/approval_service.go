@@ -660,22 +660,6 @@ func (s *ApprovalService) updateEntityStatus(tx *gorm.DB, entityType string, ent
 	}
 
 	switch entityType {
-	case models.EntityTypeSale:
-		return tx.Model(&models.Sale{}).Where("id = ?", entityID).Updates(updates).Error
-	case models.EntityTypePurchase:
-		err := tx.Model(&models.Purchase{}).Where("id = ?", entityID).Updates(updates).Error
-		if err != nil {
-			return err
-		}
-
-		// POST-APPROVAL PROCESSING for approved purchases
-		if approvalStatus == "APPROVED" {
-			// Note: We'll trigger post-approval processing after transaction commits
-			// This is handled by the calling function via callback
-			fmt.Printf("✅ Purchase %d approved - will trigger post-approval processing\n", entityID)
-		}
-
-		return nil
 	case models.EntityTypePurchaseRequest:
 		// Map approval status to PR status
 		var prStatus string
@@ -718,14 +702,9 @@ func (s *ApprovalService) notifyApprovers(request *models.ApprovalRequest, step 
 			continue // Skip creating duplicate
 		}
 
-		// Get the actual purchase to show correct amount
+		// Get the actual purchase request to show correct amount
 		var actualAmount float64 = request.Amount
-		if request.EntityType == models.EntityTypePurchase {
-			var purchase models.Purchase
-			if err := s.db.First(&purchase, request.EntityID).Error; err == nil {
-				actualAmount = purchase.TotalAmount // Use TotalAmount instead of ApprovalBaseAmount
-			}
-		} else if request.EntityType == models.EntityTypePurchaseRequest {
+		if request.EntityType == models.EntityTypePurchaseRequest {
 			var pr models.PurchaseRequest
 			if err := s.db.First(&pr, request.EntityID).Error; err == nil {
 				actualAmount = pr.TotalAmount
@@ -803,14 +782,9 @@ func (s *ApprovalService) isDuplicateApprovalNotification(userID uint, requestID
 
 // createNotificationData creates JSON data for notifications
 func (s *ApprovalService) createNotificationData(request *models.ApprovalRequest) string {
-	// Get the actual purchase amount for proper display
+	// Get the actual purchase request amount for proper display
 	var actualAmount float64 = request.Amount
-	if request.EntityType == models.EntityTypePurchase {
-		var purchase models.Purchase
-		if err := s.db.First(&purchase, request.EntityID).Error; err == nil {
-			actualAmount = purchase.TotalAmount // Use TotalAmount instead of ApprovalBaseAmount
-		}
-	} else if request.EntityType == models.EntityTypePurchaseRequest {
+	if request.EntityType == models.EntityTypePurchaseRequest {
 		var pr models.PurchaseRequest
 		if err := s.db.First(&pr, request.EntityID).Error; err == nil {
 			actualAmount = pr.TotalAmount
@@ -818,21 +792,16 @@ func (s *ApprovalService) createNotificationData(request *models.ApprovalRequest
 	}
 
 	data := map[string]interface{}{
-		"request_id":    request.ID,
-		"entity_type":   request.EntityType,
-		"entity_id":     request.EntityID,
-		"amount":        actualAmount, // Use actualAmount instead of request.Amount
-		"status":        request.Status,
-		"purchase_code": "", // Will be filled if this is a purchase
+		"request_id":  request.ID,
+		"entity_type": request.EntityType,
+		"entity_id":   request.EntityID,
+		"amount":      actualAmount,
+		"status":      request.Status,
+		"pr_code":     "",
 	}
 
-	// Add purchase code for better identification
-	if request.EntityType == models.EntityTypePurchase {
-		var purchase models.Purchase
-		if err := s.db.Select("code").First(&purchase, request.EntityID).Error; err == nil {
-			data["purchase_code"] = purchase.Code
-		}
-	} else if request.EntityType == models.EntityTypePurchaseRequest {
+	// Add PR code for better identification
+	if request.EntityType == models.EntityTypePurchaseRequest {
 		var pr models.PurchaseRequest
 		if err := s.db.Select("code").First(&pr, request.EntityID).Error; err == nil {
 			data["pr_code"] = pr.Code
@@ -989,7 +958,7 @@ func (s *ApprovalService) CreateApprovalHistory(requestID uint, userID uint, act
 }
 
 // CreateMinimalApprovalRequestForRejection creates a minimal approval request for rejection tracking without workflow dependency
-func (s *ApprovalService) CreateMinimalApprovalRequestForRejection(entityType string, entityID uint, amount float64, title string, userID uint, purchase interface{}) error {
+func (s *ApprovalService) CreateMinimalApprovalRequestForRejection(entityType string, entityID uint, amount float64, title string, userID uint, pr interface{}) error {
 	tx := s.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -1001,15 +970,11 @@ func (s *ApprovalService) CreateMinimalApprovalRequestForRejection(entityType st
 	requestCode := s.generateRequestCode(entityType)
 
 	// Create minimal approval request without workflow - use a default/dummy workflow
-	// First, try to get any active workflow for the module as a fallback
-	var workflowID uint = 1 // Default fallback - assume workflow ID 1 exists
+	var workflowID uint = 1 // Default fallback
 
 	// Try to find any active workflow for the module
 	var workflow models.ApprovalWorkflow
-	module := "PURCHASE"
-	if entityType == models.EntityTypeSale {
-		module = "SALES"
-	}
+	module := "PURCHASE_REQUEST"
 
 	err := s.db.Where("module = ? AND is_active = ?", module, true).First(&workflow).Error
 	if err == nil {
@@ -1020,7 +985,6 @@ func (s *ApprovalService) CreateMinimalApprovalRequestForRejection(entityType st
 		if err == nil {
 			workflowID = workflow.ID
 		} else {
-			// No workflow found at all - this is a critical error
 			tx.Rollback()
 			return fmt.Errorf("no active workflows found for rejection tracking: %v", err)
 		}
@@ -1028,12 +992,12 @@ func (s *ApprovalService) CreateMinimalApprovalRequestForRejection(entityType st
 
 	approvalReq := models.ApprovalRequest{
 		RequestCode:    requestCode,
-		WorkflowID:     workflowID, // Use existing workflow for DB constraint
+		WorkflowID:     workflowID,
 		RequesterID:    userID,
 		EntityType:     entityType,
 		EntityID:       entityID,
 		Amount:         amount,
-		Status:         models.ApprovalStatusPending, // Will be set to rejected later
+		Status:         models.ApprovalStatusPending,
 		Priority:       models.ApprovalPriorityNormal,
 		RequestTitle:   title,
 		RequestMessage: fmt.Sprintf("Minimal approval request for %s tracking (using workflow %d)", strings.ToLower(entityType), workflowID),
@@ -1062,11 +1026,6 @@ func (s *ApprovalService) CreateMinimalApprovalRequestForRejection(entityType st
 		return err
 	}
 
-	// Update the purchase with the approval request ID
-	if p, ok := purchase.(*models.Purchase); ok {
-		p.ApprovalRequestID = &approvalReq.ID
-	}
-
 	return nil
 }
 
@@ -1081,14 +1040,9 @@ func (s *ApprovalService) notifyDirectors(request *models.ApprovalRequest, escal
 
 	fmt.Printf("Found %d active directors to notify for request %d\n", len(directors), request.ID)
 
-	// Get the actual purchase to show correct amount
+	// Get the actual purchase request to show correct amount
 	var actualAmount float64 = request.Amount
-	if request.EntityType == models.EntityTypePurchase {
-		var purchase models.Purchase
-		if err := s.db.First(&purchase, request.EntityID).Error; err == nil {
-			actualAmount = purchase.TotalAmount // Use TotalAmount instead of ApprovalBaseAmount
-		}
-	} else if request.EntityType == models.EntityTypePurchaseRequest {
+	if request.EntityType == models.EntityTypePurchaseRequest {
 		var pr models.PurchaseRequest
 		if err := s.db.First(&pr, request.EntityID).Error; err == nil {
 			actualAmount = pr.TotalAmount

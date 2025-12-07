@@ -131,9 +131,8 @@ func (s *EscalationService) escalateApproval(action *models.ApprovalAction) erro
 func (s *EscalationService) updateEntityStatusEscalation(tx *gorm.DB, entityType string, entityID uint, status string) error {
 	now := time.Now()
 	updates := map[string]interface{}{
-		"status":          status,
-		"approval_status": status,
-		"updated_at":      now,
+		"status":     status,
+		"updated_at": now,
 	}
 
 	if status == "APPROVED" {
@@ -141,10 +140,8 @@ func (s *EscalationService) updateEntityStatusEscalation(tx *gorm.DB, entityType
 	}
 
 	switch entityType {
-	case models.EntityTypePurchase:
-		return tx.Model(&models.Purchase{}).Where("id = ?", entityID).Updates(updates).Error
-	case models.EntityTypeSale:
-		return tx.Model(&models.Sale{}).Where("id = ?", entityID).Updates(updates).Error
+	case models.EntityTypePurchaseRequest:
+		return tx.Model(&models.PurchaseRequest{}).Where("id = ?", entityID).Updates(updates).Error
 	default:
 		return fmt.Errorf("unsupported entity type: %s", entityType)
 	}

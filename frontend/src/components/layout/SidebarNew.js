@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Box,
@@ -12,24 +11,12 @@ import {
   Text,
   Drawer,
   DrawerContent,
-  useDisclosure,
-  BoxProps,
-  FlexProps,
-  Collapse,
   DrawerOverlay,
-  DrawerCloseButton,
 } from '@chakra-ui/react';
 import {
   FiTrendingUp,
-  FiCompass,
-  FiStar,
-  FiBell,
   FiSettings,
-  FiMenu,
-  FiShoppingCart,
-  FiUsers,
   FiDollarSign,
-  FiBarChart,
   FiFileText,
   FiHome,
   FiLayers,
@@ -45,14 +32,12 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useTheme } from '@/contexts/SimpleThemeContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
-// Menu structure - will be translated dynamically
-// Menu structure - will be translated dynamically
+// Menu structure for Project Management System
 const getMenuGroups = (t) => [
   {
     title: t('navigation.dashboard'),
     items: [
       { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      // Employee Dashboard / Daily Reports
       { name: 'Daily Reports', icon: FiFileText, href: '/projects', module: null, permission: null, roles: ['EMPLOYEE'] },
     ]
   },
@@ -66,43 +51,13 @@ const getMenuGroups = (t) => [
   {
     title: 'Cost Control',
     items: [
-      // Main Cost Control Dashboard
       { name: 'Cost Control', icon: FiDollarSign, href: '/cost-control', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      // Sub-modules
       { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
       { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
       { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
       { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
     ]
   },
-  // === MENU PURCHASING DISEMBUNYIKAN ===
-  // {
-  //   title: 'Purchasing',
-  //   items: [
-  //     { name: t('navigation.contacts'), icon: FiUsers, href: '/contacts', module: 'contacts', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-  //     { name: 'Purchases', icon: FiShoppingCart, href: '/purchases', module: 'purchases', permission: 'view', roles: ['ADMIN', 'FINANCE', 'PURCHASING'] },
-  //   ]
-  // },
-  // === MENU AKUNTANSI DISEMBUNYIKAN ===
-  // {
-  //   title: 'Master Data',
-  //   items: [
-  //     { name: t('navigation.accounts'), icon: FiFileText, href: '/accounts', module: 'accounts', permission: 'view', roles: ['ADMIN', 'FINANCE'] },
-  //   ]
-  // },
-  // {
-  //   title: 'Financial',
-  //   items: [
-  //     { name: t('navigation.cashBank'), icon: FiCompass, href: '/cash-bank', module: 'cash_bank', permission: 'view', roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-  //   ]
-  // },
-  // {
-  //   title: t('navigation.reports'),
-  //   items: [
-  //     { name: t('navigation.reports'), icon: FiBarChart, href: '/reports', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-  //   ]
-  // },
-  // === END MENU AKUNTANSI ===
   {
     title: 'System',
     items: [
@@ -120,7 +75,6 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
   const { theme } = useTheme();
   const { canView, canMenu, loading: permissionLoading } = usePermissions();
 
-  // Get translated menu groups
   const MenuGroups = getMenuGroups(t);
 
   // Filter menu groups based on user permissions and role
@@ -130,19 +84,15 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
     items: group.items.filter(item => {
       if (!user) return false;
 
-      // For modules with permission checking, use canMenu for menu visibility
-      // but still check canView for data access requirements
       if (item.module && item.permission) {
         return canView(item.module) && canMenu(item.module);
       }
 
-      // For system pages (users, settings) and dashboard, use role-based checking
       return item.roles.some(role => normalizeRole(role) === userRoleNormalized);
     })
   })).filter(group => group.items.length > 0);
 
   const SidebarContent = ({ onClose, ...rest }) => {
-    // Theme-aware colors
     const sidebarBg = useColorModeValue('white', 'var(--bg-primary)');
     const sidebarBorder = useColorModeValue('gray.200', 'var(--border-color)');
     const sidebarShadow = useColorModeValue('sm', 'var(--shadow)');
@@ -163,7 +113,6 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
         {...rest}>
         <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
           <Flex alignItems="center" gap={3}>
-            {/* Logo Icon */}
             <Flex
               w="40px"
               h="40px"
@@ -187,7 +136,6 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
               <Icon as={FiTarget} color="white" fontSize="20px" fontWeight="bold" />
             </Flex>
 
-            {/* Logo Text */}
             <Flex direction="column" gap={0}>
               <Text
                 fontSize="lg"
@@ -238,11 +186,9 @@ export default function Sidebar({ isOpen, onClose, display, width, collapsed, on
   const NavItem = ({ icon, children, href, isActive, ...rest }) => {
     const handleClick = (e) => {
       e.preventDefault();
-      console.log('NavItem clicked:', href);
       router.push(href);
     };
 
-    // Theme-aware colors for nav items - ALL GREEN
     const activeBg = 'green.500';
     const activeColor = 'white';
     const inactiveColor = useColorModeValue('gray.700', 'var(--text-secondary)');

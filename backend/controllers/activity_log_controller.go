@@ -322,6 +322,90 @@ func (ctrl *ActivityLogController) CleanupOldLogs(c *gin.Context) {
 	})
 }
 
+// GetUserActivityLogs retrieves activity logs for a specific user
+// @Summary Get user activity logs
+// @Description Retrieve activity logs for a specific user (admin only)
+// @Tags Activity Logs
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param start_date query string false "Start date (RFC3339 format)"
+// @Param end_date query string false "End date (RFC3339 format)"
+// @Param limit query int false "Limit results (default: 100)"
+// @Param offset query int false "Offset for pagination"
+// @Success 200 {object} map[string]interface{} "Activity logs retrieved successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request parameters"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /api/v1/admin/activity-logs/user/{userId} [get]
+func (ctrl *ActivityLogController) GetUserActivityLogs(c *gin.Context) {
+	// Parse user ID from path
+	userIDStr := c.Param("userId")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid user ID",
+		})
+		return
+	}
+
+	uid := uint(userID)
+
+	// Build filter
+	filter := models.ActivityLogFilter{
+		UserID: &uid,
+	}
+
+	// Parse dates
+	if startDateStr := c.Query("start_date"); startDateStr != "" {
+		if startDate, err := time.Parse(time.RFC3339, startDateStr); err == nil {
+			filter.StartDate = &startDate
+		}
+	}
+
+	if endDateStr := c.Query("end_date"); endDateStr != "" {
+		if endDate, err := time.Parse(time.RFC3339, endDateStr); err == nil {
+			filter.EndDate = &endDate
+		}
+	}
+
+	// Parse pagination
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil {
+			filter.Limit = limit
+		}
+	}
+	if filter.Limit == 0 {
+		filter.Limit = 100
+	}
+
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if offset, err := strconv.Atoi(offsetStr); err == nil {
+			filter.Offset = offset
+		}
+	}
+
+	// Get activity logs
+	logs, total, err := middleware.GetActivityLogs(filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to retrieve activity logs",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"logs":    logs,
+			"total":   total,
+			"limit":   filter.Limit,
+			"offset":  filter.Offset,
+			"user_id": uid,
+		},
+	})
+}
+
 // GetActivityStats retrieves activity statistics
 // @Summary Get activity statistics
 // @Description Get activity statistics for dashboard (admin only)

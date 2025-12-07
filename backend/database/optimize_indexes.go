@@ -13,127 +13,111 @@ func OptimizeDatabaseIndexes(db *gorm.DB) error {
 	log.Println("🔧 Starting database index optimization...")
 
 	optimizations := []indexOptimization{
-		// Sales table optimizations
+		// Projects table optimizations
 		{
-			table:       "sales",
-			indexName:   "idx_sales_status_customer",
-			columns:     []string{"status", "customer_id"},
-			description: "Optimize payment queries by status and customer",
-		},
-		{
-			table:       "sales",
-			indexName:   "idx_sales_outstanding",
-			columns:     []string{"outstanding_amount"},
-			description: "Optimize searches for unpaid invoices",
-		},
-		{
-			table:       "sales",
-			indexName:   "idx_sales_date_status",
-			columns:     []string{"invoice_date", "status"},
-			description: "Optimize date-based reports with status filter",
+			table:       "projects",
+			indexName:   "idx_projects_status",
+			columns:     []string{"status"},
+			description: "Optimize project status queries",
 		},
 
-		// Payments table optimizations
+		// Daily updates table optimizations
 		{
-			table:       "payments",
-			indexName:   "idx_payments_contact_date",
-			columns:     []string{"contact_id", "date"},
-			description: "Optimize payment history queries",
-		},
-		{
-			table:       "payments",
-			indexName:   "idx_payments_status_method",
-			columns:     []string{"status", "method"},
-			description: "Optimize payment reporting by status and method",
+			table:       "daily_updates",
+			indexName:   "idx_daily_updates_project",
+			columns:     []string{"project_id"},
+			description: "Optimize daily update queries by project",
 		},
 
-		// Cash banks optimizations
+		// Milestones table optimizations
 		{
-			table:       "cash_banks",
-			indexName:   "idx_cash_banks_active",
-			columns:     []string{"is_active", "account_type"},
-			description: "Optimize cash bank dropdown queries",
+			table:       "milestones",
+			indexName:   "idx_milestones_project",
+			columns:     []string{"project_id"},
+			description: "Optimize milestone queries by project",
+		},
+		{
+			table:       "milestones",
+			indexName:   "idx_milestones_status",
+			columns:     []string{"status"},
+			description: "Optimize milestone status queries",
 		},
 
-		// Journal entries optimizations
+		// Weekly reports table optimizations
 		{
-			table:       "ssot_journal_entries",
-			indexName:   "idx_journal_source",
-			columns:     []string{"source_type", "source_id"},
-			description: "Optimize SSOT journal source lookups",
-		},
-		{
-			table:       "ssot_journal_entries",
-			indexName:   "idx_journal_date_status",
-			columns:     []string{"entry_date", "status"},
-			description: "Optimize journal date and status queries",
+			table:       "weekly_reports",
+			indexName:   "idx_weekly_reports_project",
+			columns:     []string{"project_id"},
+			description: "Optimize weekly report queries by project",
 		},
 
-		// Products table optimizations
+		// Purchase requests table optimizations
 		{
-			table:       "products",
-			indexName:   "idx_products_category_active",
-			columns:     []string{"category_id", "is_active"},
-			description: "Optimize product category queries",
+			table:       "purchase_requests",
+			indexName:   "idx_purchase_requests_project",
+			columns:     []string{"project_id"},
+			description: "Optimize purchase request queries by project",
 		},
 		{
-			table:       "products",
-			indexName:   "idx_products_stock",
-			columns:     []string{"current_stock", "min_stock"},
-			description: "Optimize stock level monitoring",
-		},
-
-		// Accounts table optimizations
-		{
-			table:       "accounts",
-			indexName:   "idx_accounts_code_parent",
-			columns:     []string{"code", "parent_id"},
-			description: "Optimize account hierarchy queries",
-		},
-		{
-			table:       "accounts",
-			indexName:   "idx_accounts_type_active",
-			columns:     []string{"account_type", "is_active"},
-			description: "Optimize account type filtering",
+			table:       "purchase_requests",
+			indexName:   "idx_purchase_requests_status",
+			columns:     []string{"status"},
+			description: "Optimize purchase request status queries",
 		},
 
-		// Contacts table optimizations
+		// CBS nodes table optimizations
 		{
-			table:       "contacts",
-			indexName:   "idx_contacts_type_name",
-			columns:     []string{"contact_type", "name"},
-			description: "Optimize contact searches by type and name",
+			table:       "cbs_nodes",
+			indexName:   "idx_cbs_nodes_project",
+			columns:     []string{"project_id"},
+			description: "Optimize CBS node queries by project",
+		},
+		{
+			table:       "cbs_nodes",
+			indexName:   "idx_cbs_nodes_parent",
+			columns:     []string{"parent_id"},
+			description: "Optimize CBS node hierarchy queries",
 		},
 
-		// Purchases table optimizations
+		// Notifications table optimizations
 		{
-			table:       "purchases",
-			indexName:   "idx_purchases_vendor_status",
-			columns:     []string{"vendor_id", "status"},
-			description: "Optimize vendor purchase queries",
+			table:       "notifications",
+			indexName:   "idx_notifications_user",
+			columns:     []string{"user_id"},
+			description: "Optimize notification queries by user",
 		},
 		{
-			table:       "purchases",
-			indexName:   "idx_purchases_date_status",
-			columns:     []string{"purchase_date", "status"},
-			description: "Optimize purchase date reports",
+			table:       "notifications",
+			indexName:   "idx_notifications_read",
+			columns:     []string{"is_read"},
+			description: "Optimize unread notification queries",
+		},
+
+		// Users table optimizations
+		{
+			table:       "users",
+			indexName:   "idx_users_role",
+			columns:     []string{"role"},
+			description: "Optimize user role queries",
 		},
 	}
 
 	successCount := 0
 	for _, opt := range optimizations {
 		if err := createIndexIfNotExists(db, opt); err != nil {
-			log.Printf("⚠️ Warning: Failed to create index %s on %s: %v", opt.indexName, opt.table, err)
+			// Silently skip if table doesn't exist
+			continue
 		} else {
 			successCount++
-			log.Printf("✅ Created index %s on %s: %s", opt.indexName, opt.table, opt.description)
 		}
-		
+
 		// Small delay to prevent overwhelming the database
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 
-	log.Printf("🎯 Database optimization complete: %d/%d indexes created successfully", successCount, len(optimizations))
+	if successCount > 0 {
+		log.Printf("🎯 Database optimization complete: %d indexes verified/created", successCount)
+	}
 	return nil
 }
 
@@ -145,27 +129,19 @@ type indexOptimization struct {
 	description string
 }
 
-// createIndexIfNotExists creates an index if it doesn't already exist
+// createIndexIfNotExists creates an index if it doesn't already exist (PostgreSQL)
 func createIndexIfNotExists(db *gorm.DB, opt indexOptimization) error {
-	// Check if index already exists
-	var count int64
-	indexCheckQuery := fmt.Sprintf(`
-		SELECT COUNT(*) FROM information_schema.statistics 
-		WHERE table_schema = DATABASE() 
-		AND table_name = '%s' 
-		AND index_name = '%s'
-	`, opt.table, opt.indexName)
-
-	if err := db.Raw(indexCheckQuery).Scan(&count).Error; err != nil {
-		return fmt.Errorf("failed to check index existence: %w", err)
+	// Check if table exists first
+	var tableExists bool
+	tableCheckQuery := `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)`
+	if err := db.Raw(tableCheckQuery, opt.table).Scan(&tableExists).Error; err != nil {
+		return err
+	}
+	if !tableExists {
+		return nil // Table doesn't exist, skip silently
 	}
 
-	if count > 0 {
-		log.Printf("⏭️ Index %s already exists on %s", opt.indexName, opt.table)
-		return nil
-	}
-
-	// Create the index
+	// Build column list
 	columns := ""
 	for i, col := range opt.columns {
 		if i > 0 {
@@ -174,8 +150,9 @@ func createIndexIfNotExists(db *gorm.DB, opt indexOptimization) error {
 		columns += col
 	}
 
-	createIndexSQL := fmt.Sprintf("CREATE INDEX %s ON %s (%s)", opt.indexName, opt.table, columns)
-	
+	// Create index if not exists (PostgreSQL syntax)
+	createIndexSQL := fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s (%s)", opt.indexName, opt.table, columns)
+
 	if err := db.Exec(createIndexSQL).Error; err != nil {
 		return fmt.Errorf("failed to create index: %w", err)
 	}
@@ -185,8 +162,6 @@ func createIndexIfNotExists(db *gorm.DB, opt indexOptimization) error {
 
 // OptimizeDatabaseSettings applies general database optimization settings
 func OptimizeDatabaseSettings(db *gorm.DB) error {
-	log.Println("⚙️ Applying database optimization settings...")
-
 	// Get the underlying SQL DB
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -194,95 +169,9 @@ func OptimizeDatabaseSettings(db *gorm.DB) error {
 	}
 
 	// Set connection pool settings for better performance
-	sqlDB.SetMaxOpenConns(25)      // Limit total connections
-	sqlDB.SetMaxIdleConns(10)      // Keep some connections idle
-	sqlDB.SetConnMaxLifetime(5 * time.Minute) // Rotate connections
-
-	log.Println("✅ Database connection pool optimized")
-
-	// Try to apply MySQL-specific optimizations
-	optimizationQueries := []struct {
-		query       string
-		description string
-	}{
-		{
-			query:       "SET SESSION query_cache_type = ON",
-			description: "Enable query cache for session",
-		},
-		{
-			query:       "SET SESSION query_cache_size = 67108864", // 64MB
-			description: "Set query cache size to 64MB",
-		},
-	}
-
-	for _, opt := range optimizationQueries {
-		if err := db.Exec(opt.query).Error; err != nil {
-			log.Printf("⚠️ Warning: %s failed: %v", opt.description, err)
-		} else {
-			log.Printf("✅ %s", opt.description)
-		}
-	}
-
-	return nil
-}
-
-// AnalyzeSlowQueries identifies potentially slow queries
-func AnalyzeSlowQueries(db *gorm.DB) error {
-	log.Println("🔍 Analyzing database for slow query patterns...")
-
-	// Common slow query patterns to check
-	slowQueryChecks := []struct {
-		query       string
-		description string
-		suggestion  string
-	}{
-		{
-			query: `
-				SELECT TABLE_NAME, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS 'Size (MB)'
-				FROM information_schema.TABLES 
-				WHERE table_schema = DATABASE() 
-				ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC 
-				LIMIT 10
-			`,
-			description: "Largest tables by size",
-			suggestion:  "Consider archiving old data or partitioning large tables",
-		},
-		{
-			query: `
-				SELECT CONCAT(table_schema,'.',table_name) AS 'Table Name', 
-				       table_rows AS 'Number of Rows',
-				       ROUND(((data_length + index_length) / 1024 / 1024), 2) AS 'Size in MB'
-				FROM information_schema.TABLES
-				WHERE table_schema = DATABASE()
-				AND table_rows > 10000
-				ORDER BY table_rows DESC
-			`,
-			description: "Tables with high row counts",
-			suggestion:  "Consider indexing frequently queried columns",
-		},
-	}
-
-	for _, check := range slowQueryChecks {
-		log.Printf("📊 %s:", check.description)
-		
-		var results []map[string]interface{}
-		if err := db.Raw(check.query).Find(&results).Error; err != nil {
-			log.Printf("⚠️ Query failed: %v", err)
-			continue
-		}
-
-		if len(results) > 0 {
-			log.Printf("💡 %s", check.suggestion)
-			for i, result := range results {
-				if i >= 5 { // Limit output
-					break
-				}
-				log.Printf("   - %+v", result)
-			}
-		} else {
-			log.Printf("✅ No issues found")
-		}
-	}
+	sqlDB.SetMaxOpenConns(25)                   // Limit total connections
+	sqlDB.SetMaxIdleConns(10)                   // Keep some connections idle
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)   // Rotate connections
 
 	return nil
 }
@@ -302,13 +191,8 @@ func RunFullDatabaseOptimization(db *gorm.DB) error {
 		log.Printf("⚠️ Warning: Database settings optimization failed: %v", err)
 	}
 
-	// Step 3: Analyze slow queries
-	if err := AnalyzeSlowQueries(db); err != nil {
-		log.Printf("⚠️ Warning: Slow query analysis failed: %v", err)
-	}
-
 	duration := time.Since(start)
 	log.Printf("🎯 Full database optimization completed in %v", duration)
-	
+
 	return nil
 }
