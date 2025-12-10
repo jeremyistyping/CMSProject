@@ -3,12 +3,20 @@ import { PurchaseRequest, CreatePRData, UpdatePRData, PRFilter, MaterialImpact }
 
 const purchaseRequestService = {
     getAll: async (filter?: PRFilter): Promise<PurchaseRequest[]> => {
-        const params = new URLSearchParams();
-        if (filter?.project_id) params.append('project_id', filter.project_id.toString());
-        if (filter?.status) params.append('status', filter.status);
+        try {
+            const params = new URLSearchParams();
+            if (filter?.project_id) params.append('project_id', filter.project_id.toString());
+            if (filter?.status) params.append('status', filter.status);
 
-        const response = await api.get(`/api/v1/purchase-requests?${params.toString()}`);
-        return response.data;
+            const response = await api.get(`/api/v1/purchase-requests?${params.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 404 || error.response?.status === 500) {
+                console.warn('Purchase requests endpoint not available or error:', error.response?.status);
+                return [];
+            }
+            throw error;
+        }
     },
 
     getById: async (id: number): Promise<PurchaseRequest> => {
@@ -34,8 +42,16 @@ const purchaseRequestService = {
     },
 
     getMaterialImpact: async (id: number): Promise<MaterialImpact[]> => {
-        const response = await api.get(`/api/v1/purchase-requests/${id}/material-impact`);
-        return response.data;
+        try {
+            const response = await api.get(`/api/v1/purchase-requests/${id}/material-impact`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.status === 404 || error.response?.status === 500) {
+                console.warn('Material impact endpoint not available');
+                return [];
+            }
+            throw error;
+        }
     },
 };
 

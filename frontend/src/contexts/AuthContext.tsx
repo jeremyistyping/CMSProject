@@ -6,9 +6,6 @@ import { API_ENDPOINTS, API_BASE_URL } from '@/config/api';
 // Define user type - backend sends lowercase roles
 export type UserRole =
   | 'admin'
-  | 'finance'
-  | 'inventory_manager'
-  | 'director'
   | 'employee'
   | 'auditor'
   | 'operational_user'

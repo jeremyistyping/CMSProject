@@ -25,12 +25,6 @@ func convertRoleToUppercase(role string) string {
 	switch role {
 	case "admin":
 		return "ADMIN"
-	case "finance":
-		return "FINANCE"
-	case "director":
-		return "DIRECTOR"
-	case "inventory_manager":
-		return "INVENTORY_MANAGER"
 	case "employee":
 		return "EMPLOYEE"
 	case "purchasing":

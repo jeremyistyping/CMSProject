@@ -423,19 +423,19 @@ func (rm *RBACManager) AdminOnly() gin.HandlerFunc {
 	return rm.RequireRole(models.RoleAdmin)
 }
 
-// FinanceOrAdmin restricts access to finance users and admins
-func (rm *RBACManager) FinanceOrAdmin() gin.HandlerFunc {
-	return rm.RequireRole(models.RoleAdmin, models.RoleFinance)
+// CostControlOrAdmin restricts access to cost control users and admins
+func (rm *RBACManager) CostControlOrAdmin() gin.HandlerFunc {
+	return rm.RequireRole(models.RoleAdmin, models.RoleCostControl)
 }
 
-// DirectorOrAdmin restricts access to director and admin users
-func (rm *RBACManager) DirectorOrAdmin() gin.HandlerFunc {
-	return rm.RequireRole(models.RoleAdmin, models.RoleDirector)
+// ManagementOrAdmin restricts access to management level users and admin
+func (rm *RBACManager) ManagementOrAdmin() gin.HandlerFunc {
+	return rm.RequireRole(models.RoleAdmin, models.RoleGM, models.RoleProjectDirector, models.RoleManagingDirector)
 }
 
-// InventoryManagerOrAdmin restricts access to inventory manager and admin users
-func (rm *RBACManager) InventoryManagerOrAdmin() gin.HandlerFunc {
-	return rm.RequireRole(models.RoleAdmin, models.RoleInventoryManager)
+// PurchasingOrAdmin restricts access to purchasing users and admins
+func (rm *RBACManager) PurchasingOrAdmin() gin.HandlerFunc {
+	return rm.RequireRole(models.RoleAdmin, models.RolePurchasing)
 }
 
 
@@ -463,8 +463,10 @@ func (rm *RBACManager) CanModifyFinancialData() gin.HandlerFunc {
 func (rm *RBACManager) CanAccessReports() gin.HandlerFunc {
 	return rm.RequireRole(
 		models.RoleAdmin,
-		models.RoleDirector,
-		models.RoleFinance,
+		models.RoleCostControl,
+		models.RoleGM,
+		models.RoleProjectDirector,
+		models.RoleManagingDirector,
 	)
 }
 
@@ -477,7 +479,8 @@ func (rm *RBACManager) CanManageUsers() gin.HandlerFunc {
 func (rm *RBACManager) CanManageInventory() gin.HandlerFunc {
 	return rm.RequireRole(
 		models.RoleAdmin,
-		models.RoleInventoryManager,
+		models.RoleCostControl,
+		models.RolePurchasing,
 	)
 }
 

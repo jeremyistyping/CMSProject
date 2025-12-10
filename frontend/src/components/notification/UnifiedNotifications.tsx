@@ -43,9 +43,7 @@ import {
   FiXCircle, 
   FiClock, 
   FiShoppingCart,
-  FiPackage, 
   FiAlertTriangle, 
-  FiAlertCircle,
   FiLogOut
 } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,23 +64,11 @@ interface NotificationItem {
   data?: any;
 }
 
-interface StockAlert {
-  id: number;
-  product_id: number;
-  product_name: string;
-  product_code: string;
-  current_stock: number;
-  threshold_stock: number;
-  alert_type: string;
-  urgency: string;
-  message: string;
-  category_name?: string;
-}
+
 
 const UnifiedNotifications: React.FC = () => {
   const [approvalNotifications, setApprovalNotifications] = useState<NotificationItem[]>([]);
   const [stockNotifications, setStockNotifications] = useState<NotificationItem[]>([]);
-  const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([]);
   const [approvalUnreadCount, setApprovalUnreadCount] = useState(0);
   const [stockUnreadCount, setStockUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -93,7 +79,7 @@ const UnifiedNotifications: React.FC = () => {
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   // Determine if user can see stock notifications
-  const canViewStockNotifications = user?.role === 'admin' || user?.role === 'inventory_manager';
+  const canViewStockNotifications = user?.role === 'admin' || user?.role === 'cost_control' || user?.role === 'purchasing';
 
   useEffect(() => {
     fetchAllNotifications();
@@ -105,7 +91,6 @@ const UnifiedNotifications: React.FC = () => {
     await Promise.all([
       fetchApprovalNotifications(),
       canViewStockNotifications && fetchStockNotifications(),
-      canViewStockNotifications && fetchStockAlerts(),
     ].filter(Boolean));
   };
 
@@ -176,35 +161,7 @@ const UnifiedNotifications: React.FC = () => {
     }
   };
 
-  const fetchStockAlerts = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.DASHBOARD_STOCK_ALERTS}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.data?.alerts) {
-        setStockAlerts(response.data.data.alerts);
-      } else {
-        // Handle different response structure
-        setStockAlerts(response.data.alerts || []);
-      }
-    } catch (error: any) {
-      // Handle specific error cases
-      if (error.response?.status === 401) {
-        // Token expired or invalid - show user-friendly modal
-        setAuthError(true);
-        onAuthErrorOpen();
-      } else if (error.response?.status === 500) {
-        console.warn('Stock alerts service temporarily unavailable');
-      } else if (error.response?.status === 403) {
-        console.info('User not authorized to view stock alerts');
-      } else {
-        console.error('Failed to fetch stock alerts:', error.response?.data || error.message);
-      }
-      setStockAlerts([]);
-    }
-  };
+
 
   const handleMarkApprovalAsRead = async (notificationId: number) => {
     try {
@@ -236,20 +193,7 @@ const UnifiedNotifications: React.FC = () => {
     }
   };
 
-  const dismissStockAlert = async (alertId: number) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_BASE_URL}${API_ENDPOINTS.DASHBOARD_STOCK_ALERTS_DISMISS(alertId)}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setStockAlerts(prev => prev.filter(a => a.id !== alertId));
-    } catch (error) {
-      console.error('Failed to dismiss stock alert:', error);
-    }
-  };
+
 
   const getApprovalIcon = (type: string) => {
     switch (type) {
@@ -264,16 +208,7 @@ const UnifiedNotifications: React.FC = () => {
     }
   };
 
-  const getStockIcon = (urgency: string) => {
-    switch (urgency) {
-      case 'critical':
-        return <FiAlertTriangle color="#e53e3e" />;
-      case 'high':
-        return <FiAlertCircle color="#dd6b20" />;
-      default:
-        return <FiPackage color="#3182ce" />;
-    }
-  };
+
 
   const handleLogout = () => {
     onAuthErrorClose();
@@ -325,16 +260,7 @@ const UnifiedNotifications: React.FC = () => {
     return result;
   };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'critical': return 'red';
-      case 'high': return 'orange';
-      case 'medium': return 'yellow';
-      default: return 'blue';
-    }
-  };
-
-  const totalUnreadCount = approvalUnreadCount + stockUnreadCount + stockAlerts.length;
+  const totalUnreadCount = approvalUnreadCount + stockUnreadCount;
 
   return (
     <Menu placement="bottom-end" autoSelect={false} onOpen={fetchAllNotifications}>
@@ -382,9 +308,9 @@ const UnifiedNotifications: React.FC = () => {
               </Tab>
               <Tab>
                 Stock
-                {(stockUnreadCount + stockAlerts.length) > 0 && (
+                {stockUnreadCount > 0 && (
                   <Badge ml={2} colorScheme="red" borderRadius="full" fontSize="0.6em">
-                    {stockUnreadCount + stockAlerts.length}
+                    {stockUnreadCount}
                   </Badge>
                 )}
               </Tab>
@@ -431,91 +357,50 @@ const UnifiedNotifications: React.FC = () => {
               {/* Stock Notifications Tab */}
               <TabPanel p={0}>
                 <Box maxH="300px" overflowY="auto">
-                  {stockAlerts.length === 0 && stockNotifications.length === 0 ? (
+                  {stockNotifications.length === 0 ? (
                     <MenuItem isDisabled>
                       <Text fontSize="sm" color="gray.500">No stock alerts</Text>
                     </MenuItem>
                   ) : (
-                    <>
-                      {/* Active Stock Alerts */}
-                      {stockAlerts.map((alert) => (
-                        <Box key={`alert-${alert.id}`} p={3} borderBottom="1px" borderColor="gray.200">
-                          <HStack align="start" spacing={3}>
-                            <Box pt={1}>{getStockIcon(alert.urgency)}</Box>
-                            <VStack align="start" spacing={1} flex={1}>
+                    stockNotifications.map((notif) => {
+                      const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data;
+                      return (
+                        <MenuItem
+                          key={`notif-${notif.id}`}
+                          onClick={() => {
+                            if (!notif.is_read) handleMarkStockAsRead(notif.id);
+                          }}
+                        >
+                          <HStack align="start" spacing={3} w="full">
+                            <Box pt={1}>
+                              <FiAlertTriangle color="#dd6b20" />
+                            </Box>
+                            <VStack align="start" spacing={0} flex={1}>
                               <HStack justify="space-between" w="full">
-                                <Text fontSize="sm" fontWeight="bold">
-                                  {alert.product_name}
+                                <Text fontSize="sm" fontWeight={notif.is_read ? 'normal' : 'semibold'}>
+                                  {notif.title}
                                 </Text>
-                                <Badge colorScheme={getUrgencyColor(alert.urgency)} fontSize="0.6em">
-                                  {alert.urgency}
-                                </Badge>
+                                {!notif.is_read && <Box w={2} h={2} bg="orange.500" borderRadius="full" />}
                               </HStack>
                               
-                              <Text fontSize="xs" color="gray.600">
-                                Code: {alert.product_code} {alert.category_name && `• ${alert.category_name}`}
+                              <Text fontSize="xs" color="gray.600" noOfLines={2}>
+                                {formatMessageCurrency(notif.message, notif.data)}
                               </Text>
                               
-                              <Alert status="warning" size="sm" borderRadius="md">
-                                <AlertIcon />
-                                <Text fontSize="xs">
-                                  Stock: {alert.current_stock} / Min: {alert.threshold_stock}
+                              {data && (
+                                <Text fontSize="xs" color="gray.500">
+                                  Stock: {data.current_stock} / Min: {data.minimum_stock}
                                 </Text>
-                              </Alert>
+                              )}
                               
-                              <Button 
-                                size="xs" 
-                                colorScheme="gray" 
-                                onClick={() => dismissStockAlert(alert.id)}
-                              >
-                                Dismiss
-                              </Button>
+                              <Text fontSize="xs" color="gray.500">
+                                {formatDate(notif.created_at)}
+                              </Text>
                             </VStack>
                           </HStack>
-                        </Box>
-                      ))}
-                      
-                      {/* Stock Notifications */}
-                      {stockNotifications.map((notif) => {
-                        const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data;
-                        return (
-                          <MenuItem
-                            key={`notif-${notif.id}`}
-                            onClick={() => {
-                              if (!notif.is_read) handleMarkStockAsRead(notif.id);
-                            }}
-                          >
-                            <HStack align="start" spacing={3} w="full">
-                              <Box pt={1}>
-                                <FiAlertTriangle color="#dd6b20" />
-                              </Box>
-                              <VStack align="start" spacing={0} flex={1}>
-                                <HStack justify="space-between" w="full">
-                                  <Text fontSize="sm" fontWeight={notif.is_read ? 'normal' : 'semibold'}>
-                                    {notif.title}
-                                  </Text>
-                                  {!notif.is_read && <Box w={2} h={2} bg="orange.500" borderRadius="full" />}
-                                </HStack>
-                                
-                                <Text fontSize="xs" color="gray.600" noOfLines={2}>
-                                  {formatMessageCurrency(notif.message, notif.data)}
-                                </Text>
-                                
-                                {data && (
-                                  <Text fontSize="xs" color="gray.500">
-                                    Stock: {data.current_stock} / Min: {data.minimum_stock}
-                                  </Text>
-                                )}
-                                
-                                <Text fontSize="xs" color="gray.500">
-                                  {formatDate(notif.created_at)}
-                                </Text>
-                              </VStack>
-                            </HStack>
-                          </MenuItem>
-                        );
-                      })}
-                    </>
+                        </MenuItem>
+                      );
+                    })
                   )}
                 </Box>
               </TabPanel>

@@ -5,11 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
   AdminDashboard,
-  FinanceDashboard,
-  InventoryManagerDashboard,
-  DirectorDashboard,
   EmployeeDashboard,
-  PurchasingDashboard
+  PurchasingDashboard,
+  CostControlDashboard,
+  GMDashboard,
+  ProjectDirectorDashboard,
+  ManagingDirectorDashboard
 } from '@/components/dashboard';
 import SimpleLayout from '@/components/layout/SimpleLayout';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
@@ -42,7 +43,7 @@ export default function DashboardPage() {
 
   // Handle unauthorized role redirect
   useEffect(() => {
-    if (user && !['admin', 'finance', 'inventory_manager', 'director', 'employee', 'purchasing', 'project_director', 'gm', 'managing_director'].includes(user.role)) {
+    if (user && !['admin', 'employee', 'purchasing', 'cost_control', 'project_director', 'gm', 'managing_director'].includes(user.role)) {
       setRedirecting(true);
       router.push('/unauthorized');
     }
@@ -52,7 +53,7 @@ export default function DashboardPage() {
 
   const roleNeedsAnalytics = useMemo(() => {
     const role = user?.role;
-    return role === 'admin' || role === 'director' || role === 'finance' || role === 'project_director' || role === 'gm' || role === 'managing_director';
+    return role === 'admin' || role === 'project_director' || role === 'gm' || role === 'managing_director' || role === 'cost_control';
   }, [user]);
 
   const isLoading = redirecting || (roleNeedsAnalytics ? analyticsLoading : false);
@@ -82,15 +83,14 @@ export default function DashboardPage() {
     switch (user?.role) {
       case 'admin':
         return <AdminDashboard analytics={analytics} />;
-      case 'finance':
-        return <FinanceDashboard />;
-      case 'inventory_manager':
-        return <InventoryManagerDashboard />;
-      case 'director':
-      case 'project_director':
-      case 'gm':
       case 'managing_director':
-        return <DirectorDashboard analytics={analytics} />;
+        return <ManagingDirectorDashboard analytics={analytics} />;
+      case 'project_director':
+        return <ProjectDirectorDashboard analytics={analytics} />;
+      case 'gm':
+        return <GMDashboard analytics={analytics} />;
+      case 'cost_control':
+        return <CostControlDashboard analytics={analytics} />;
       case 'employee':
         return <EmployeeDashboard />;
       case 'purchasing':
@@ -108,7 +108,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <SimpleLayout allowedRoles={['admin', 'finance', 'director', 'inventory_manager', 'employee', 'purchasing', 'project_director', 'gm', 'managing_director']}>
+    <SimpleLayout allowedRoles={['admin', 'employee', 'purchasing', 'cost_control', 'project_director', 'gm', 'managing_director']}>
       {renderDashboardByRole()}
     </SimpleLayout>
   );

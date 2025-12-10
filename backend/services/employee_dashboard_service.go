@@ -337,7 +337,7 @@ func (eds *EmployeeDashboardService) getEmployeeQuickStats(userID uint, userRole
 			return nil, err
 		}
 		stats["rejected_purchase_requests_count"] = rejectedCount
-	} else if userRoleNorm == "finance" || userRoleNorm == "director" || userRoleNorm == "admin" {
+	} else if userRoleNorm == "cost_control" || userRoleNorm == "gm" || userRoleNorm == "project_director" || userRoleNorm == "managing_director" || userRoleNorm == "admin" {
 		// For approver roles, count their monthly approval activity
 		var monthlyApprovedCount int64
 		startOfMonth := time.Now().AddDate(0, 0, -time.Now().Day()+1)

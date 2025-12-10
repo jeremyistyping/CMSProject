@@ -229,9 +229,11 @@ const UserPermissions: React.FC<UserPermissionsProps> = ({ isOpen, onClose, user
   const getRoleBadgeColor = (role: string) => {
     switch (role.toLowerCase()) {
       case 'admin': return 'red';
-      case 'finance': return 'purple';
-      case 'inventory_manager': return 'blue';
-      case 'director': return 'green';
+      case 'cost_control': return 'purple';
+      case 'purchasing': return 'blue';
+      case 'gm': return 'green';
+      case 'project_director': return 'teal';
+      case 'managing_director': return 'orange';
       case 'employee': return 'gray';
       default: return 'gray';
     }

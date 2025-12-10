@@ -89,6 +89,14 @@ func main() {
 	// Seed database with initial data
 	database.SeedData(db)
 
+	// Seed master data (COA, Material Categories, UoM, Vendor Categories)
+	log.Println("🌱 Seeding master data...")
+	if err := routes.SeedMasterData(db); err != nil {
+		log.Printf("⚠️ Warning: Master data seeding failed: %v", err)
+	} else {
+		log.Println("✅ Master data seeded successfully!")
+	}
+
 	// Run startup tasks
 	startupService := services.NewStartupService(db)
 	startupService.RunStartupTasks()

@@ -3,6 +3,15 @@ export interface PurchaseRequestItem {
     purchase_request_id?: number;
     item_name: string;
     product_id?: number;
+    material_id?: number;
+    coa_account_id?: number;
+    material?: {
+        id: number;
+        code: string;
+        name: string;
+        unit: string;
+        unit_price: number;
+    };
     quantity: number;
     unit: string;
     estimated_price: number;
@@ -18,7 +27,7 @@ export interface PurchaseRequest {
     required_date: string;
     vendor_id?: number;
     notes: string;
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVISION' | 'PO_CREATED';
+    status: 'PENDING' | 'PENDING_VERIFICATION' | 'VERIFIED' | 'APPROVED' | 'REJECTED' | 'REVISION' | 'PO_CREATED' | 'COMPLETED';
     total_amount: number;
 
     // Approval fields
@@ -56,10 +65,10 @@ export interface PurchaseRequest {
 export interface CreatePRData {
     project_id: number;
     request_date: string;
-    required_date: string;
+    required_date?: string;
     vendor_id?: number;
     notes: string;
-    items: PurchaseRequestItem[];
+    items: Partial<PurchaseRequestItem>[];
 }
 
 export interface UpdatePRData extends CreatePRData { }

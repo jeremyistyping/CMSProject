@@ -16,10 +16,12 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
 } from '@chakra-ui/react';
-import { FiPlus, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiRefreshCw, FiDollarSign, FiBarChart2 } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
 import SimpleLayout from '../../../src/components/layout/SimpleLayout';
 import CBSTreeView from '../../../src/components/cost-control/CBSTreeView';
 import CBSNodeModal from '../../../src/components/cost-control/CBSNodeModal';
+import CBSBudgetSummary from '../../../src/components/cost-control/CBSBudgetSummary';
 import cbsService from '../../../src/services/cbsService';
 import projectService from '../../../src/services/projectService';
 import { CBSNode } from '../../../src/types/cbs';
@@ -38,6 +40,7 @@ export default function CBSPage() {
   const [nodeToEdit, setNodeToEdit] = useState<CBSNode | undefined>(undefined);
 
   const toast = useToast();
+  const router = useRouter();
   const { canCreate, canEdit, canDelete } = useModulePermissions('cbs');
 
   // Fetch Projects
@@ -127,7 +130,7 @@ export default function CBSPage() {
   };
 
   return (
-    <SimpleLayout allowedRoles={['cost_control', 'admin', 'director', 'gm', 'purchasing']}>
+    <SimpleLayout allowedRoles={['cost_control', 'admin', 'gm', 'project_director', 'managing_director', 'purchasing']}>
       <Container maxW="container.xl" py={6}>
         <VStack spacing={6} align="stretch">
           {/* Header & Controls */}
@@ -141,7 +144,7 @@ export default function CBSPage() {
               </BreadcrumbItem>
             </Breadcrumb>
 
-            <HStack>
+            <HStack spacing={2} flexWrap="wrap">
               <Select
                 w="300px"
                 value={selectedProjectId || ''}
@@ -155,6 +158,7 @@ export default function CBSPage() {
                 leftIcon={<FiRefreshCw />}
                 onClick={fetchCBSTree}
                 isLoading={isLoading}
+                size="md"
               >
                 Refresh
               </Button>
@@ -166,11 +170,35 @@ export default function CBSPage() {
                   handleAddNode();
                 }}
                 isDisabled={!selectedProjectId}
+                size="md"
               >
                 Create Root Node
               </Button>
+              <Button
+                leftIcon={<FiDollarSign />}
+                colorScheme="green"
+                variant="outline"
+                onClick={() => router.push(`/cost-control/expenses`)}
+                size="md"
+              >
+                View Expenses
+              </Button>
+              <Button
+                leftIcon={<FiBarChart2 />}
+                colorScheme="purple"
+                variant="outline"
+                onClick={() => router.push(`/cost-control/budget-vs-actual`)}
+                size="md"
+              >
+                Budget Report
+              </Button>
             </HStack>
           </HStack>
+
+          {/* Budget Summary */}
+          {selectedProjectId && (
+            <CBSBudgetSummary projectId={selectedProjectId} />
+          )}
 
           {/* Main Content */}
           <Box bg="white" p={6} borderRadius="lg" shadow="sm" minH="500px">

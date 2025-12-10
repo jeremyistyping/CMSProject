@@ -21,6 +21,7 @@ func SetupCBSRoutes(router *gin.RouterGroup, cbsController *controllers.CBSContr
 	projects := router.Group("/projects")
 	{
 		projects.GET("/:id/cbs", permMiddleware.CanView("cbs"), cbsController.GetProjectCBSTree)
+		projects.GET("/:id/cbs/summary", permMiddleware.CanView("cbs"), cbsController.GetProjectBudgetSummary)
 	}
 
 	// Purchase Request CBS Mappings Routes

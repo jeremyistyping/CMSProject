@@ -14,17 +14,30 @@ type CBSService interface {
 	UpdateCBSNode(id uint, node *models.CBSNode) error
 	DeleteCBSNode(id uint) error
 	GetNodeCostSummary(nodeID uint) (*models.CBSNodeSummary, error)
+	GetProjectBudgetSummary(projectID uint) (*ProjectBudgetSummary, error)
 	ValidateCBSBudget(nodeID uint, amount int64) error
 	GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error)
 	VerifyPurchaseRequest(prID uint, userID uint, mappings []models.PRCBSMapping, notes string) error
 }
 
-type cbsService struct {
-	repo repositories.CBSRepository
+type ProjectBudgetSummary struct {
+	ProjectID    uint    `json:"project_id"`
+	TotalBudget  int64   `json:"total_budget"`
+	TotalActual  int64   `json:"total_actual"`
+	TotalVariance int64  `json:"total_variance"`
+	NodeCount    int     `json:"node_count"`
 }
 
-func NewCBSService(repo repositories.CBSRepository) CBSService {
-	return &cbsService{repo: repo}
+type cbsService struct {
+	repo              repositories.CBSRepository
+	projectBudgetRepo repositories.ProjectBudgetRepository
+}
+
+func NewCBSService(repo repositories.CBSRepository, projectBudgetRepo repositories.ProjectBudgetRepository) CBSService {
+	return &cbsService{
+		repo:              repo,
+		projectBudgetRepo: projectBudgetRepo,
+	}
 }
 
 // GetProjectCBSTree retrieves the CBS tree with cost summaries
@@ -78,7 +91,21 @@ func (s *cbsService) CreateCBSNode(node *models.CBSNode) error {
 	node.CreatedAt = now
 	node.UpdatedAt = now
 
-	return s.repo.CreateNode(node)
+	// Create CBS node
+	if err := s.repo.CreateNode(node); err != nil {
+		return err
+	}
+
+	// Auto-sync to project_budgets if COAAccountID and BudgetAmount exist
+	if node.COAAccountID != nil && node.BudgetAmount > 0 {
+		if err := s.syncToProjectBudget(node); err != nil {
+			// Log warning but don't fail the operation
+			// In production, you might want to use proper logging
+			// log.Printf("Warning: Failed to sync CBS to project budget: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // UpdateCBSNode updates an existing CBS node
@@ -112,7 +139,20 @@ func (s *cbsService) UpdateCBSNode(id uint, node *models.CBSNode) error {
 	node.ProjectID = existing.ProjectID // Cannot change project
 	node.UpdatedAt = time.Now()
 
-	return s.repo.UpdateNode(node)
+	// Update CBS node
+	if err := s.repo.UpdateNode(node); err != nil {
+		return err
+	}
+
+	// Auto-sync to project_budgets if COAAccountID and BudgetAmount exist
+	if node.COAAccountID != nil && node.BudgetAmount > 0 {
+		if err := s.syncToProjectBudget(node); err != nil {
+			// Log warning but don't fail the operation
+			// log.Printf("Warning: Failed to sync CBS to project budget: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // DeleteCBSNode deletes a CBS node
@@ -177,4 +217,46 @@ func (s *cbsService) VerifyPurchaseRequest(prID uint, userID uint, mappings []mo
 	// For now, let's assume we can update it via DB directly or we need to inject PR repo.
 	// Since we only have CBSRepository, let's add a method to CBSRepository to update PR status.
 	return s.repo.UpdatePRVerificationStatus(prID, userID, notes)
+}
+
+// syncToProjectBudget syncs CBS node budget to project_budgets table
+func (s *cbsService) syncToProjectBudget(node *models.CBSNode) error {
+	if node.COAAccountID == nil {
+		return nil
+	}
+
+	budget := &models.ProjectBudget{
+		ProjectID:       node.ProjectID,
+		AccountID:       *node.COAAccountID,
+		EstimatedAmount: float64(node.BudgetAmount),
+	}
+
+	return s.projectBudgetRepo.Upsert(budget)
+}
+
+// GetProjectBudgetSummary retrieves budget summary for a project from CBS
+func (s *cbsService) GetProjectBudgetSummary(projectID uint) (*ProjectBudgetSummary, error) {
+	nodes, err := s.repo.GetNodesByProjectID(projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := &ProjectBudgetSummary{
+		ProjectID: projectID,
+		NodeCount: len(nodes),
+	}
+
+	for _, node := range nodes {
+		summary.TotalBudget += node.BudgetAmount
+		
+		// Get actual cost for this node
+		nodeSummary, err := s.repo.GetNodeCostSummary(node.ID)
+		if err == nil {
+			summary.TotalActual += nodeSummary.ActualCost
+		}
+	}
+
+	summary.TotalVariance = summary.TotalBudget - summary.TotalActual
+
+	return summary, nil
 }

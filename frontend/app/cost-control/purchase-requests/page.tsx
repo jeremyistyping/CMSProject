@@ -32,7 +32,10 @@ import PRList from '@/components/cost-control/PRList';
 import CreatePRModal from '@/components/cost-control/CreatePRModal';
 import PRDetailModal from '@/components/cost-control/PRDetailModal';
 import PRVerificationModal from '@/components/cost-control/PRVerificationModal';
+import CreatePOModal from '@/components/cost-control/CreatePOModal';
+import GoodsReceiptModal from '@/components/cost-control/GoodsReceiptModal';
 import purchaseRequestService from '@/services/purchaseRequestService';
+import purchaseOrderService from '@/services/purchaseOrderService';
 import projectService from '@/services/projectService';
 import cbsService from '@/services/cbsService';
 import { PurchaseRequest } from '@/types/purchaseRequest';
@@ -51,6 +54,10 @@ const PurchaseRequestsPage: React.FC = () => {
   // Verification State
   const [prToVerify, setPrToVerify] = useState<PurchaseRequest | null>(null);
   const [cbsNodes, setCbsNodes] = useState<CBSNode[]>([]);
+
+  // PO State
+  const [prForPO, setPrForPO] = useState<PurchaseRequest | null>(null);
+  const [prForGR, setPrForGR] = useState<PurchaseRequest | null>(null);
 
   const { canView, canCreate, canEdit, canDelete, canApprove, loading: permLoading } = useModulePermissions('purchases');
   // Check if user has cost control permissions for verification
@@ -92,6 +99,18 @@ const PurchaseRequestsPage: React.FC = () => {
     isOpen: isVerifyOpen,
     onOpen: onVerifyOpen,
     onClose: onVerifyClose
+  } = useDisclosure();
+
+  const {
+    isOpen: isPOOpen,
+    onOpen: onPOOpen,
+    onClose: onPOClose
+  } = useDisclosure();
+
+  const {
+    isOpen: isGROpen,
+    onOpen: onGROpen,
+    onClose: onGRClose
   } = useDisclosure();
 
   useEffect(() => {
@@ -210,6 +229,70 @@ const PurchaseRequestsPage: React.FC = () => {
       toast({
         title: 'Error',
         description: 'Failed to load CBS structure for verification',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleCreatePO = (pr: PurchaseRequest) => {
+    setPrForPO(pr);
+    onPOOpen();
+  };
+
+  const handleReceiveGoods = (pr: PurchaseRequest) => {
+    setPrForGR(pr);
+    onGROpen();
+  };
+
+  const handleDownloadPO = async (pr: PurchaseRequest) => {
+    try {
+      // Get PO ID from PR
+      const pos = await purchaseOrderService.getByPRId(pr.id);
+      if (pos && pos.length > 0) {
+        const activePO = pos.find(po => po.status !== 'CANCELLED');
+        if (activePO) {
+          await purchaseOrderService.downloadPOPDF(activePO.id);
+          toast({
+            title: 'Success',
+            description: 'PO PDF downloaded successfully',
+            status: 'success',
+            duration: 2000,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading PO PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to download PO PDF',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleDownloadGR = async (pr: PurchaseRequest) => {
+    try {
+      // Get PO ID from PR
+      const pos = await purchaseOrderService.getByPRId(pr.id);
+      if (pos && pos.length > 0) {
+        const activePO = pos.find(po => po.status !== 'CANCELLED');
+        if (activePO) {
+          await purchaseOrderService.downloadGRPDF(activePO.id);
+          toast({
+            title: 'Success',
+            description: 'Goods Receipt PDF downloaded successfully',
+            status: 'success',
+            duration: 2000,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading GR PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to download Goods Receipt PDF',
         status: 'error',
         duration: 3000,
       });
@@ -382,6 +465,7 @@ const PurchaseRequestsPage: React.FC = () => {
               <option value="REJECTED">Rejected</option>
               <option value="REVISION">Revision</option>
               <option value="PO_CREATED">PO Created</option>
+              <option value="COMPLETED">Completed</option>
             </Select>
           </HStack>
         </VStack>
@@ -407,6 +491,10 @@ const PurchaseRequestsPage: React.FC = () => {
               onApprove={canApprove ? handleApprovePR : undefined}
               onReject={canApprove ? handleRejectPR : undefined}
               onVerify={canVerify ? handleVerifyPR : undefined}
+              onCreatePO={canCreate ? handleCreatePO : undefined}
+              onReceiveGoods={canCreate ? handleReceiveGoods : undefined}
+              onDownloadPO={canView ? handleDownloadPO : undefined}
+              onDownloadGR={canView ? handleDownloadGR : undefined}
             />
           )}
         </Box>
@@ -432,6 +520,20 @@ const PurchaseRequestsPage: React.FC = () => {
         onClose={onVerifyClose}
         pr={prToVerify}
         cbsNodes={cbsNodes}
+        onSuccess={fetchPRs}
+      />
+
+      <CreatePOModal
+        isOpen={isPOOpen}
+        onClose={onPOClose}
+        pr={prForPO}
+        onSuccess={fetchPRs}
+      />
+
+      <GoodsReceiptModal
+        isOpen={isGROpen}
+        onClose={onGRClose}
+        pr={prForGR}
         onSuccess={fetchPRs}
       />
 

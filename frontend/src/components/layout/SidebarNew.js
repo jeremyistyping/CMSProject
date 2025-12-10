@@ -37,25 +37,34 @@ const getMenuGroups = (t) => [
   {
     title: t('navigation.dashboard'),
     items: [
-      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'INVENTORY_MANAGER', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: t('navigation.dashboard'), icon: FiHome, href: '/dashboard', module: null, permission: null, roles: ['ADMIN', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR', 'COST_CONTROL', 'PURCHASING'] },
       { name: 'Daily Reports', icon: FiFileText, href: '/projects', module: null, permission: null, roles: ['EMPLOYEE'] },
     ]
   },
   {
     title: 'Project Management',
     items: [
-      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Projects', icon: FiFolder, href: '/projects', module: null, permission: null, roles: ['ADMIN', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
       { name: 'Approval Daily Report', icon: FiCheckSquare, href: '/daily-report-approval', module: null, permission: null, roles: ['GM'] },
     ]
   },
   {
     title: 'Cost Control',
     items: [
-      { name: 'Cost Control', icon: FiDollarSign, href: '/cost-control', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Budget vs Actual per Project', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
-      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'FINANCE', 'COST_CONTROL', 'DIRECTOR', 'PURCHASING', 'INVENTORY_MANAGER', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Cost Control', icon: FiDollarSign, href: '/cost-control', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Expense Transactions', icon: FiDollarSign, href: '/cost-control/expenses', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Budget vs Actual Report', icon: FiTrendingUp, href: '/cost-control/budget-vs-actual', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Material Tracking', icon: FiPackage, href: '/cost-control/material-tracking', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Cost Breakdown Structure (CBS)', icon: FiLayers, href: '/cost-control/cbs', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+      { name: 'Purchase Request Management', icon: FiCheckSquare, href: '/cost-control/purchase-requests', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PURCHASING', 'PROJECT_DIRECTOR', 'GM', 'MANAGING_DIRECTOR'] },
+    ]
+  },
+  {
+    title: 'Master Data',
+    items: [
+      { name: 'Chart of Accounts', icon: FiLayers, href: '/master-data/coa', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL'] },
+      { name: 'Material', icon: FiPackage, href: '/master-data/materials', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PURCHASING'] },
+      { name: 'Vendor', icon: FiUser, href: '/master-data/vendor-management', module: null, permission: null, roles: ['ADMIN', 'COST_CONTROL', 'PURCHASING'] },
     ]
   },
   {

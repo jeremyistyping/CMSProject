@@ -317,6 +317,39 @@ go run cmd/main.go
 SERVER_PORT=8081
 ```
 
+#### 2.5 Reset Database (Testing)
+
+Untuk testing dari awal dengan database bersih:
+
+```bash
+# Windows
+cd backend\cmd\reset_db
+reset_db.bat
+
+# Linux/Mac
+cd backend/cmd/reset_db
+chmod +x reset_db.sh
+./reset_db.sh
+
+# Atau dengan backup otomatis (recommended)
+backup_and_reset.bat  # Windows
+./backup_and_reset.sh # Linux/Mac
+```
+
+Script akan:
+- ✅ Drop semua tables, sequences, dan custom types
+- ✅ Meminta konfirmasi sebelum delete
+- ✅ Membaca credentials dari .env (tidak hardcoded)
+- ✅ Backup database sebelum reset (jika pakai backup_and_reset)
+
+Setelah reset, jalankan aplikasi untuk apply migrations dan seed data:
+```bash
+cd backend
+go run main.go
+```
+
+📚 **Dokumentasi lengkap**: [backend/RESET_DATABASE.md](backend/RESET_DATABASE.md)
+
 ### 3. Setup Frontend
 ```bash
 cd frontend

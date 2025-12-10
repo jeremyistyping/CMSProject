@@ -107,11 +107,11 @@ class UserService {
   getRoleLabel(role: string): string {
     const labels: { [key: string]: string } = {
       'admin': 'Administrator',
-      'manager': 'Manager',
-      'accountant': 'Accountant',
-      'finance': 'Finance',
-      'sales': 'Sales',
-      'inventory': 'Inventory',
+      'purchasing': 'Purchasing',
+      'cost_control': 'Cost Control',
+      'gm': 'GM',
+      'project_director': 'Direktur Proyek',
+      'managing_director': 'Direktur Utama',
       'employee': 'Employee'
     };
     return labels[role] || role;

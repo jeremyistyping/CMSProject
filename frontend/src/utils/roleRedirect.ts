@@ -8,12 +8,7 @@ export function getDefaultPageForRole(role: UserRole | string): string {
 
     switch (normalizedRole) {
         case 'admin':
-        case 'director':
         case 'managing_director':
-            return '/dashboard';
-
-        case 'finance':
-        case 'finance_manager':
             return '/dashboard';
 
         case 'purchasing':
@@ -21,9 +16,6 @@ export function getDefaultPageForRole(role: UserRole | string): string {
 
         case 'cost_control':
             return '/cost-control';
-
-        case 'inventory_manager':
-            return '/products';
 
         case 'gm':
         case 'project_director':

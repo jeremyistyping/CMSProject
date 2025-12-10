@@ -45,18 +45,27 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB, permMiddleware *mi
 	timelineScheduleService := services.NewTimelineScheduleService(db)
 	timelineScheduleController := controllers.NewTimelineScheduleController(timelineScheduleService)
 
+	// Initialize Expense Transaction service and controller
+	expenseRepo := repositories.NewExpenseTransactionRepository(db)
+	coaRepo := repositories.NewCOARepository(db)
+	expenseService := services.NewExpenseTransactionService(expenseRepo, projectRepo, coaRepo)
+	expenseController := controllers.NewExpenseTransactionController(expenseService)
+
+	// Initialize CBS service and controller
+	cbsRepo := repositories.NewCBSRepository(db)
+	projectBudgetRepo := repositories.NewProjectBudgetRepository(db)
+	cbsService := services.NewCBSService(cbsRepo, projectBudgetRepo)
+	cbsController := controllers.NewCBSController(cbsService)
+
 	// Project routes
 	projects := router.Group("/projects")
 	{
 		// Get routes - View Project Permission
+		// Note: Static routes must come before dynamic routes with :id
 		projects.GET("", permMiddleware.CanView("projects"), projectController.GetAllProjects)
 		projects.GET("/active", permMiddleware.CanView("projects"), projectController.GetActiveProjects)
 		projects.GET("/status", permMiddleware.CanView("projects"), projectController.GetProjectsByStatus)
 		projects.GET("/daily-updates/pending", permMiddleware.CanApprove("daily_updates"), dailyUpdateController.GetPendingDailyUpdates)
-		projects.GET("/:id", permMiddleware.CanView("projects"), projectController.GetProjectByID)
-		projects.GET("/:id/cost-summary", permMiddleware.CanView("projects"), projectController.GetProjectCostSummary)
-		projects.GET("/:id/progress-history", permMiddleware.CanView("projects"), projectProgressController.GetProjectProgressHistory)
-		projects.GET("/:id/actual-costs", permMiddleware.CanView("projects"), projectActualCostController.GetProjectActualCosts)
 
 		// Project budgets (nested under projects) - Edit Project Permission (Budgets are sensitive)
 		projects.GET("/:id/budgets", permMiddleware.CanView("projects"), projectBudgetController.GetProjectBudgets)
@@ -109,5 +118,23 @@ func SetupProjectRoutes(router *gin.RouterGroup, db *gorm.DB, permMiddleware *mi
 		projects.PUT("/:id/timeline-schedules/:scheduleId", permMiddleware.CanEdit("projects"), timelineScheduleController.UpdateSchedule)
 		projects.DELETE("/:id/timeline-schedules/:scheduleId", permMiddleware.CanEdit("projects"), timelineScheduleController.DeleteSchedule)
 		projects.PATCH("/:id/timeline-schedules/:scheduleId/status", permMiddleware.CanEdit("projects"), timelineScheduleController.UpdateScheduleStatus)
+
+		// Expense Transaction routes (nested under projects) - Cost Control Permission
+		projects.GET("/:id/expenses", permMiddleware.CanView("cost_control"), expenseController.GetByProject)
+		projects.POST("/:id/expenses", permMiddleware.CanCreate("cost_control"), expenseController.Create)
+		projects.POST("/:id/expenses/batch", permMiddleware.CanCreate("cost_control"), expenseController.BatchCreate)
+		projects.GET("/:id/reports/budget-vs-actual", permMiddleware.CanView("cost_control"), expenseController.GetBudgetReport)
+		projects.GET("/:id/reports/budget-vs-actual/pdf", permMiddleware.CanView("cost_control"), expenseController.ExportBudgetReportPDF)
+
+		// CBS routes (nested under projects) - Cost Control Permission
+		projects.GET("/:id/cbs", permMiddleware.CanView("cost_control"), cbsController.GetProjectCBSTree)
+		projects.GET("/:id/cbs/tree", permMiddleware.CanView("cost_control"), cbsController.GetProjectCBSTree)
+		projects.GET("/:id/cbs/summary", permMiddleware.CanView("cost_control"), cbsController.GetProjectBudgetSummary)
+
+		// Single project routes - Must be at the end to avoid matching sub-routes
+		projects.GET("/:id", permMiddleware.CanView("projects"), projectController.GetProjectByID)
+		projects.GET("/:id/cost-summary", permMiddleware.CanView("projects"), projectController.GetProjectCostSummary)
+		projects.GET("/:id/progress-history", permMiddleware.CanView("projects"), projectProgressController.GetProjectProgressHistory)
+		projects.GET("/:id/actual-costs", permMiddleware.CanView("projects"), projectActualCostController.GetProjectActualCosts)
 	}
 }

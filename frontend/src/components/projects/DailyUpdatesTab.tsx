@@ -608,6 +608,7 @@ const DailyUpdatesTab: React.FC<DailyUpdatesTabProps> = ({ projectId, project })
         onClose={onViewClose}
         dailyUpdate={viewUpdate}
         onEdit={handleEditFromView}
+        onStatusChange={fetchDailyUpdates}
       />
 
       {/* Photo Gallery Modal */}

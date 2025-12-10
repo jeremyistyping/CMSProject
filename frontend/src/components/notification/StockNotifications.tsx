@@ -55,7 +55,7 @@ const StockNotifications: React.FC = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'inventory_manager') {
+    if (user?.role === 'admin' || user?.role === 'cost_control' || user?.role === 'purchasing') {
       fetchStockNotifications();
       fetchStockAlerts();
       // Increase interval to 5 minutes to reduce server load
@@ -180,7 +180,7 @@ const StockNotifications: React.FC = () => {
   };
 
   // Don't show for non-authorized roles
-  if (user?.role !== 'admin' && user?.role !== 'inventory_manager') {
+  if (user?.role !== 'admin' && user?.role !== 'cost_control' && user?.role !== 'purchasing') {
     return null;
   }
 

@@ -222,9 +222,7 @@ func (s *dailyUpdateService) validateDailyUpdate(update *models.DailyUpdate) err
 		return errors.New("invalid weather value")
 	}
 
-	if strings.TrimSpace(update.CreatedBy) == "" {
-		return errors.New("created by is required")
-	}
+	// Note: created_by has a default value in BeforeCreate hook, so no validation needed here
 
 	return nil
 }
@@ -279,12 +277,20 @@ func (s *dailyUpdateService) ApproveDailyUpdate(projectID uint, updateID uint, a
 	}
 
 	now := time.Now()
-	update.Status = "approved"
-	update.ApprovedBy = approver
-	update.ApprovedAt = &now
-	update.RejectionReason = "" // Clear rejection reason if approved
 
-	return s.db.Save(&update).Error
+	// Use Updates with map to ensure all fields are updated including empty strings
+	result := s.db.Model(&update).Updates(map[string]interface{}{
+		"status":           "approved",
+		"approved_by":      approver,
+		"approved_at":      now,
+		"rejection_reason": "",
+	})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
 
 // RejectDailyUpdate rejects a daily update
@@ -297,12 +303,19 @@ func (s *dailyUpdateService) RejectDailyUpdate(projectID uint, updateID uint, re
 		return err
 	}
 
-	update.Status = "rejected"
-	update.ApprovedBy = rejector // Reuse field for rejector
-	update.RejectionReason = reason
-	update.ApprovedAt = nil
+	// Use Updates with map to ensure all fields are updated
+	result := s.db.Model(&update).Updates(map[string]interface{}{
+		"status":           "rejected",
+		"approved_by":      rejector,
+		"rejection_reason": reason,
+		"approved_at":      nil,
+	})
 
-	return s.db.Save(&update).Error
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
 
 // GetPendingDailyUpdates retrieves all daily updates with pending status

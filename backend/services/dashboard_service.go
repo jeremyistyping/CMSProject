@@ -93,11 +93,11 @@ func (ds *DashboardService) GetDashboardAnalyticsForRole(role string) (*Analytic
 	// Total projects
 	ds.DB.Model(&models.Project{}).Count(&analytics.TotalProjects)
 	
-	// Active projects
-	ds.DB.Model(&models.Project{}).Where("status IN ?", []string{"ACTIVE", "IN_PROGRESS", "ONGOING"}).Count(&analytics.ActiveProjects)
+	// Active projects (case-insensitive check for various status values)
+	ds.DB.Model(&models.Project{}).Where("LOWER(status) IN ?", []string{"active", "in_progress", "ongoing"}).Count(&analytics.ActiveProjects)
 	
-	// Completed projects
-	ds.DB.Model(&models.Project{}).Where("status = ?", "COMPLETED").Count(&analytics.CompletedProjects)
+	// Completed projects (case-insensitive)
+	ds.DB.Model(&models.Project{}).Where("LOWER(status) = ?", "completed").Count(&analytics.CompletedProjects)
 	
 	// Total purchase requests
 	ds.DB.Model(&models.PurchaseRequest{}).Count(&analytics.TotalPurchaseRequests)
@@ -269,19 +269,19 @@ func (ds *DashboardService) GetQuickStats() (map[string]interface{}, error) {
 	ds.DB.Model(&models.Project{}).Count(&totalProjects)
 	stats["total_projects"] = totalProjects
 	
-	// Active projects
+	// Active projects (case-insensitive)
 	var activeProjects int64
-	ds.DB.Model(&models.Project{}).Where("status IN ?", []string{"ACTIVE", "IN_PROGRESS", "ONGOING"}).Count(&activeProjects)
+	ds.DB.Model(&models.Project{}).Where("LOWER(status) IN ?", []string{"active", "in_progress", "ongoing"}).Count(&activeProjects)
 	stats["active_projects"] = activeProjects
 	
-	// Pending purchase requests
+	// Pending purchase requests (case-insensitive)
 	var pendingPRs int64
-	ds.DB.Model(&models.PurchaseRequest{}).Where("status = ?", "PENDING").Count(&pendingPRs)
+	ds.DB.Model(&models.PurchaseRequest{}).Where("LOWER(status) = ?", "pending").Count(&pendingPRs)
 	stats["pending_purchase_requests"] = pendingPRs
 	
-	// Pending approvals
+	// Pending approvals (case-insensitive)
 	var pendingApprovals int64
-	ds.DB.Model(&models.ApprovalRequest{}).Where("status = ?", "PENDING").Count(&pendingApprovals)
+	ds.DB.Model(&models.ApprovalRequest{}).Where("LOWER(status) = ?", "pending").Count(&pendingApprovals)
 	stats["pending_approvals"] = pendingApprovals
 	
 	// Today's daily updates

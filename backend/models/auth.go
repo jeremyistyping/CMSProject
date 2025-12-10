@@ -173,17 +173,13 @@ const (
 
 // User roles constants (moved from user.go for consistency)
 const (
-	RoleAdmin            = "admin"
-	RoleFinance          = "finance"
-	RoleFinanceManager   = "finance_manager"
-	RoleDirector         = "director"
-	RoleInventoryManager = "inventory_manager"
-	RoleEmployee         = "employee"
-	RoleAuditor          = "auditor"
-	RoleOperationalUser  = "operational_user"
+	RoleAdmin           = "admin"
+	RoleEmployee        = "employee"
+	RoleAuditor         = "auditor"
+	RoleOperationalUser = "operational_user"
 
 	// Extended roles for purchase approval RBAC
-	RolePurchasing       = "purchasing"        // Purchasing staff (previously mapped to employee)
+	RolePurchasing       = "purchasing"        // Purchasing staff
 	RoleCostControl      = "cost_control"      // Cost Control verifier (Pak Patrick)
 	RoleGM               = "gm"                // General Manager (Pak Marlin)
 	RoleProjectDirector  = "project_director"  // Project Director (Pak Christopher)

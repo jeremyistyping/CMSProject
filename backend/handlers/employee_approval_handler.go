@@ -211,8 +211,8 @@ func (h *EmployeeApprovalHandler) GetApprovalHistory(c *gin.Context) {
 		canAccess = true
 	}
 	
-	// Admin or director can see all
-	if userRoleNorm == "admin" || userRoleNorm == "director" {
+	// Admin or management can see all
+	if userRoleNorm == "admin" || userRoleNorm == "gm" || userRoleNorm == "project_director" || userRoleNorm == "managing_director" {
 		canAccess = true
 	}
 	

@@ -12,6 +12,8 @@ type PurchaseRequestRepository interface {
 	Delete(id uint) error
 	FindByID(id uint) (*models.PurchaseRequest, error)
 	FindAll(filter map[string]interface{}) ([]models.PurchaseRequest, error)
+	GetByID(id uint) (*models.PurchaseRequest, error)
+	UpdateStatus(id uint, status string) error
 }
 
 type purchaseRequestRepository struct {
@@ -53,4 +55,14 @@ func (r *purchaseRequestRepository) FindAll(filter map[string]interface{}) ([]mo
 
 	err := query.Order("created_at desc").Find(&prs).Error
 	return prs, err
+}
+
+// GetByID is an alias for FindByID for compatibility
+func (r *purchaseRequestRepository) GetByID(id uint) (*models.PurchaseRequest, error) {
+	return r.FindByID(id)
+}
+
+// UpdateStatus updates the status of a purchase request
+func (r *purchaseRequestRepository) UpdateStatus(id uint, status string) error {
+	return r.db.Model(&models.PurchaseRequest{}).Where("id = ?", id).Update("status", status).Error
 }

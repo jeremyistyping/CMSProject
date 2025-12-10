@@ -20,9 +20,10 @@ type CBSNode struct {
 	DeletedAt    *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 
 	// Relationships
-	Project  *Project  `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
-	Parent   *CBSNode  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
-	Children []CBSNode `gorm:"foreignKey:ParentID" json:"children,omitempty"`
+	Project    *Project    `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
+	Parent     *CBSNode    `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
+	Children   []CBSNode   `gorm:"foreignKey:ParentID" json:"children,omitempty"`
+	COAAccount *COAAccount `gorm:"foreignKey:COAAccountID" json:"coa_account,omitempty"`
 
 	// Computed fields (not stored in DB)
 	ActualCost int64 `gorm:"-" json:"actual_cost"`

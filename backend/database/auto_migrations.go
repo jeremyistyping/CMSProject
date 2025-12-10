@@ -79,6 +79,11 @@ func RunAutoMigrations(db *gorm.DB) error {
 		log.Printf("⚠️  ACTIVITY_LOGS USER_ID FIX FAILED: %v", err)
 	}
 
+	// Ensure project_budgets table exists
+	if err := ensureProjectBudgetsTable(db); err != nil {
+		log.Printf("⚠️  PROJECT_BUDGETS TABLE CREATION FAILED: %v", err)
+	}
+
 	log.Println("✅ Auto-migrations completed")
 	return nil
 }
@@ -364,5 +369,148 @@ func ensureStandardPurchaseApprovalWorkflow(db *gorm.DB) error {
 	}
 
 	log.Println("✅ Created Standard Purchase Approval workflow with 5 steps")
+	return nil
+}
+
+// ensureProjectBudgetsTable ensures the project_budgets table exists with correct structure
+func ensureProjectBudgetsTable(db *gorm.DB) error {
+	// Check if table already exists
+	var tableExists bool
+	err := db.Raw(`
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables 
+			WHERE table_schema = 'public' 
+			AND table_name = 'project_budgets'
+		)
+	`).Scan(&tableExists).Error
+
+	if err != nil {
+		return fmt.Errorf("failed to check if project_budgets table exists: %v", err)
+	}
+
+	if tableExists {
+		// Table exists, check if account_id column exists
+		var accountIdExists bool
+		err := db.Raw(`
+			SELECT EXISTS (
+				SELECT FROM information_schema.columns 
+				WHERE table_schema = 'public' 
+				AND table_name = 'project_budgets'
+				AND column_name = 'account_id'
+			)
+		`).Scan(&accountIdExists).Error
+
+		if err != nil {
+			return fmt.Errorf("failed to check if account_id column exists: %v", err)
+		}
+
+		if !accountIdExists {
+			log.Println("🔄 Adding account_id column to project_budgets table...")
+			
+			// Add account_id column
+			if err := db.Exec(`
+				ALTER TABLE project_budgets 
+				ADD COLUMN account_id INTEGER REFERENCES coa_accounts(id) ON DELETE RESTRICT
+			`).Error; err != nil {
+				return fmt.Errorf("failed to add account_id column: %v", err)
+			}
+
+			// Make category column nullable for backward compatibility
+			if err := db.Exec(`
+				ALTER TABLE project_budgets 
+				ALTER COLUMN category DROP NOT NULL
+			`).Error; err != nil {
+				log.Printf("⚠️  Warning: Failed to make category nullable: %v", err)
+			}
+
+			// Create index
+			if err := db.Exec(`
+				CREATE INDEX IF NOT EXISTS idx_project_budgets_account_id ON project_budgets(account_id)
+			`).Error; err != nil {
+				log.Printf("⚠️  Warning: Failed to create index on account_id: %v", err)
+			}
+
+			log.Println("✅ account_id column added to project_budgets table")
+		} else {
+			log.Println("✅ project_budgets table already has correct structure")
+		}
+		return nil
+	}
+
+	log.Println("🔄 Creating project_budgets table...")
+
+	// Create the table
+	createTableSQL := `
+	CREATE TABLE IF NOT EXISTS project_budgets (
+		id SERIAL PRIMARY KEY,
+		project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+		account_id INTEGER NOT NULL REFERENCES coa_accounts(id) ON DELETE RESTRICT,
+		estimated_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		deleted_at TIMESTAMP NULL,
+		
+		CONSTRAINT project_budgets_unique_project_account UNIQUE (project_id, account_id),
+		CONSTRAINT project_budgets_positive_amount CHECK (estimated_amount >= 0)
+	)`
+
+	if err := db.Exec(createTableSQL).Error; err != nil {
+		return fmt.Errorf("failed to create project_budgets table: %v", err)
+	}
+
+	// Create indexes
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS idx_project_budgets_project_id ON project_budgets(project_id)",
+		"CREATE INDEX IF NOT EXISTS idx_project_budgets_account_id ON project_budgets(account_id)",
+		"CREATE INDEX IF NOT EXISTS idx_project_budgets_deleted_at ON project_budgets(deleted_at)",
+	}
+
+	for _, indexSQL := range indexes {
+		if err := db.Exec(indexSQL).Error; err != nil {
+			log.Printf("⚠️  Warning: Failed to create index: %v", err)
+		}
+	}
+
+	// Add comments
+	comments := []string{
+		"COMMENT ON TABLE project_budgets IS 'Budget allocation per project per COA account'",
+		"COMMENT ON COLUMN project_budgets.project_id IS 'Reference to project'",
+		"COMMENT ON COLUMN project_budgets.account_id IS 'Reference to COA account'",
+		"COMMENT ON COLUMN project_budgets.estimated_amount IS 'Estimated budget amount for this project-account combination'",
+		"COMMENT ON COLUMN project_budgets.deleted_at IS 'Soft delete timestamp'",
+	}
+
+	for _, commentSQL := range comments {
+		if err := db.Exec(commentSQL).Error; err != nil {
+			log.Printf("⚠️  Warning: Failed to add comment: %v", err)
+		}
+	}
+
+	// Create trigger function
+	triggerFunctionSQL := `
+	CREATE OR REPLACE FUNCTION update_project_budgets_updated_at()
+	RETURNS TRIGGER AS $$
+	BEGIN
+		NEW.updated_at = CURRENT_TIMESTAMP;
+		RETURN NEW;
+	END;
+	$$ LANGUAGE plpgsql`
+
+	if err := db.Exec(triggerFunctionSQL).Error; err != nil {
+		log.Printf("⚠️  Warning: Failed to create trigger function: %v", err)
+	}
+
+	// Create trigger
+	triggerSQL := `
+	CREATE TRIGGER trigger_update_project_budgets_updated_at
+		BEFORE UPDATE ON project_budgets
+		FOR EACH ROW
+		EXECUTE FUNCTION update_project_budgets_updated_at()`
+
+	if err := db.Exec(triggerSQL).Error; err != nil {
+		log.Printf("⚠️  Warning: Failed to create trigger: %v", err)
+	}
+
+	log.Println("✅ project_budgets table created successfully")
 	return nil
 }

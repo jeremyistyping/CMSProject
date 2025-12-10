@@ -139,6 +139,17 @@ func (c *PurchaseRequestController) UpdateStatus(ctx *gin.Context) {
 		return
 	}
 
+	// IMPORTANT: If PR is approved, trigger expense creation
+	if req.Status == "APPROVED" {
+		fmt.Printf("🔄 Creating expenses for approved PR %d...\n", uint(id))
+		if err := c.service.CreateExpenseFromApprovedPR(uint(id)); err != nil {
+			fmt.Printf("⚠️ Failed to create expenses for PR %d: %v\n", uint(id), err)
+			// Log error but don't fail the status update
+		} else {
+			fmt.Printf("✅ Successfully created expenses for PR %d\n", uint(id))
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Status updated successfully"})
 }
 

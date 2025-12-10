@@ -17,7 +17,7 @@ import {
     HStack,
     Tooltip,
 } from '@chakra-ui/react';
-import { FiMoreVertical, FiEye, FiCheck, FiX, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiMoreVertical, FiEye, FiCheck, FiX, FiEdit, FiTrash2, FiShoppingCart, FiPackage, FiDownload, FiFileText } from 'react-icons/fi';
 import { PurchaseRequest } from '../../types/purchaseRequest';
 
 interface PRListProps {
@@ -28,9 +28,13 @@ interface PRListProps {
     onApprove?: (pr: PurchaseRequest) => void;
     onReject?: (pr: PurchaseRequest) => void;
     onVerify?: (pr: PurchaseRequest) => void;
+    onCreatePO?: (pr: PurchaseRequest) => void;
+    onReceiveGoods?: (pr: PurchaseRequest) => void;
+    onDownloadPO?: (pr: PurchaseRequest) => void;
+    onDownloadGR?: (pr: PurchaseRequest) => void;
 }
 
-const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDelete, onApprove, onReject, onVerify }) => {
+const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDelete, onApprove, onReject, onVerify, onCreatePO, onReceiveGoods, onDownloadPO, onDownloadGR }) => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'APPROVED': return 'green';
@@ -39,6 +43,7 @@ const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDel
             case 'PO_CREATED': return 'blue';
             case 'VERIFIED': return 'cyan';
             case 'PENDING_VERIFICATION': return 'purple';
+            case 'COMPLETED': return 'teal';
             default: return 'yellow';
         }
     };
@@ -115,6 +120,26 @@ const PRList: React.FC<PRListProps> = ({ purchaseRequests, onView, onEdit, onDel
                                             {onReject && (pr.status === 'PENDING' || pr.status === 'PENDING_VERIFICATION' || pr.status === 'VERIFIED') && (
                                                 <MenuItem icon={<FiX />} onClick={() => onReject(pr)} color="red.500">
                                                     Reject
+                                                </MenuItem>
+                                            )}
+                                            {onCreatePO && pr.status === 'APPROVED' && (
+                                                <MenuItem icon={<FiShoppingCart />} onClick={() => onCreatePO(pr)} color="blue.500">
+                                                    Create PO
+                                                </MenuItem>
+                                            )}
+                                            {onReceiveGoods && pr.status === 'PO_CREATED' && (
+                                                <MenuItem icon={<FiPackage />} onClick={() => onReceiveGoods(pr)} color="teal.500">
+                                                    Receive Goods
+                                                </MenuItem>
+                                            )}
+                                            {onDownloadPO && (pr.status === 'PO_CREATED' || pr.status === 'COMPLETED') && (
+                                                <MenuItem icon={<FiDownload />} onClick={() => onDownloadPO(pr)} color="blue.600">
+                                                    Download PO (PDF)
+                                                </MenuItem>
+                                            )}
+                                            {onDownloadGR && pr.status === 'COMPLETED' && (
+                                                <MenuItem icon={<FiFileText />} onClick={() => onDownloadGR(pr)} color="green.600">
+                                                    Download Receipt (PDF)
                                                 </MenuItem>
                                             )}
                                             {onEdit && pr.status === 'PENDING' && (

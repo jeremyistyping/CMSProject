@@ -1,0 +1,13 @@
+# Compiled binaries
+reset_db
+reset_db.exe
+*.exe
+*.out
+
+# Backup files (should be in backend/backups)
+*.sql
+*.dump
+
+# OS files
+.DS_Store
+Thumbs.db

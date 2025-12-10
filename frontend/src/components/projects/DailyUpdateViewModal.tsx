@@ -51,7 +51,6 @@ interface DailyUpdateViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   dailyUpdate: DailyUpdate | null;
-  dailyUpdate: DailyUpdate | null;
   onEdit?: () => void;
   onStatusChange?: () => void;
 }

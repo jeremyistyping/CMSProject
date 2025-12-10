@@ -37,6 +37,7 @@ type PurchaseRequest struct {
 	Requester User                  `json:"requester" gorm:"foreignKey:CreatedBy"`
 	Approver  *User                 `json:"approver,omitempty" gorm:"foreignKey:ApprovedBy"`
 	Verifier  *User                 `json:"verifier,omitempty" gorm:"foreignKey:VerifiedBy"`
+	Vendor    *Vendor               `json:"vendor,omitempty" gorm:"foreignKey:VendorID"`
 	Items     []PurchaseRequestItem `json:"items" gorm:"foreignKey:PurchaseRequestID"`
 }
 
@@ -44,7 +45,8 @@ type PurchaseRequestItem struct {
 	ID                uint    `json:"id" gorm:"primaryKey"`
 	PurchaseRequestID uint    `json:"purchase_request_id" gorm:"not null;index"`
 	ItemName          string  `json:"item_name" gorm:"not null;size:255"` // Can be free text or product name
-	ProductID         *uint   `json:"product_id" gorm:"index"`            // Optional link to product catalog
+	ProductID         *uint   `json:"product_id" gorm:"index"`            // Optional link to product catalog (legacy)
+	MaterialID        *uint   `json:"material_id" gorm:"index"`           // Link to master material
 	Quantity          float64 `json:"quantity" gorm:"type:decimal(10,2);not null"`
 	Unit              string  `json:"unit" gorm:"size:50"`
 	EstimatedPrice    float64 `json:"estimated_price" gorm:"type:decimal(15,2);default:0"`
@@ -57,15 +59,19 @@ type PurchaseRequestItem struct {
 
 	// Relations
 	PurchaseRequest PurchaseRequest `json:"purchase_request" gorm:"foreignKey:PurchaseRequestID"`
+	Material        *Material       `json:"material,omitempty" gorm:"foreignKey:MaterialID"`
 }
 
 // Purchase Request Status Constants
 const (
-	PRStatusPending   = "PENDING"
-	PRStatusApproved  = "APPROVED"
-	PRStatusRejected  = "REJECTED"
-	PRStatusRevision  = "REVISION"
-	PRStatusPOCreated = "PO_CREATED"
+	PRStatusPending             = "PENDING"
+	PRStatusPendingVerification = "PENDING_VERIFICATION"
+	PRStatusVerified            = "VERIFIED"
+	PRStatusApproved            = "APPROVED"
+	PRStatusRejected            = "REJECTED"
+	PRStatusRevision            = "REVISION"
+	PRStatusPOCreated           = "PO_CREATED"
+	PRStatusCompleted           = "COMPLETED"
 )
 
 // MaterialImpact represents the estimated impact of a PR on material stock

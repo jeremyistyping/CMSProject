@@ -47,7 +47,7 @@ type ModulePermission struct {
 }
 
 // GetDefaultPermissions returns default permissions based on role
-// Modules: projects, cost_control, material_tracking, cbs, purchase_requests, daily_reports, settings
+// Modules: projects, cost_control, material_tracking, cbs, purchase_requests, daily_reports, master_data, settings
 // Role Responsibilities:
 // - admin: Full system access
 // - managing_director: Final approval authority, view all
@@ -55,14 +55,15 @@ type ModulePermission struct {
 // - project_director: Project management, approve daily reports & purchase requests
 // - gm: Approve daily reports, view cost control
 // - finance: Cost control & purchase request management
-// - cost_control: CBS, material tracking, budget analysis
-// - purchasing: Create & manage purchase requests
+// - cost_control: CBS, material tracking, budget analysis, master data management
+// - purchasing: Create & manage purchase requests, manage materials & vendors
 // - inventory_manager: Material tracking & inventory
 // - employee: Daily reports input only
 func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	permissions := make(map[string]*ModulePermission)
 	// Cost Control focused modules
-	modules := []string{"projects", "cost_control", "material_tracking", "cbs", "purchase_requests", "daily_reports", "settings"}
+	// Note: daily_updates is an alias for daily_reports (used by routes)
+	modules := []string{"projects", "cost_control", "material_tracking", "cbs", "purchase_requests", "daily_reports", "daily_updates", "master_data", "settings"}
 
 	switch role {
 	case "admin":
@@ -118,7 +119,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if module == "projects" || module == "cost_control" || module == "material_tracking" || module == "cbs" || module == "daily_reports" {
+			} else if module == "projects" || module == "cost_control" || module == "material_tracking" || module == "cbs" || module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -154,7 +155,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if module == "daily_reports" {
+			} else if module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -200,7 +201,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	case "gm":
 		// GM (General Manager): Approve daily reports, view all cost control modules
 		for _, module := range modules {
-			if module == "daily_reports" {
+			if module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -256,7 +257,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if module == "projects" || module == "material_tracking" || module == "cbs" || module == "daily_reports" {
+			} else if module == "projects" || module == "material_tracking" || module == "cbs" || module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -280,9 +281,9 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 		}
 
 	case "cost_control":
-		// Cost Control: Full access to CBS, material tracking, budget analysis
+		// Cost Control: Full access to CBS, material tracking, budget analysis, master data
 		for _, module := range modules {
-			if module == "cbs" || module == "material_tracking" {
+			if module == "cbs" || module == "material_tracking" || module == "master_data" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  true,
@@ -312,7 +313,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanExport:  true,
 					CanMenu:    true,
 				}
-			} else if module == "projects" || module == "daily_reports" {
+			} else if module == "projects" || module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  false,
@@ -336,7 +337,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 		}
 
 	case "purchasing":
-		// Purchasing: Create & manage purchase requests
+		// Purchasing: Create & manage purchase requests, manage materials & vendors
 		for _, module := range modules {
 			if module == "purchase_requests" {
 				permissions[module] = &ModulePermission{
@@ -344,6 +345,17 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 					CanCreate:  true,
 					CanEdit:    true,
 					CanDelete:  true,
+					CanApprove: false,
+					CanExport:  true,
+					CanMenu:    true,
+				}
+			} else if module == "master_data" {
+				// Purchasing can manage materials and vendors (not COA)
+				permissions[module] = &ModulePermission{
+					CanView:    true,
+					CanCreate:  true,
+					CanEdit:    true,
+					CanDelete:  false,
 					CanApprove: false,
 					CanExport:  true,
 					CanMenu:    true,
@@ -420,7 +432,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	case "field_officer", "site_manager":
 		// Field Team: Input daily reports, view projects, record material usage
 		for _, module := range modules {
-			if module == "daily_reports" {
+			if module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  true,
@@ -466,7 +478,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	case "employee":
 		// Employee: View projects, create daily reports
 		for _, module := range modules {
-			if module == "daily_reports" {
+			if module == "daily_reports" || module == "daily_updates" {
 				permissions[module] = &ModulePermission{
 					CanView:    true,
 					CanCreate:  true,

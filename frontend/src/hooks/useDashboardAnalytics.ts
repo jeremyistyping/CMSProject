@@ -2,24 +2,51 @@ import { useState, useEffect, useRef } from 'react';
 import api from '@/services/api';
 import { API_ENDPOINTS } from '@/config/api';
 
-// Define the structure of the analytics data
-interface DashboardAnalytics {
-  totalSales: number;
-  totalPurchases: number;
-  accountsReceivable: number;
-  accountsPayable: number;
+// Define the structure of the analytics data for Project Management System
+export interface ProjectSummary {
+  id: number;
+  name: string;
+  status: string;
+  progress: number;
+  budget: number;
+  created_at: string;
+}
+
+export interface PurchaseRequestSummary {
+  id: number;
+  pr_number: string;
+  project_name: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+}
+
+export interface MonthlyData {
+  month: string;
+  value: number;
+}
+
+export interface DashboardAnalytics {
+  // Project statistics
+  totalProjects: number;
+  activeProjects: number;
+  completedProjects: number;
   
-  // Growth percentages
-  salesGrowth: number;
-  purchasesGrowth: number;
-  receivablesGrowth: number;
-  payablesGrowth: number;
+  // Purchase Request statistics
+  totalPurchaseRequests: number;
+  pendingApprovals: number;
   
-  monthlySales: { month: string; value: number }[];
-  monthlyPurchases: { month: string; value: number }[];
-  cashFlow: { month: string; inflow: number; outflow: number; balance: number }[];
-  topAccounts: { name: string; balance: number; type: string }[];
-  recentTransactions: any[];
+  // Budget statistics
+  totalBudget: number;
+  totalSpent: number;
+  
+  // Monthly data for charts
+  monthlyProjects: MonthlyData[];
+  monthlyPRs: MonthlyData[];
+  
+  // Recent data
+  recentProjects: ProjectSummary[];
+  recentPurchaseRequests: PurchaseRequestSummary[];
 }
 
 // Cache for analytics data with timestamp
@@ -29,7 +56,7 @@ interface CacheEntry {
 }
 
 const analyticsCache: { current: CacheEntry | null } = { current: null };
-const CACHE_DURATION = 30000; // 30 seconds cache
+const CACHE_DURATION = 5000; // 5 seconds cache for faster updates
 
 export const useDashboardAnalytics = (user: any, token: string | null) => {
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
@@ -45,7 +72,7 @@ export const useDashboardAnalytics = (user: any, token: string | null) => {
 
     // Check if user has required role
     const userRoleNormalized = user.role?.toString().toLowerCase();
-    if (!['admin', 'director', 'finance'].includes(userRoleNormalized)) {
+    if (!['admin', 'project_director', 'gm', 'managing_director', 'cost_control'].includes(userRoleNormalized)) {
       setLoading(false);
       return;
     }
@@ -76,20 +103,23 @@ export const useDashboardAnalytics = (user: any, token: string | null) => {
         console.log('User:', user);
         console.log('Token length:', token?.length);
         console.log('User role:', user.role);
-        console.log('User role normalized:', user.role?.toString().toLowerCase());
         
         console.log('🌐 Making API request to', API_ENDPOINTS.DASHBOARD_ANALYTICS);
         const response = await api.get(API_ENDPOINTS.DASHBOARD_ANALYTICS);
         
-        console.log('✅ Dashboard analytics response received:', Object.keys(response.data));
+        console.log('✅ Dashboard analytics response received:', response.data);
+        
+        // Extract analytics from nested response { success: true, data: {...} }
+        const analyticsData = response.data.data || response.data;
+        console.log('📊 Analytics data:', analyticsData);
         
         // Update cache
         analyticsCache.current = {
-          data: response.data,
+          data: analyticsData,
           timestamp: Date.now()
         };
         
-        setAnalytics(response.data);
+        setAnalytics(analyticsData);
         setError(null);
       } catch (err: any) {
         console.error('❌ Failed to fetch dashboard analytics:', err);

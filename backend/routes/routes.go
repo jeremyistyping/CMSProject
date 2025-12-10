@@ -118,14 +118,21 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 	// Approval service for purchase requests
 	approvalService := services.NewApprovalService(db)
 
-	// Purchase Request
+	// Purchase Request with expense integration
 	cbsRepo := repositories.NewCBSRepository(db)
 	prRepo := repositories.NewPurchaseRequestRepository(db)
-	prService := services.NewPurchaseRequestService(prRepo, cbsRepo, db, approvalService)
+	expenseRepo := repositories.NewExpenseTransactionRepository(db)
+	materialRepo := repositories.NewMaterialRepository(db)
+	prService := services.NewPurchaseRequestService(prRepo, cbsRepo, db, approvalService, expenseRepo, materialRepo)
 	prController := controllers.NewPurchaseRequestController(prService)
 
+	// Setup approval callback to connect approval service to PR service
+	approvalCallback := services.NewApprovalCallbackHandler(prService)
+	approvalService.SetPostApprovalCallback(approvalCallback)
+
 	// CBS (Cost Breakdown Structure)
-	cbsService := services.NewCBSService(cbsRepo)
+	projectBudgetRepo := repositories.NewProjectBudgetRepository(db)
+	cbsService := services.NewCBSService(cbsRepo, projectBudgetRepo)
 	cbsController := controllers.NewCBSController(cbsService)
 
 	// Employee dashboard and approval handlers
@@ -259,6 +266,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 				pr.DELETE("/:id", permMiddleware.CanDelete("purchases"), prController.Delete)
 				pr.PATCH("/:id/status", permMiddleware.CanApprove("purchases"), prController.UpdateStatus)
 				pr.GET("/:id/material-impact", permMiddleware.CanView("purchases"), prController.GetMaterialImpact)
+				// CBS Verification routes
+				pr.POST("/:id/verify", permMiddleware.CanApprove("purchases"), cbsController.VerifyPurchaseRequest)
+				pr.GET("/:id/cbs-mappings", permMiddleware.CanView("purchases"), cbsController.GetPRCBSMappings)
 			}
 
 			// Approval workflows routes
@@ -356,6 +366,15 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, startupService *services.StartupSer
 
 			// Project routes
 			SetupProjectRoutes(protected, db, permMiddleware)
+
+			// Master Data routes (COA, Materials, Vendors)
+			SetupMasterDataRoutes(protected, db, permMiddleware)
+
+			// Expense Transaction routes
+			SetupExpenseTransactionRoutes(protected, db, permMiddleware)
+
+			// Purchase Order routes
+			SetupPurchaseOrderRoutes(protected, db, jwtManager)
 		}
 	}
 

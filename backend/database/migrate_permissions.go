@@ -21,15 +21,48 @@ func MigratePermissions(db *gorm.DB) error {
 		return err
 	}
 	
-modules := []string{"accounts", "products", "contacts", "assets", "sales", "purchases", "payments", "cash_bank", "cost_control", "reports", "settings"}
+	modules := []string{"projects", "cost_control", "material_tracking", "cbs", "purchase_requests", "daily_reports", "daily_updates", "master_data", "settings"}
 	
 	for _, user := range users {
-		// Check if user already has permissions
+		// Get default permissions based on role
+		defaultPerms := models.GetDefaultPermissions(user.Role)
+		
+		// Check for missing modules and add them
+		for _, module := range modules {
+			var existingPerm models.ModulePermissionRecord
+			err := db.Where("user_id = ? AND module = ?", user.ID, module).First(&existingPerm).Error
+			
+			if err == gorm.ErrRecordNotFound {
+				// Module permission doesn't exist, create it
+				perm := defaultPerms[module]
+				if perm != nil {
+					permission := models.ModulePermissionRecord{
+						UserID:     user.ID,
+						Module:     module,
+						CanView:    perm.CanView,
+						CanCreate:  perm.CanCreate,
+						CanEdit:    perm.CanEdit,
+						CanDelete:  perm.CanDelete,
+						CanApprove: perm.CanApprove,
+						CanExport:  perm.CanExport,
+						CanMenu:    perm.CanMenu,
+					}
+					
+					if err := db.Create(&permission).Error; err != nil {
+						log.Printf("Error creating permission for user %d module %s: %v", user.ID, module, err)
+					} else {
+						log.Printf("✅ Added %s permission for user: %s (role: %s)", module, user.Username, user.Role)
+					}
+				}
+			}
+		}
+		
+		// Legacy: Check if user has NO permissions at all (old behavior)
 		var count int64
 		db.Model(&models.ModulePermissionRecord{}).Where("user_id = ?", user.ID).Count(&count)
 		
 		if count == 0 {
-			// Get default permissions based on role
+			// Get default permissions based on role (redundant but kept for legacy)
 			defaultPerms := models.GetDefaultPermissions(user.Role)
 			
 			// Create permission records for each module

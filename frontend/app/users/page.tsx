@@ -556,12 +556,9 @@ const UsersPage: React.FC = () => {
                       <option value="gm">GM</option>
                       <option value="project_director">Direktur Proyek</option>
                       <option value="managing_director">Direktur Utama</option>
-                      {/* Generic/system roles (kept for compatibility) */}
+                      {/* Generic/system roles */}
                       <option value="employee">Employee</option>
                       <option value="admin">Administrator</option>
-                      <option value="finance">Finance</option>
-                      <option value="director">Director</option>
-                      <option value="inventory_manager">Inventory Manager</option>
                     </Select>
                   </FormControl>
                   <FormControl>

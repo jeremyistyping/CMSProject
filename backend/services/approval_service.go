@@ -15,6 +15,7 @@ import (
 // PostApprovalCallback interface for handling post-approval business logic
 type PostApprovalCallback interface {
 	OnPurchaseApproved(purchaseID uint) error
+	OnPurchaseRequestApproved(prID uint) error
 }
 
 type ApprovalService struct {
@@ -450,9 +451,15 @@ func (s *ApprovalService) ProcessApprovalAction(requestID uint, userID uint, act
 	}
 
 	var purchaseToProcess *uint
-	// Check if we need to trigger post-approval processing for purchase
-	if approvalReq.Status == models.ApprovalStatusApproved && approvalReq.EntityType == models.EntityTypePurchase {
-		purchaseToProcess = &approvalReq.EntityID
+	var prToProcess *uint
+	
+	// Check if we need to trigger post-approval processing
+	if approvalReq.Status == models.ApprovalStatusApproved {
+		if approvalReq.EntityType == models.EntityTypePurchase {
+			purchaseToProcess = &approvalReq.EntityID
+		} else if approvalReq.EntityType == models.EntityTypePurchaseRequest {
+			prToProcess = &approvalReq.EntityID
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -468,6 +475,17 @@ func (s *ApprovalService) ProcessApprovalAction(requestID uint, userID uint, act
 				fmt.Printf("✅ Post-approval processing completed for purchase %d\n", purchaseID)
 			}
 		}(*purchaseToProcess)
+	}
+
+	// POST-APPROVAL PROCESSING: Create expense transactions for approved PRs
+	if prToProcess != nil && s.postApprovalCallback != nil {
+		go func(prID uint) {
+			if err := s.postApprovalCallback.OnPurchaseRequestApproved(prID); err != nil {
+				fmt.Printf("⚠️ Post-approval processing failed for PR %d: %v\n", prID, err)
+			} else {
+				fmt.Printf("✅ Post-approval processing completed for PR %d - expense transactions created\n", prID)
+			}
+		}(*prToProcess)
 	}
 
 	// Send notification to requester
@@ -486,7 +504,7 @@ func (s *ApprovalService) GetApprovalRequests(userID uint, userRole string, stat
 	userRoleNorm := strings.ToLower(strings.TrimSpace(userRole))
 
 	// Filter by user permissions
-	if userRoleNorm != "admin" && userRoleNorm != "director" {
+	if userRoleNorm != "admin" && userRoleNorm != "gm" && userRoleNorm != "project_director" && userRoleNorm != "managing_director" {
 		// Regular users can only see requests they created or need to approve (case-insensitive role match)
 		query = query.Where(
 			"requester_id = ? OR id IN (SELECT DISTINCT request_id FROM approval_actions WHERE is_active = ? AND step_id IN (SELECT id FROM approval_steps WHERE LOWER(approver_role) = LOWER(?)))",

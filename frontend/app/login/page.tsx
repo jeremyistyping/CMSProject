@@ -51,25 +51,25 @@ const LoginContent = () => {
   const toast = useToast();
   const { colorMode } = useColorMode();
 
-  // Black themed design - Fixed colors (no light mode)
-  const bgGradient = 'linear(to-br, gray.900, black, gray.900)';
-  const cardBg = 'gray.900';
-  const headingColor = 'white';
-  const textColor = 'gray.300';
-  const borderColor = 'gray.700';
-  const inputBg = 'gray.800';
-  const featureCardBg = 'gray.800';
-  const iconColor = 'green.400';
-  const accentColor = 'green.500';
-  const inputHoverBorderColor = 'green.500';
-  const inputPlaceholderColor = 'gray.500';
-  const buttonHoverBg = 'green.600';
-  const decorativeElementBg1 = 'rgba(16, 185, 129, 0.1)'; // green with opacity
-  const decorativeElementBg2 = 'rgba(139, 92, 246, 0.1)'; // purple with opacity
-  const passwordToggleHoverBg = 'gray.700';
+  // Professional Green themed design
+  const bgGradient = 'linear(to-br, green.50, white, green.50)';
+  const cardBg = 'white';
+  const headingColor = 'green.800';
+  const textColor = 'gray.700';
+  const borderColor = 'green.200';
+  const inputBg = 'white';
+  const featureCardBg = 'green.50';
+  const iconColor = 'green.600';
+  const accentColor = 'green.600';
+  const inputHoverBorderColor = 'green.400';
+  const inputPlaceholderColor = 'gray.400';
+  const buttonHoverBg = 'green.700';
+  const decorativeElementBg1 = 'rgba(16, 185, 129, 0.15)'; // green with opacity
+  const decorativeElementBg2 = 'rgba(52, 211, 153, 0.1)'; // lighter green with opacity
+  const passwordToggleHoverBg = 'green.100';
   // Error alert colors
-  const errorAlertBg = 'red.900';
-  const errorAlertBorderColor = 'red.700';
+  const errorAlertBg = 'red.50';
+  const errorAlertBorderColor = 'red.300';
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -262,7 +262,7 @@ const LoginContent = () => {
                           <Center
                             w={10}
                             h={10}
-                            bg="gray.700"
+                            bg="green.100"
                             borderRadius="lg"
                           >
                             <FiShield color={iconColor} size={20} />
@@ -292,7 +292,7 @@ const LoginContent = () => {
                           <Center
                             w={10}
                             h={10}
-                            bg="gray.700"
+                            bg="green.100"
                             borderRadius="lg"
                           >
                             <FiTrendingUp color={iconColor} size={20} />
@@ -322,7 +322,7 @@ const LoginContent = () => {
                           <Center
                             w={10}
                             h={10}
-                            bg="gray.700"
+                            bg="green.100"
                             borderRadius="lg"
                           >
                             <FiUsers color={iconColor} size={20} />
@@ -352,7 +352,7 @@ const LoginContent = () => {
                           <Center
                             w={10}
                             h={10}
-                            bg="gray.700"
+                            bg="green.100"
                             borderRadius="lg"
                           >
                             <FiLock color={iconColor} size={20} />
@@ -380,8 +380,8 @@ const LoginContent = () => {
                         borderRadius="full"
                         fontSize="xs"
                         fontWeight="semibold"
-                        bg="green.900"
-                        color="green.200"
+                        bg="green.100"
+                        color="green.700"
                       >
                         ✓ Secure
                       </Badge>
@@ -392,8 +392,8 @@ const LoginContent = () => {
                         borderRadius="full"
                         fontSize="xs"
                         fontWeight="semibold"
-                        bg="green.900"
-                        color="green.200"
+                        bg="green.100"
+                        color="green.700"
                       >
                         ✓ Fast
                       </Badge>
@@ -404,8 +404,8 @@ const LoginContent = () => {
                         borderRadius="full"
                         fontSize="xs"
                         fontWeight="semibold"
-                        bg="green.900"
-                        color="green.200"
+                        bg="green.100"
+                        color="green.700"
                       >
                         ✓ Reliable
                       </Badge>
@@ -534,7 +534,7 @@ const LoginContent = () => {
                               borderColor: accentColor,
                               boxShadow: `0 0 0 1px ${accentColor}`,
                               bg: inputBg,
-                              color: 'white'
+                              color: 'gray.800'
                             }}
                             _placeholder={{
                               color: inputPlaceholderColor
@@ -570,7 +570,7 @@ const LoginContent = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={isSubmitting}
                             bg={inputBg}
-                            color="white"
+                            color="gray.800"
                             borderWidth="2px"
                             borderColor={borderColor}
                             borderRadius="xl"
@@ -583,7 +583,7 @@ const LoginContent = () => {
                               borderColor: accentColor,
                               boxShadow: `0 0 0 1px ${accentColor}`,
                               bg: inputBg,
-                              color: 'white'
+                              color: 'gray.800'
                             }}
                             _placeholder={{
                               color: inputPlaceholderColor
@@ -597,6 +597,7 @@ const LoginContent = () => {
                               icon={showPassword ? <FiEyeOff /> : <FiEye />}
                               onClick={() => setShowPassword(!showPassword)}
                               borderRadius="lg"
+                              color="green.600"
                               _hover={{
                                 bg: passwordToggleHoverBg
                               }}

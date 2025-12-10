@@ -149,13 +149,27 @@ func (c *CBSController) VerifyPurchaseRequest(ctx *gin.Context) {
 	}
 
 	// Get user ID from context
-	userID, exists := ctx.Get("userID")
+	userID, exists := ctx.Get("user_id")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	if err := c.service.VerifyPurchaseRequest(uint(prID), uint(userID.(float64)), req.Mappings, req.Notes); err != nil {
+	// Handle different types for userID
+	var uid uint
+	switch v := userID.(type) {
+	case uint:
+		uid = v
+	case float64:
+		uid = uint(v)
+	case int:
+		uid = uint(v)
+	default:
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
+	if err := c.service.VerifyPurchaseRequest(uint(prID), uid, req.Mappings, req.Notes); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -286,4 +300,22 @@ func (c *CBSController) GetTreeByProject(ctx *gin.Context) {
 		"project_id": projectID,
 		"tree":       nodes,
 	})
+}
+
+// GetProjectBudgetSummary retrieves budget summary for a project
+// GET /api/v1/projects/:id/cbs/summary
+func (c *CBSController) GetProjectBudgetSummary(ctx *gin.Context) {
+	projectID, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
+		return
+	}
+
+	summary, err := c.service.GetProjectBudgetSummary(uint(projectID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, summary)
 }

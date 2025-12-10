@@ -144,11 +144,11 @@ const PurchaseApprovalDashboard: React.FC<PurchaseApprovalDashboardProps> = () =
     
     setProcessing(true);
     try {
-      // Check if user is Finance and wants to escalate to Director
+      // Check if user is Cost Control and wants to escalate to higher level
       const userRole = normalizeRole(user?.role as string);
-      const isFinance = userRole === 'finance';
-      // Remove amount restriction - Finance can escalate any amount to Director
-      const needsEscalation = isFinance && requiresDirector;
+      const isCostControl = userRole === 'cost_control';
+      // Cost Control can escalate to GM/Director
+      const needsEscalation = isCostControl && requiresDirector;
       
       const response = await approvalService.approvePurchase(selectedPurchase.id, {
         comments: comments || undefined,
@@ -158,8 +158,8 @@ const PurchaseApprovalDashboard: React.FC<PurchaseApprovalDashboardProps> = () =
       // Check if it was escalated
       if (response?.escalated) {
         toast({
-          title: 'Escalated to Director',
-          description: response.message || 'Purchase has been escalated to Director for final approval',
+          title: 'Escalated to Management',
+          description: response.message || 'Purchase has been escalated to Management for final approval',
           status: 'info',
           duration: 5000,
           isClosable: true,
@@ -452,14 +452,14 @@ const getPriorityColor = (amount: number) => {
       <VStack spacing={6} align="stretch">
         <Box>
           <Heading size="lg" mb={2}>Purchase Approval Dashboard</Heading>
-          <Text color="gray.600">Menu ini khusus untuk persetujuan oleh peran Finance/Director.</Text>
+          <Text color="gray.600">Menu ini khusus untuk persetujuan oleh peran Cost Control/GM/Direktur.</Text>
         </Box>
         <Card>
           <CardBody>
             <Alert status="info">
               <AlertIcon />
               <AlertTitle mr={2}>Tidak ada item untuk Anda</AlertTitle>
-              <AlertDescription>Persetujuan dilakukan oleh Finance/Director. Anda dapat membuat Purchase dan Submit for Approval dari menu Purchases.</AlertDescription>
+              <AlertDescription>Persetujuan dilakukan oleh Cost Control/GM/Direktur. Anda dapat membuat Purchase dan Submit for Approval dari menu Purchases.</AlertDescription>
             </Alert>
           </CardBody>
         </Card>
@@ -541,8 +541,8 @@ const getPriorityColor = (amount: number) => {
         </Alert>
       )}
 
-      {/* Role-specific Landing Card for Finance/Director */}
-      {(meRole === 'finance' || meRole === 'director') && (
+      {/* Role-specific Landing Card for Cost Control/GM/Directors */}
+      {(meRole === 'cost_control' || meRole === 'gm' || meRole === 'project_director' || meRole === 'managing_director') && (
         <Card>
           <CardBody>
             <HStack justify="space-between">
@@ -852,8 +852,8 @@ const getPriorityColor = (amount: number) => {
                     rows={4}
                   />
                 </FormControl>
-                {/* Show checkbox for Finance role to escalate to Director */}
-                {approvalType === 'approve' && normalizeRole(user?.role as string) === 'finance' && (
+                {/* Show checkbox for Cost Control role to escalate to Management */}
+                {approvalType === 'approve' && normalizeRole(user?.role as string) === 'cost_control' && (
                   <FormControl>
                     <HStack>
                       <input
@@ -863,7 +863,7 @@ const getPriorityColor = (amount: number) => {
                         onChange={(e) => setRequiresDirector(e.target.checked)}
                       />
                       <FormLabel htmlFor="escalateToDirector" mb={0} cursor="pointer">
-                        Eskalasi ke Director untuk persetujuan tambahan
+                        Eskalasi ke Management untuk persetujuan tambahan
                       </FormLabel>
                     </HStack>
                   </FormControl>

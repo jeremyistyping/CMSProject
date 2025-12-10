@@ -24,17 +24,17 @@ import {
     IconButton,
     NumberInput,
     NumberInputField,
-    NumberInputStepper,
-    NumberIncrementStepper,
-    NumberDecrementStepper,
     Textarea,
     Select,
+    Box,
+    Badge,
 } from '@chakra-ui/react';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
-import { useForm, useFieldArray, Control, Controller } from 'react-hook-form';
+import { FiPlus, FiTrash2, FiPackage } from 'react-icons/fi';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import purchaseRequestService from '../../services/purchaseRequestService';
 import projectService from '../../services/projectService';
-import { CreatePRData, PurchaseRequestItem } from '../../types/purchaseRequest';
+import { materialService, vendorService, coaService, Material, Vendor, UnitOfMeasure, COAAccount } from '../../services/masterDataService';
+import { CreatePRData, PurchaseRequest } from '../../types/purchaseRequest';
 import { Project } from '../../types/project';
 
 interface CreatePRModalProps {
@@ -47,6 +47,10 @@ interface CreatePRModalProps {
 const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSuccess, prToEdit }) => {
     const toast = useToast();
     const [projects, setProjects] = useState<Project[]>([]);
+    const [materials, setMaterials] = useState<Material[]>([]);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [uoms, setUoms] = useState<UnitOfMeasure[]>([]);
+    const [coaAccounts, setCoaAccounts] = useState<COAAccount[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     const { control, register, handleSubmit, reset, watch, setValue } = useForm<CreatePRData>({
@@ -63,7 +67,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
 
     useEffect(() => {
         if (isOpen) {
-            fetchProjects();
+            fetchInitialData();
             if (prToEdit) {
                 // Populate form with PR data
                 reset({
@@ -90,14 +94,75 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
         }
     }, [isOpen, prToEdit, reset]);
 
-    const fetchProjects = async () => {
+    const fetchInitialData = async () => {
         try {
-            const data = await projectService.getAllProjects();
-            setProjects(data);
+            const [projectsData, materialsData, vendorsData, uomsData, coaData] = await Promise.all([
+                projectService.getAllProjects(),
+                materialService.getAll({ is_active: true }),
+                vendorService.getAll({ is_active: true }),
+                materialService.getUoM(),
+                coaService.getAll({ is_active: true }),
+            ]);
+            setProjects(projectsData);
+            setMaterials(materialsData.data || []);
+            setVendors(vendorsData.data || []);
+            setUoms(uomsData.data || []);
+            setCoaAccounts(coaData.data || []);
+            
+            // Debug: Log materials to check if COA is included
+            console.log('Materials loaded:', materialsData.data?.slice(0, 2));
+            console.log('COA Accounts loaded:', coaData.data?.slice(0, 2));
         } catch (error) {
-            console.error('Error fetching projects:', error);
+            console.error('Error fetching initial data:', error);
         }
     };
+
+    const handleMaterialSelect = (index: number, materialId: string) => {
+        if (!materialId) return;
+        const material = materials.find(m => m.id === parseInt(materialId));
+        if (material) {
+            setValue(`items.${index}.item_name`, material.name);
+            setValue(`items.${index}.unit`, material.unit);
+            setValue(`items.${index}.estimated_price`, material.unit_price);
+            setValue(`items.${index}.material_id`, material.id);
+            
+            // Set COA from material if available
+            if (material.coa_account_id) {
+                setValue(`items.${index}.coa_account_id` as any, material.coa_account_id);
+            }
+            
+            // Debug log
+            console.log('Material selected:', material);
+        }
+    };
+
+    // Helper to get COA info for an item
+    const getItemCOAInfo = (index: number) => {
+        const item = watchedItems[index];
+        
+        // First try to get from selected COA
+        if (item?.coa_account_id) {
+            const coa = coaAccounts.find(c => c.id === item.coa_account_id);
+            if (coa) return coa;
+        }
+        
+        // Then try to get from material
+        if (item?.material_id) {
+            const material = materials.find(m => m.id === item.material_id);
+            if (material?.coa_account_id) {
+                const coa = coaAccounts.find(c => c.id === material.coa_account_id);
+                if (coa) return coa;
+            }
+            // If material has coa_account object directly
+            if (material?.coa_account) {
+                return material.coa_account;
+            }
+        }
+        
+        return null;
+    };
+
+
 
     const onSubmit = async (data: CreatePRData) => {
         try {
@@ -105,7 +170,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
             // Calculate total price for each item
             const itemsWithTotal = data.items.map(item => ({
                 ...item,
-                total_price: item.quantity * item.estimated_price
+                total_price: (item.quantity || 0) * (item.estimated_price || 0)
             }));
 
             // Format dates to ISO string for backend (RFC3339)
@@ -118,7 +183,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
 
             if (prToEdit) {
                 // Update existing PR
-                await purchaseRequestService.update(prToEdit.id, formattedData);
+                await purchaseRequestService.update(prToEdit.id, formattedData as any);
                 toast({
                     title: 'Success',
                     description: 'Purchase Request updated successfully',
@@ -170,7 +235,7 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
                 <ModalBody>
                     <VStack spacing={4} align="stretch">
                         <HStack spacing={4}>
-                            <FormControl isRequired>
+                            <FormControl isRequired flex={2}>
                                 <FormLabel>Project</FormLabel>
                                 <Select placeholder="Select project" {...register('project_id', { required: true, valueAsNumber: true })}>
                                     {projects.map((project) => (
@@ -180,6 +245,18 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
                                     ))}
                                 </Select>
                             </FormControl>
+                            <FormControl flex={1}>
+                                <FormLabel>Vendor (Optional)</FormLabel>
+                                <Select placeholder="Select vendor" {...register('vendor_id', { valueAsNumber: true })}>
+                                    {vendors.map((vendor) => (
+                                        <option key={vendor.id} value={vendor.id}>
+                                            {vendor.name}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </HStack>
+                        <HStack spacing={4}>
                             <FormControl isRequired>
                                 <FormLabel>Request Date</FormLabel>
                                 <Input type="date" {...register('request_date', { required: true })} />
@@ -195,81 +272,130 @@ const CreatePRModal: React.FC<CreatePRModalProps> = ({ isOpen, onClose, onSucces
                             <Textarea {...register('notes')} placeholder="General notes for this request" />
                         </FormControl>
 
-                        <Text fontWeight="bold" mt={4}>Items</Text>
-                        <Table size="sm" variant="simple">
-                            <Thead>
-                                <Tr>
-                                    <Th>Item Name</Th>
-                                    <Th width="140px">Qty</Th>
-                                    <Th width="100px">Unit</Th>
-                                    <Th width="150px">Est. Price</Th>
-                                    <Th width="150px">Total</Th>
-                                    <Th width="50px"></Th>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {fields.map((field, index) => (
-                                    <Tr key={field.id}>
-                                        <Td>
-                                            <Input {...register(`items.${index}.item_name` as const, { required: true })} placeholder="Item name" size="sm" />
-                                        </Td>
-                                        <Td>
-                                            <Controller
-                                                name={`items.${index}.quantity`}
-                                                control={control}
-                                                rules={{ required: true }}
-                                                render={({ field }) => (
-                                                    <NumberInput
-                                                        size="sm"
-                                                        min={0}
-                                                        precision={2}
-                                                        step={1}
-                                                        value={field.value}
-                                                        onChange={(val) => field.onChange(Number(val))}
-                                                    >
-                                                        <NumberInputField />
-                                                        <NumberInputStepper>
-                                                            <NumberIncrementStepper />
-                                                            <NumberDecrementStepper />
-                                                        </NumberInputStepper>
-                                                    </NumberInput>
-                                                )}
-                                            />
-                                        </Td>
-                                        <Td>
-                                            <Select {...register(`items.${index}.unit` as const)} size="sm" placeholder="-">
-                                                <option value="Pcs">Pcs</option>
-                                                <option value="Kg">Kg</option>
-                                                <option value="Set">Set</option>
-                                                <option value="Ltr">Ltr</option>
-                                                <option value="Mtr">Mtr</option>
-                                            </Select>
-                                        </Td>
-                                        <Td>
-                                            <Input type="number" step="100" {...register(`items.${index}.estimated_price` as const, { valueAsNumber: true })} size="sm" />
-                                        </Td>
-                                        <Td>
-                                            <Text fontSize="sm">
-                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(
-                                                    (watchedItems[index]?.quantity || 0) * (watchedItems[index]?.estimated_price || 0)
-                                                )}
-                                            </Text>
-                                        </Td>
-                                        <Td>
-                                            <IconButton
-                                                aria-label="Remove item"
-                                                icon={<FiTrash2 />}
-                                                size="xs"
-                                                colorScheme="red"
-                                                onClick={() => remove(index)}
-                                            />
-                                        </Td>
+                        <HStack justify="space-between" mt={4}>
+                            <Text fontWeight="bold">Items</Text>
+                            <Badge colorScheme="blue" fontSize="xs">
+                                <FiPackage style={{ display: 'inline', marginRight: 4 }} />
+                                Pilih dari Master Material atau input manual
+                            </Badge>
+                        </HStack>
+                        <Box overflowX="auto">
+                            <Table size="sm" variant="simple">
+                                <Thead>
+                                    <Tr>
+                                        <Th width="200px">Material</Th>
+                                        <Th>Item Name</Th>
+                                        <Th width="150px">COA / Budget Category</Th>
+                                        <Th width="100px">Qty</Th>
+                                        <Th width="80px">Unit</Th>
+                                        <Th width="130px">Est. Price</Th>
+                                        <Th width="130px">Total</Th>
+                                        <Th width="40px"></Th>
                                     </Tr>
-                                ))}
-                            </Tbody>
-                        </Table>
+                                </Thead>
+                                <Tbody>
+                                    {fields.map((field, index) => {
+                                        const coaInfo = getItemCOAInfo(index);
+                                        return (
+                                            <Tr key={field.id}>
+                                                <Td>
+                                                    <Select
+                                                        size="sm"
+                                                        placeholder="Pilih material..."
+                                                        onChange={(e) => handleMaterialSelect(index, e.target.value)}
+                                                    >
+                                                        {materials.map((mat) => (
+                                                            <option key={mat.id} value={mat.id}>
+                                                                {mat.code} - {mat.name}
+                                                            </option>
+                                                        ))}
+                                                    </Select>
+                                                </Td>
+                                                <Td>
+                                                    <Input {...register(`items.${index}.item_name` as const, { required: true })} placeholder="Item name" size="sm" />
+                                                </Td>
+                                                <Td>
+                                                    <VStack align="start" spacing={1} width="100%">
+                                                        <Select
+                                                            size="xs"
+                                                            placeholder="Pilih COA..."
+                                                            {...register(`items.${index}.coa_account_id` as any, { valueAsNumber: true })}
+                                                            value={watchedItems[index]?.coa_account_id || ''}
+                                                        >
+                                                            {coaAccounts.map((coa) => (
+                                                                <option key={coa.id} value={coa.id}>
+                                                                    {coa.code} - {coa.name}
+                                                                </option>
+                                                            ))}
+                                                        </Select>
+                                                        {coaInfo && (
+                                                            <HStack spacing={1} flexWrap="wrap">
+                                                                <Badge colorScheme="green" fontSize="xx-small">
+                                                                    {coaInfo.budget_category?.replace('_', ' ')}
+                                                                </Badge>
+                                                                {coaInfo.work_package && (
+                                                                    <Badge colorScheme="blue" fontSize="xx-small">
+                                                                        {coaInfo.work_package}
+                                                                    </Badge>
+                                                                )}
+                                                            </HStack>
+                                                        )}
+                                                    </VStack>
+                                                </Td>
+                                                <Td>
+                                                    <Controller
+                                                        name={`items.${index}.quantity`}
+                                                        control={control}
+                                                        rules={{ required: true }}
+                                                        render={({ field }) => (
+                                                            <NumberInput
+                                                                size="sm"
+                                                                min={0}
+                                                                precision={2}
+                                                                step={1}
+                                                                value={field.value}
+                                                                onChange={(val) => field.onChange(Number(val))}
+                                                            >
+                                                                <NumberInputField />
+                                                            </NumberInput>
+                                                        )}
+                                                    />
+                                                </Td>
+                                                <Td>
+                                                    <Select {...register(`items.${index}.unit` as const)} size="sm" placeholder="-">
+                                                        {uoms.map((u) => (
+                                                            <option key={u.id} value={u.code}>{u.code}</option>
+                                                        ))}
+                                                    </Select>
+                                                </Td>
+                                                <Td>
+                                                    <Input type="number" step="100" {...register(`items.${index}.estimated_price` as const, { valueAsNumber: true })} size="sm" />
+                                                </Td>
+                                                <Td>
+                                                    <Text fontSize="sm" fontWeight="medium">
+                                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(
+                                                            (watchedItems[index]?.quantity || 0) * (watchedItems[index]?.estimated_price || 0)
+                                                        )}
+                                                    </Text>
+                                                </Td>
+                                                <Td>
+                                                    <IconButton
+                                                        aria-label="Remove item"
+                                                        icon={<FiTrash2 />}
+                                                        size="xs"
+                                                        colorScheme="red"
+                                                        variant="ghost"
+                                                        onClick={() => remove(index)}
+                                                    />
+                                                </Td>
+                                            </Tr>
+                                        );
+                                    })}
+                                </Tbody>
+                            </Table>
+                        </Box>
 
-                        <Button leftIcon={<FiPlus />} onClick={() => append({ item_name: '', quantity: 1, unit: '', estimated_price: 0, total_price: 0, notes: '' })} size="sm" alignSelf="start">
+                        <Button leftIcon={<FiPlus />} onClick={() => append({ item_name: '', quantity: 1, unit: '', estimated_price: 0, total_price: 0, notes: '', material_id: undefined })} size="sm" alignSelf="start" colorScheme="blue" variant="outline">
                             Add Item
                         </Button>
 

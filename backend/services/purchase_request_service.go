@@ -20,6 +20,7 @@ type PurchaseRequestService interface {
 	VerifyPR(prID uint, mappings []models.PRCBSMapping, verifierID uint, notes string) error
 	GetPRCBSMappings(prID uint) ([]models.PRCBSMapping, error)
 	ValidateCBSAllocation(prID uint, mappings []models.PRCBSMapping) error
+	CreateExpenseFromApprovedPR(prID uint) error
 }
 
 type purchaseRequestService struct {
@@ -27,10 +28,26 @@ type purchaseRequestService struct {
 	cbsRepo         repositories.CBSRepository
 	db              *gorm.DB
 	approvalService *ApprovalService
+	expenseRepo     repositories.ExpenseTransactionRepository
+	materialRepo    repositories.MaterialRepository
 }
 
-func NewPurchaseRequestService(repo repositories.PurchaseRequestRepository, cbsRepo repositories.CBSRepository, db *gorm.DB, approvalService *ApprovalService) PurchaseRequestService {
-	return &purchaseRequestService{repo, cbsRepo, db, approvalService}
+func NewPurchaseRequestService(
+	repo repositories.PurchaseRequestRepository,
+	cbsRepo repositories.CBSRepository,
+	db *gorm.DB,
+	approvalService *ApprovalService,
+	expenseRepo repositories.ExpenseTransactionRepository,
+	materialRepo repositories.MaterialRepository,
+) PurchaseRequestService {
+	return &purchaseRequestService{
+		repo:            repo,
+		cbsRepo:         cbsRepo,
+		db:              db,
+		approvalService: approvalService,
+		expenseRepo:     expenseRepo,
+		materialRepo:    materialRepo,
+	}
 }
 
 func (s *purchaseRequestService) CreatePR(pr *models.PurchaseRequest) error {
@@ -254,6 +271,109 @@ func (s *purchaseRequestService) ValidateCBSAllocation(prID uint, mappings []mod
 
 	if totalAllocated != prTotalCents {
 		return fmt.Errorf("CBS allocation (%d) does not match PR total (%d)", totalAllocated, prTotalCents)
+	}
+
+	return nil
+}
+
+// CreateExpenseFromApprovedPR creates expense transactions when a PR is approved
+func (s *purchaseRequestService) CreateExpenseFromApprovedPR(prID uint) error {
+	fmt.Printf("📝 [CreateExpenseFromApprovedPR] Starting for PR ID: %d\n", prID)
+	
+	// Get PR with items
+	pr, err := s.repo.FindByID(prID)
+	if err != nil {
+		fmt.Printf("❌ [CreateExpenseFromApprovedPR] Failed to get PR %d: %v\n", prID, err)
+		return fmt.Errorf("failed to get PR: %w", err)
+	}
+	fmt.Printf("📋 [CreateExpenseFromApprovedPR] Found PR: %s, Status: %s, Items: %d\n", pr.Code, pr.Status, len(pr.Items))
+
+	// Only create expenses for approved PRs
+	if pr.Status != models.PRStatusApproved {
+		fmt.Printf("⚠️  [CreateExpenseFromApprovedPR] PR is not approved, status: %s\n", pr.Status)
+		return fmt.Errorf("PR is not approved, status: %s", pr.Status)
+	}
+
+	createdCount := 0
+	skippedCount := 0
+	errorCount := 0
+
+	// Create expense transaction for each PR item
+	for i, item := range pr.Items {
+		fmt.Printf("🔍 [CreateExpenseFromApprovedPR] Processing item %d/%d: %s (ID: %d)\n", i+1, len(pr.Items), item.ItemName, item.ID)
+		
+		// Determine COA account ID
+		var coaAccountID uint
+		var description string
+
+		// Try to get COA from material
+		if item.MaterialID != nil {
+			fmt.Printf("   📦 Material ID: %d\n", *item.MaterialID)
+			material, err := s.materialRepo.GetByID(*item.MaterialID)
+			if err != nil {
+				fmt.Printf("   ⚠️  Failed to get material %d: %v\n", *item.MaterialID, err)
+			} else if material == nil {
+				fmt.Printf("   ⚠️  Material %d not found\n", *item.MaterialID)
+			} else {
+				fmt.Printf("   📦 Material found: %s (Code: %s)\n", material.Name, material.Code)
+				if material.COAAccountID != nil {
+					coaAccountID = *material.COAAccountID
+					description = fmt.Sprintf("PR-%s: %s (Material: %s)", pr.Code, item.ItemName, material.Name)
+					fmt.Printf("   ✅ COA Account ID: %d\n", coaAccountID)
+				} else {
+					fmt.Printf("   ⚠️  Material has no COA mapping\n")
+				}
+			}
+		} else {
+			fmt.Printf("   ⚠️  Item has no material_id\n")
+		}
+
+		// If no COA from material, skip this item (or use default COA)
+		if coaAccountID == 0 {
+			// Log warning but continue
+			fmt.Printf("   ⏭️  Skipping: No COA found for PR item %d (%s)\n", item.ID, item.ItemName)
+			skippedCount++
+			continue
+		}
+
+		// Create expense transaction
+		expense := &models.ExpenseTransaction{
+			ProjectID:       pr.ProjectID,
+			TransactionDate: time.Now(),
+			COAAccountID:    coaAccountID,
+			Description:     description,
+			Amount:          item.TotalPrice,
+			Unit:            item.Unit,
+			Quantity:        item.Quantity,
+			TransactionType: models.ExpenseTypeMaterial,
+			ReferenceType:   models.ExpenseRefTypePR,
+			ReferenceID:     &pr.ID,
+			ReferenceNo:     pr.Code,
+			Notes:           fmt.Sprintf("Auto-created from approved PR: %s", pr.Code),
+			CreatedBy:       pr.CreatedBy,
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+
+		fmt.Printf("   💾 Saving expense: Project=%d, COA=%d, Amount=%.2f\n", expense.ProjectID, expense.COAAccountID, expense.Amount)
+		
+		// Save expense transaction
+		if err := s.expenseRepo.Create(expense); err != nil {
+			// Log error but continue with other items
+			fmt.Printf("   ❌ Error creating expense for PR item %d: %v\n", item.ID, err)
+			errorCount++
+			continue
+		}
+
+		fmt.Printf("   ✅ Created expense transaction ID: %d for PR-%s item: %s (Amount: %.2f)\n", 
+			expense.ID, pr.Code, item.ItemName, item.TotalPrice)
+		createdCount++
+	}
+
+	fmt.Printf("📊 [CreateExpenseFromApprovedPR] Summary - Created: %d, Skipped: %d, Errors: %d\n", createdCount, skippedCount, errorCount)
+	
+	if createdCount == 0 && len(pr.Items) > 0 {
+		return fmt.Errorf("no expenses were created (skipped: %d, errors: %d)", skippedCount, errorCount)
 	}
 
 	return nil

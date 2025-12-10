@@ -61,6 +61,19 @@ func AutoMigrate(db *gorm.DB) {
 		&models.PRCBSMapping{},
 		&models.PurchaseRequest{},
 		&models.PurchaseRequestItem{},
+		&models.PurchaseOrder{},
+		&models.PurchaseOrderItem{},
+		&models.GoodsReceipt{},
+		&models.GoodsReceiptItem{},
+
+		// Master Data
+		&models.COAAccount{},
+		&models.Material{},
+		&models.MaterialCategory{},
+		&models.UnitOfMeasure{},
+		&models.Vendor{},
+		&models.VendorCategory{},
+		&models.VendorMaterial{},
 
 		// Approvals
 		&models.ApprovalWorkflow{},

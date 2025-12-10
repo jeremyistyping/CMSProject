@@ -87,8 +87,8 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
   const rejectDisabled = comments.trim() === '';
   const userRole = user?.role || '';
   const normalizedRole = normalizeRole(userRole as any);
-  const isFinanceRole = normalizedRole === 'finance';
-  const isDirectorRole = normalizedRole === 'director';
+  const isCostControlRole = normalizedRole === 'cost_control';
+  const isManagementRole = normalizedRole === 'gm' || normalizedRole === 'project_director' || normalizedRole === 'managing_director';
   const isPendingApproval = (approvalStatus || '').toUpperCase() === 'PENDING';
   const isNotStarted = (approvalStatus || '').toUpperCase() === 'NOT_STARTED';
   const isApproved = (approvalStatus || '').toUpperCase() === 'APPROVED';
@@ -100,47 +100,47 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
       return null; // Process completed
     }
     
-    // For new approval workflow starting from Employee
+    // For new approval workflow starting from Purchasing
     if (history.length === 0 || isNotStarted) {
-      // Employee creates the purchase but approval process starts from Finance
-      return 'finance'; // First approval step is Finance
+      // Purchasing creates the purchase but approval process starts from Cost Control
+      return 'cost_control'; // First approval step is Cost Control
     }
     
     // Check the last approval action
     const lastApproval = history[history.length - 1];
     
-    // If last action was Employee submitting/creating, next step is Finance
+    // If last action was Purchasing submitting/creating, next step is Cost Control
     if (lastApproval.action === 'CREATED' || lastApproval.action === 'SUBMITTED' || 
-        lastApproval.action === 'APPROVED' && lastApproval.comments?.includes('Purchase submitted by Employee')) {
-      return 'finance';
+        lastApproval.action === 'APPROVED' && lastApproval.comments?.includes('Purchase submitted by')) {
+      return 'cost_control';
     }
     
-    // If Finance approved and escalated to Director
-    if (lastApproval.action === 'APPROVED' && lastApproval.comments?.includes('Escalated to Director')) {
-      return 'director';
+    // If Cost Control approved and escalated to Management
+    if (lastApproval.action === 'APPROVED' && lastApproval.comments?.includes('Escalated')) {
+      return 'gm';
     }
     
     // If we're in pending status, determine who should act next based on history
     if (isPendingApproval) {
-      // Check if there's an escalation or director approval needed
-      const financeApproval = history.find(h => 
+      // Check if there's an escalation or management approval needed
+      const costControlApproval = history.find(h => 
         h.action === 'APPROVED' && 
-        (h.comments?.includes('Escalated') || h.comments?.includes('Director'))
+        (h.comments?.includes('Escalated') || h.comments?.includes('Management'))
       );
-      if (financeApproval) {
-        return 'director';
+      if (costControlApproval) {
+        return 'gm';
       }
       
-      // Check if employee step is completed
-      const employeeSubmission = history.find(h => 
+      // Check if purchasing step is completed
+      const purchasingSubmission = history.find(h => 
         h.action === 'CREATED' || h.action === 'SUBMITTED' ||
-        (h.action === 'APPROVED' && h.comments?.includes('Purchase submitted by Employee'))
+        (h.action === 'APPROVED' && h.comments?.includes('Purchase submitted by'))
       );
-      if (employeeSubmission) {
-        return 'finance';
+      if (purchasingSubmission) {
+        return 'cost_control';
       }
       
-      return 'finance'; // Default to finance if no clear employee submission found
+      return 'cost_control'; // Default to cost_control if no clear submission found
     }
     
     return null; // Default fallback
@@ -150,19 +150,19 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
   const isUserTurn = activeStep === normalizedRole;
   const canUserAct = isUserTurn && canApprove && !isApproved && !isRejected;
   
-  const shouldShowDirectorCheckbox = isFinanceRole && canUserAct && (isPendingApproval || isNotStarted);
+  const shouldShowEscalationCheckbox = isCostControlRole && canUserAct && (isPendingApproval || isNotStarted);
   const isDisabled = isApproved || isRejected || !canUserAct; // Disable when completed or not user's turn
   
   // Debug logging
   console.log('ApprovalPanel Debug:', {
     userRole,
     normalizedRole,
-    isFinanceRole,
+    isCostControlRole,
     canApprove,
     approvalStatus,
     isPendingApproval,
     isNotStarted,
-    shouldShowDirectorCheckbox
+    shouldShowEscalationCheckbox
   });
 
   return (
@@ -186,12 +186,6 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
                 <Text fontSize="sm" fontWeight="medium">
                   {h.user ? (
                     <>
-                      <Text as="span" color="blue.600" fontWeight="semibold">
-                        {formatRoleForApproval(h.user.role)}
-                      </Text>
-                      <Text as="span" color="gray.600" mx={1}>
-                        -
-                      </Text>
                       <Text as="span">
                         {h.user.first_name} {h.user.last_name}
                       </Text>
@@ -230,7 +224,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
                 <AlertIcon />
                 <Text fontSize="sm">
                   Menunggu persetujuan dari: <Text as="span" fontWeight="bold">{formatRoleForApproval(activeStep)}</Text>
-                  {activeStep === 'director' && ' (sudah di-escalate ke Director)'}
+                  {activeStep === 'gm' && ' (sudah di-escalate ke Management)'}
                 </Text>
               </Alert>
             )}
@@ -289,8 +283,8 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
               </FormHelperText>
             </FormControl>
             
-            {/* Director approval checkbox for finance role - only disabled during explicit rejection */}
-            {shouldShowDirectorCheckbox && (
+            {/* Management approval checkbox for cost control role - only disabled during explicit rejection */}
+            {shouldShowEscalationCheckbox && (
               <FormControl>
                 <Checkbox 
                   isChecked={requiresDirector} 
@@ -299,7 +293,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({ purchaseId, approv
                   isDisabled={approvalIntent === 'reject'} // Only disable when user explicitly clicks reject
                 >
                   <Text fontSize="sm" fontWeight="medium">
-                    Butuh persetujuan Director
+                    Butuh persetujuan Management
                   </Text>
                 </Checkbox>
                 <FormHelperText fontSize="xs" color="gray.600">
