@@ -105,3 +105,37 @@ noted.txt
 /backend/docs/swagger_backup_*.yml
 
 /backup
+
+# ================================================================
+# Docker Deployment Files
+# ================================================================
+
+# Production environment file (contains secrets!)
+.env.production
+.env.production.backup
+
+# Backup files
+backups/
+*.tar.gz
+*.backup
+
+# SSL certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+
+# Nginx logs
+nginx/logs/
+nginx_logs/
+
+# Docker volumes data (managed by Docker)
+postgres_data/
+backend_uploads/
+
+# Deployment logs
+deployment.log
+deploy_*.log
+
+# Temporary deployment files
+.deploy_tmp/
+.backup_tmp/

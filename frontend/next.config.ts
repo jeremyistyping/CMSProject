@@ -1,16 +1,33 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+	// Enable standalone output for Docker deployment
+	output: 'standalone',
+	
+	// Environment variables
 	env: {
-		NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+		NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
 	},
+	
+	// TypeScript configuration
 	typescript: {
 		ignoreBuildErrors: true,
 	},
+	
+	// ESLint configuration
 	eslint: {
 		ignoreDuringBuilds: true,
 	},
-	// Konfigurasi Webpack hanya untuk mode non-Turbopack
+	
+	// Image optimization - disable for Docker to avoid issues
+	images: {
+		unoptimized: true,
+	},
+	
+	// Disable telemetry
+	telemetry: false,
+	
+	// Webpack configuration (only for non-Turbopack mode)
 	...(!process.env.TURBOPACK && {
 		webpack: (config, { isServer }) => {
 			// Handle client-side module resolution for jsPDF
@@ -32,6 +49,8 @@ const nextConfig: NextConfig = {
 			return config;
 		},
 	}),
+	
+	// API rewrites for development
 	async rewrites() {
 		// Use environment variable for API destination, fallback to localhost for development
 		const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
