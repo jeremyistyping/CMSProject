@@ -54,6 +54,12 @@ func NewEnhancedSecurityMiddleware(db *gorm.DB) *EnhancedSecurityMiddleware {
 // IP Whitelisting middleware for development endpoints
 func (esm *EnhancedSecurityMiddleware) IPWhitelist() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Check if IP whitelist is disabled
+		if os.Getenv("DISABLE_IP_WHITELIST") == "true" {
+			c.Next()
+			return
+		}
+		
 		// Get real IP (considering proxies)
 		clientIP := esm.getRealClientIP(c)
 		
@@ -156,8 +162,9 @@ func (esm *EnhancedSecurityMiddleware) RequestMonitoring() gin.HandlerFunc {
 		// Check for suspicious patterns using security service
 		isSuspicious, suspiciousReason := esm.securityService.DetectSuspiciousPattern(method, path, userAgent, clientIP, headers)
 		
-		// Block highly suspicious requests (but allow localhost and whitelisted IPs)
-		if isSuspicious && !esm.securityService.IsIPWhitelisted(clientIP) && !esm.isIPAllowed(clientIP) {
+		// Block highly suspicious requests (but allow if IP whitelist is disabled or localhost/whitelisted IPs)
+		disableIPWhitelist := os.Getenv("DISABLE_IP_WHITELIST") == "true"
+		if isSuspicious && !disableIPWhitelist && !esm.securityService.IsIPWhitelisted(clientIP) && !esm.isIPAllowed(clientIP) {
 			if strings.Contains(suspiciousReason, "SQL_INJECTION") ||
 			   strings.Contains(suspiciousReason, "DIRECTORY_TRAVERSAL") ||
 			   strings.Contains(suspiciousReason, "XSS_ATTEMPT") {
