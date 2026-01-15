@@ -63,7 +63,7 @@ func GetDefaultPermissions(role string) map[string]*ModulePermission {
 	permissions := make(map[string]*ModulePermission)
 	// Cost Control focused modules
 	// Note: daily_updates is an alias for daily_reports (used by routes)
-	modules := []string{"projects", "cost_control", "material_tracking", "cbs", "purchase_requests", "daily_reports", "daily_updates", "master_data", "settings"}
+	modules := []string{"projects", "cost_control", "material_tracking", "cbs", "purchase_requests", "daily_reports", "daily_updates", "master_data", "settings", "reports", "purchases"}
 
 	switch role {
 	case "admin":
