@@ -119,11 +119,8 @@ export const projectService = {
         formData.append('photos', photo);
       });
 
-      const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // Don't set Content-Type manually - axios will set it with proper boundary
+      const response = await api.post(`${PROJECT_ENDPOINT}/${projectId}/daily-updates`, formData);
       return response.data;
     }
 
