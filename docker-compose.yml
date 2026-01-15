@@ -37,6 +37,8 @@ services:
       SKIP_BALANCE_RESET: ${SKIP_BALANCE_RESET:-false}
       ENABLE_LEGACY_PAYMENT_JOURNALS: ${ENABLE_LEGACY_PAYMENT_JOURNALS:-true}
       ENABLE_SSOT_PAYMENT_JOURNALS: ${ENABLE_SSOT_PAYMENT_JOURNALS:-true}
+      DISABLE_IP_WHITELIST: ${DISABLE_IP_WHITELIST:-false}
+      SECURITY_ALLOWED_IPS: ${SECURITY_ALLOWED_IPS:-127.0.0.1,::1,localhost}
     volumes:
       - backend_uploads:/app/uploads
       - ./backend/migrations:/app/migrations:ro
